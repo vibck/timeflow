@@ -72,10 +72,8 @@ const eventTooltipAccessor = (event) => {
 
 // Benutzerdefinierte Agenda-Komponente
 const CustomAgendaView = ({ events, date, onSelectEvent, showHolidays }) => {
-  // Filtere Feiertage, wenn sie ausgeblendet werden sollen
-  const filteredEvents = showHolidays 
-    ? events 
-    : events.filter(event => !event.isHoliday);
+  // Filtere Feiertage immer aus der Agenda heraus, unabhängig von showHolidays
+  const filteredEvents = events.filter(event => !event.isHoliday);
   
   // Sortiere Termine nach Startdatum
   const sortedEvents = [...filteredEvents].sort((a, b) => new Date(a.start) - new Date(b.start));
@@ -172,7 +170,7 @@ const CalendarView = () => {
   const navigate = useNavigate();
   const [userState, setUserState] = useState(localStorage.getItem('userState') || 'BY');
   const [regularEvents, setRegularEvents] = useState([]);
-  const [showHolidays, setShowHolidays] = useState(true);
+  const [showHolidays, setShowHolidays] = useState(false);
   const [lastStateChange, setLastStateChange] = useState(Date.now()); // Zeitstempel der letzten Änderung
 
   // Überwache Änderungen am Bundesland im lokalen Speicher
