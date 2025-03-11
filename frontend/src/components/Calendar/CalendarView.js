@@ -1,13 +1,28 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
+import { Calendar, momentLocalizer, Views } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/de';
 import dayjs from 'dayjs';
-import { Box, Typography, Button, Paper } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { 
+  Box, 
+  Typography, 
+  Button, 
+  Paper, 
+  Alert, 
+  IconButton, 
+  Tooltip,
+  ButtonGroup
+} from '@mui/material';
+import { 
+  Add as AddIcon, 
+  ChevronLeft, 
+  ChevronRight, 
+  Today
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import './CalendarView.css'; // Importiere benutzerdefinierte CSS-Datei
 
 // Setze die Sprache auf Deutsch
 moment.locale('de');
@@ -28,10 +43,24 @@ const messages = {
   noEventsInRange: 'Keine Termine in diesem Zeitraum.',
 };
 
+// Benutzerdefinierte Formatierungen für die Zeitanzeige
+const formats = {
+  timeGutterFormat: 'HH:mm',
+  eventTimeRangeFormat: ({ start, end }) => {
+    return `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')} Uhr`;
+  },
+  agendaTimeRangeFormat: ({ start, end }) => {
+    return `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')} Uhr`;
+  },
+  dayRangeHeaderFormat: ({ start, end }) => {
+    return `${moment(start).format('DD.MM.YYYY')} - ${moment(end).format('DD.MM.YYYY')}`;
+  },
+};
+
 // Formatiere Datum für Tooltips
 const eventTooltipAccessor = (event) => {
-  const start = dayjs(event.start).format('DD.MM.YYYY HH:mm');
-  const end = dayjs(event.end).format('DD.MM.YYYY HH:mm');
+  const start = dayjs(event.start).format('DD.MM.YYYY HH:mm [Uhr]');
+  const end = dayjs(event.end).format('DD.MM.YYYY HH:mm [Uhr]');
   return `${event.title}\n${start} - ${end}${event.location ? `\nOrt: ${event.location}` : ''}`;
 };
 
@@ -39,6 +68,8 @@ const CalendarView = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [date, setDate] = useState(new Date());
+  const [view, setView] = useState('month');
   const navigate = useNavigate();
 
   // Lade Termine vom Backend
@@ -46,7 +77,23 @@ const CalendarView = () => {
     const fetchEvents = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/events`);
+        
+        // Hole den Token aus dem localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Du bist nicht angemeldet. Bitte melde dich an, um deine Termine zu sehen.');
+          setLoading(false);
+          return;
+        }
+        
+        // Setze den Authorization-Header
+        const config = {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        };
+        
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/events`, config);
         
         // Formatiere die Termine für den Kalender
         const formattedEvents = response.data.map(event => ({
@@ -63,7 +110,11 @@ const CalendarView = () => {
         setError(null);
       } catch (err) {
         console.error('Fehler beim Laden der Termine:', err);
-        setError('Termine konnten nicht geladen werden. Bitte versuche es später erneut.');
+        if (err.response && err.response.status === 401) {
+          setError('Du bist nicht angemeldet oder deine Sitzung ist abgelaufen. Bitte melde dich erneut an.');
+        } else {
+          setError('Termine konnten nicht geladen werden. Bitte versuche es später erneut.');
+        }
       } finally {
         setLoading(false);
       }
@@ -123,6 +174,15 @@ const CalendarView = () => {
     };
   };
 
+  // Behandle Änderungen der Ansicht oder des Datums
+  const handleNavigate = (newDate) => {
+    setDate(newDate);
+  };
+
+  const handleViewChange = (newView) => {
+    setView(newView);
+  };
+
   return (
     <Paper elevation={3} sx={{ p: 3, height: 'calc(100vh - 180px)', mb: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -139,26 +199,106 @@ const CalendarView = () => {
         </Button>
       </Box>
       
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      
       {loading ? (
         <Typography>Termine werden geladen...</Typography>
-      ) : error ? (
-        <Typography color="error">{error}</Typography>
       ) : (
-        <Calendar
-          localizer={momentLocalizer(moment)}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: 'calc(100% - 50px)' }}
-          tooltipAccessor={eventTooltipAccessor}
-          onSelectEvent={handleSelectEvent}
-          onSelectSlot={handleSelectSlot}
-          selectable
-          messages={messages}
-          eventPropGetter={eventStyleGetter}
-          views={['month', 'week', 'day', 'agenda']}
-          popup
-        />
+        <Box sx={{ height: 'calc(100% - 50px)' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Tooltip title="Heute">
+                <IconButton onClick={() => handleNavigate(new Date())}>
+                  <Today />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Zurück">
+                <IconButton onClick={() => {
+                  const newDate = new Date(date);
+                  if (view === 'month') {
+                    newDate.setMonth(date.getMonth() - 1);
+                  } else if (view === 'week') {
+                    newDate.setDate(date.getDate() - 7);
+                  } else if (view === 'day') {
+                    newDate.setDate(date.getDate() - 1);
+                  }
+                  handleNavigate(newDate);
+                }}>
+                  <ChevronLeft />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Weiter">
+                <IconButton onClick={() => {
+                  const newDate = new Date(date);
+                  if (view === 'month') {
+                    newDate.setMonth(date.getMonth() + 1);
+                  } else if (view === 'week') {
+                    newDate.setDate(date.getDate() + 7);
+                  } else if (view === 'day') {
+                    newDate.setDate(date.getDate() + 1);
+                  }
+                  handleNavigate(newDate);
+                }}>
+                  <ChevronRight />
+                </IconButton>
+              </Tooltip>
+              
+              <Typography variant="h6" sx={{ ml: 2 }}>
+                {moment(date).format(view === 'month' ? 'MMMM YYYY' : 'DD. MMMM YYYY')}
+              </Typography>
+            </Box>
+            <ButtonGroup size="small">
+              <Button
+                variant={view === 'month' ? 'contained' : 'outlined'}
+                onClick={() => handleViewChange('month')}
+              >
+                Monat
+              </Button>
+              <Button
+                variant={view === 'week' ? 'contained' : 'outlined'}
+                onClick={() => handleViewChange('week')}
+              >
+                Woche
+              </Button>
+              <Button
+                variant={view === 'day' ? 'contained' : 'outlined'}
+                onClick={() => handleViewChange('day')}
+              >
+                Tag
+              </Button>
+              <Button
+                variant={view === 'agenda' ? 'contained' : 'outlined'}
+                onClick={() => handleViewChange('agenda')}
+              >
+                Agenda
+              </Button>
+            </ButtonGroup>
+          </Box>
+          
+          <Calendar
+            localizer={momentLocalizer(moment)}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: 'calc(100% - 50px)' }}
+            tooltipAccessor={eventTooltipAccessor}
+            onSelectEvent={handleSelectEvent}
+            onSelectSlot={handleSelectSlot}
+            selectable
+            messages={messages}
+            eventPropGetter={eventStyleGetter}
+            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+            view={view}
+            onView={handleViewChange}
+            date={date}
+            onNavigate={handleNavigate}
+            popup
+            formats={formats}
+            components={{
+              toolbar: () => null // Verstecke die eingebaute Toolbar
+            }}
+          />
+        </Box>
       )}
     </Paper>
   );

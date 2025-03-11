@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Box, 
-  Typography, 
-  TextField, 
-  Button, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
-  Grid, 
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
   Paper,
+  Grid,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
   Alert,
   Dialog,
   DialogActions,
@@ -18,9 +18,9 @@ import {
   DialogContentText,
   DialogTitle
 } from '@mui/material';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import 'dayjs/locale/de';
 import axios from 'axios';
@@ -34,88 +34,119 @@ const EventForm = () => {
   const location = useLocation();
   const isEditMode = !!id;
   
+  // Hole Standardwerte aus dem Location-State (wenn von Kalender-Slot ausgewählt)
+  const defaultStart = location.state?.defaultStart ? dayjs(location.state.defaultStart) : dayjs();
+  const defaultEnd = location.state?.defaultEnd ? dayjs(location.state.defaultEnd) : dayjs().add(1, 'hour');
+  
   // Formularstatus
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [startTime, setStartTime] = useState(dayjs());
-  const [endTime, setEndTime] = useState(dayjs().add(1, 'hour')); // +1 Stunde
-  const [eventType, setEventType] = useState('personal');
   const [location_, setLocation] = useState('');
+  const [startTime, setStartTime] = useState(defaultStart);
+  const [endTime, setEndTime] = useState(defaultEnd);
+  const [eventType, setEventType] = useState('personal');
   
   // UI-Status
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   
   // Lade Termindaten, wenn im Bearbeitungsmodus
   useEffect(() => {
-    if (isEditMode) {
-      const fetchEvent = async () => {
-        try {
-          setLoading(true);
-          const response = await axios.get(`${process.env.REACT_APP_API_URL}/events/${id}`);
-          const event = response.data;
-          
-          setTitle(event.title);
-          setDescription(event.description || '');
-          setStartTime(dayjs(event.start_time));
-          setEndTime(dayjs(event.end_time));
-          setEventType(event.event_type || 'personal');
-          setLocation(event.location || '');
-          
-          setError(null);
-        } catch (err) {
-          console.error('Fehler beim Laden des Termins:', err);
-          setError('Der Termin konnte nicht geladen werden. Bitte versuche es später erneut.');
-        } finally {
-          setLoading(false);
-        }
-      };
+    const fetchEvent = async () => {
+      if (!isEditMode) return;
       
-      fetchEvent();
-    } else if (location.state?.defaultStart && location.state?.defaultEnd) {
-      // Wenn von der Kalenderansicht mit vorausgewähltem Zeitraum navigiert wurde
-      setStartTime(dayjs(location.state.defaultStart));
-      setEndTime(dayjs(location.state.defaultEnd));
-    }
-  }, [id, isEditMode, location.state]);
+      try {
+        setLoading(true);
+        
+        // Hole den Token aus dem localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Du bist nicht angemeldet. Bitte melde dich an, um Termine zu bearbeiten.');
+          setLoading(false);
+          return;
+        }
+        
+        // Setze den Authorization-Header
+        const config = {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        };
+        
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/events/${id}`, config);
+        const event = response.data;
+        
+        setTitle(event.title);
+        setDescription(event.description || '');
+        setLocation(event.location || '');
+        setStartTime(dayjs(event.start_time));
+        setEndTime(dayjs(event.end_time));
+        setEventType(event.event_type || 'personal');
+        
+      } catch (err) {
+        console.error('Fehler beim Laden des Termins:', err);
+        if (err.response && err.response.status === 401) {
+          setError('Du bist nicht angemeldet oder deine Sitzung ist abgelaufen. Bitte melde dich erneut an.');
+        } else if (err.response && err.response.status === 404) {
+          setError('Termin nicht gefunden.');
+        } else {
+          setError('Termin konnte nicht geladen werden. Bitte versuche es später erneut.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvent();
+  }, [id, isEditMode]);
   
   // Formular absenden
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validierung
-    if (!title.trim()) {
-      setError('Bitte gib einen Titel ein.');
-      return;
-    }
-    
-    if (startTime.isAfter(endTime)) {
-      setError('Die Startzeit muss vor der Endzeit liegen.');
+    // Validierung mit validateForm-Funktion
+    if (!validateForm()) {
       return;
     }
     
     const eventData = {
       title,
       description,
+      location: location_,
       start_time: startTime.toISOString(),
       end_time: endTime.toISOString(),
-      event_type: eventType,
-      location: location_
+      event_type: eventType
     };
     
     try {
       setLoading(true);
       setError(null);
       
+      // Hole den Token aus dem localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Du bist nicht angemeldet. Bitte melde dich an, um Termine zu speichern.');
+        setLoading(false);
+        return;
+      }
+      
+      // Setze den Authorization-Header
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      };
+      
       if (isEditMode) {
         // Termin aktualisieren
-        await axios.put(`${process.env.REACT_APP_API_URL}/events/${id}`, eventData);
+        await axios.put(`${process.env.REACT_APP_API_URL}/events/${id}`, eventData, config);
         setSuccess('Termin erfolgreich aktualisiert!');
       } else {
         // Neuen Termin erstellen
-        await axios.post(`${process.env.REACT_APP_API_URL}/events`, eventData);
+        await axios.post(`${process.env.REACT_APP_API_URL}/events`, eventData, config);
         setSuccess('Termin erfolgreich erstellt!');
       }
       
@@ -125,7 +156,11 @@ const EventForm = () => {
       }, 1500);
     } catch (err) {
       console.error('Fehler beim Speichern des Termins:', err);
-      setError('Der Termin konnte nicht gespeichert werden. Bitte versuche es später erneut.');
+      if (err.response && err.response.status === 401) {
+        setError('Du bist nicht angemeldet oder deine Sitzung ist abgelaufen. Bitte melde dich erneut an.');
+      } else {
+        setError('Der Termin konnte nicht gespeichert werden. Bitte versuche es später erneut.');
+      }
     } finally {
       setLoading(false);
     }
@@ -135,9 +170,27 @@ const EventForm = () => {
   const handleDelete = async () => {
     try {
       setLoading(true);
-      await axios.delete(`${process.env.REACT_APP_API_URL}/events/${id}`);
-      setDeleteDialogOpen(false);
+      
+      // Hole den Token aus dem localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Du bist nicht angemeldet. Bitte melde dich an, um Termine zu löschen.');
+        setLoading(false);
+        setDeleteDialogOpen(false);
+        return;
+      }
+      
+      // Setze den Authorization-Header
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      };
+      
+      await axios.delete(`${process.env.REACT_APP_API_URL}/events/${id}`, config);
+      
       setSuccess('Termin erfolgreich gelöscht!');
+      setDeleteDialogOpen(false);
       
       // Nach erfolgreicher Löschung zur Kalenderansicht zurückkehren
       setTimeout(() => {
@@ -145,11 +198,31 @@ const EventForm = () => {
       }, 1500);
     } catch (err) {
       console.error('Fehler beim Löschen des Termins:', err);
-      setError('Der Termin konnte nicht gelöscht werden. Bitte versuche es später erneut.');
+      if (err.response && err.response.status === 401) {
+        setError('Du bist nicht angemeldet oder deine Sitzung ist abgelaufen. Bitte melde dich erneut an.');
+      } else {
+        setError('Der Termin konnte nicht gelöscht werden. Bitte versuche es später erneut.');
+      }
       setDeleteDialogOpen(false);
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Validiere das Formular
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!title.trim()) {
+      errors.title = 'Titel ist erforderlich';
+    }
+    
+    if (startTime.isAfter(endTime)) {
+      errors.time = 'Startzeit muss vor der Endzeit liegen';
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
   
   return (
@@ -177,25 +250,40 @@ const EventForm = () => {
           </Grid>
           
           <Grid item xs={12} sm={6}>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="de">
               <DateTimePicker
                 label="Startzeit"
                 value={startTime}
                 onChange={(newValue) => setStartTime(newValue)}
-                renderInput={(params) => <TextField {...params} fullWidth />}
+                renderInput={(params) => (
+                  <TextField 
+                    {...params} 
+                    fullWidth 
+                    error={validationErrors.time ? true : false}
+                  />
+                )}
                 disabled={loading}
+                ampm={false}
               />
             </LocalizationProvider>
           </Grid>
           
           <Grid item xs={12} sm={6}>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="de">
               <DateTimePicker
                 label="Endzeit"
                 value={endTime}
                 onChange={(newValue) => setEndTime(newValue)}
-                renderInput={(params) => <TextField {...params} fullWidth />}
+                renderInput={(params) => (
+                  <TextField 
+                    {...params} 
+                    fullWidth 
+                    error={validationErrors.time ? true : false}
+                    helperText={validationErrors.time || ''}
+                  />
+                )}
                 disabled={loading}
+                ampm={false}
               />
             </LocalizationProvider>
           </Grid>
