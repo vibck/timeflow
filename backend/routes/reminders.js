@@ -2,6 +2,23 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 
+// Alle Erinnerungen für den aktuellen Benutzer abrufen
+router.get('/', async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT r.* FROM reminders r
+       JOIN events e ON r.event_id = e.id
+       WHERE e.user_id = $1
+       ORDER BY r.reminder_time`,
+      [req.user.id]
+    );
+    
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Serverfehler', error: error.message });
+  }
+});
+
 // Alle Erinnerungen für ein Event abrufen
 router.get('/event/:eventId', async (req, res) => {
   const { eventId } = req.params;

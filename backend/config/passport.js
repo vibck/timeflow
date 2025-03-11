@@ -4,8 +4,8 @@ const db = require('../db');
 require('dotenv').config();
 
 // Für Testzwecke: Prüfe, ob Umgebungsvariablen vorhanden sind
-const clientID = process.env.GOOGLE_CLIENT_ID || 'dummy_client_id';
-const clientSecret = process.env.GOOGLE_CLIENT_SECRET || 'dummy_client_secret';
+const clientID = process.env.GOOGLE_CLIENT_ID;
+const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
 passport.use(
   new GoogleStrategy(
