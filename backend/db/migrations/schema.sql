@@ -7,6 +7,7 @@ CREATE TABLE users (
   google_id VARCHAR(255) UNIQUE,
   email VARCHAR(255) UNIQUE NOT NULL,
   name VARCHAR(255),
+  password VARCHAR(255),
   profile_picture VARCHAR(255),
   language VARCHAR(10) DEFAULT 'de',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
