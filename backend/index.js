@@ -11,6 +11,7 @@ const eventRoutes = require('./routes/events');
 const reminderRoutes = require('./routes/reminders');
 const healthIntervalRoutes = require('./routes/healthIntervals');
 const telegramRoutes = require('./routes/telegram');
+const userRoutes = require('./routes/users');
 
 // Import middleware
 const { authenticateJWT } = require('./middleware/auth');
@@ -35,7 +36,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/events', authenticateJWT, eventRoutes);
 app.use('/api/reminders', authenticateJWT, reminderRoutes);
 app.use('/api/health-intervals', authenticateJWT, healthIntervalRoutes);
-app.use('/api/telegram', telegramRoutes);
+app.use('/api/telegram', authenticateJWT, telegramRoutes);
+app.use('/api/users', userRoutes);
 
 // Start server
 app.listen(PORT, () => {

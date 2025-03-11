@@ -3,6 +3,7 @@ import { Calendar, momentLocalizer, Views } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/de';
 import dayjs from 'dayjs';
+import Holidays from 'date-holidays';
 import { 
   Box, 
   Typography, 
@@ -20,12 +21,15 @@ import {
   Today
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../utils/api';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './CalendarView.css'; // Importiere benutzerdefinierte CSS-Datei
 
 // Setze die Sprache auf Deutsch
 moment.locale('de');
+
+// Initialisiere Feiertage für Deutschland (Bundesland wird dynamisch geladen)
+const hd = new Holidays();
 
 // Lokalisierung für den Kalender
 const messages = {
@@ -65,63 +69,120 @@ const eventTooltipAccessor = (event) => {
 };
 
 const CalendarView = () => {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [date, setDate] = useState(new Date());
+  const [events, setEvents] = useState([]);
+  // eslint-disable-next-line no-unused-vars
+  const [holidays, setHolidays] = useState([]);
+  const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line no-unused-vars
+  const [error, setError] = useState(null);
   const [view, setView] = useState('month');
   const navigate = useNavigate();
+  const [userState, setUserState] = useState(localStorage.getItem('userState') || 'BY');
+  const [regularEvents, setRegularEvents] = useState([]);
+  const [lastStateChange, setLastStateChange] = useState(Date.now()); // Zeitstempel der letzten Änderung
+
+  // Überwache Änderungen am Bundesland im lokalen Speicher
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e && e.key === 'userState') {
+        const newState = e.newValue || 'BY';
+        if (newState !== userState) {
+          setUserState(newState);
+          setLastStateChange(Date.now());
+        }
+      }
+    };
+
+    // Reagiere auf das benutzerdefinierte Event für Bundeslandänderungen
+    const handleStateChange = (e) => {
+      const newState = e.detail.newState || 'BY';
+      if (newState !== userState) {
+        setUserState(newState);
+        setLastStateChange(Date.now());
+      }
+    };
+
+    // Füge Event-Listener für Änderungen im lokalen Speicher hinzu
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('stateChange', handleStateChange);
+
+    // Bereinige die Event-Listener beim Unmount
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('stateChange', handleStateChange);
+    };
+  }, [userState]);
+
+  // Lade Feiertage basierend auf dem Bundesland
+  useEffect(() => {
+    // Verhindere mehrfache Ausführungen in kurzer Zeit
+    const debounceTimeout = setTimeout(() => {
+      // Konfiguriere Feiertage für das ausgewählte Bundesland
+      hd.init('DE', userState);
+      console.log(`Bundesland für Feiertage geändert auf: ${userState}`);
+      
+      const loadHolidays = () => {
+        const currentYear = new Date().getFullYear();
+        let allHolidays = [];
+        
+        // Lade Feiertage für das aktuelle Jahr und die nächsten 3 Jahre
+        for (let year = currentYear; year <= currentYear + 3; year++) {
+          const holidaysList = hd.getHolidays(year);
+          
+          // Formatiere Feiertage für den Kalender
+          const formattedHolidays = holidaysList.map(holiday => ({
+            id: `holiday-${holiday.date}`,
+            title: holiday.name,
+            start: new Date(holiday.start),
+            end: new Date(holiday.end),
+            allDay: true,
+            isHoliday: true,
+            holidayType: holiday.type
+          }));
+          
+          allHolidays = [...allHolidays, ...formattedHolidays];
+        }
+        
+        setHolidays(allHolidays);
+        console.log(`Geladene Feiertage für ${userState}: ${allHolidays.length}`);
+        
+        // Kombiniere reguläre Termine und Feiertage
+        setEvents([...regularEvents, ...allHolidays]);
+      };
+      
+      loadHolidays();
+    }, 300); // 300ms Verzögerung, um mehrfache Ausführungen zu reduzieren
+    
+    // Bereinige den Timeout beim Unmount oder bei Änderungen
+    return () => clearTimeout(debounceTimeout);
+  }, [userState, regularEvents, lastStateChange]);
 
   // Lade Termine vom Backend
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         setLoading(true);
+        const response = await api.get('/api/events');
         
-        // Hole den Token aus dem localStorage
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setError('Du bist nicht angemeldet. Bitte melde dich an, um deine Termine zu sehen.');
-          setLoading(false);
-          return;
-        }
-        
-        // Setze den Authorization-Header
-        const config = {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        };
-        
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/events`, config);
-        
-        // Formatiere die Termine für den Kalender
+        // Konvertiere Datumsstrings in Date-Objekte
         const formattedEvents = response.data.map(event => ({
-          id: event.id,
-          title: event.title,
+          ...event,
           start: new Date(event.start_time),
-          end: new Date(event.end_time),
-          location: event.location,
-          description: event.description,
-          event_type: event.event_type
+          end: new Date(event.end_time)
         }));
         
-        setEvents(formattedEvents);
-        setError(null);
-      } catch (err) {
-        console.error('Fehler beim Laden der Termine:', err);
-        if (err.response && err.response.status === 401) {
-          setError('Du bist nicht angemeldet oder deine Sitzung ist abgelaufen. Bitte melde dich erneut an.');
-        } else {
-          setError('Termine konnten nicht geladen werden. Bitte versuche es später erneut.');
-        }
-      } finally {
+        // Speichere reguläre Termine separat
+        setRegularEvents(formattedEvents);
+        setLoading(false);
+      } catch (error) {
+        console.error('Fehler beim Laden der Termine:', error);
         setLoading(false);
       }
     };
-
+    
     fetchEvents();
-  }, []);
+  }, []); // Nur beim Mounten ausführen
 
   // Navigiere zur Termin-Erstellungsseite
   const handleAddEvent = () => {
@@ -130,6 +191,9 @@ const CalendarView = () => {
 
   // Navigiere zur Termin-Bearbeitungsseite, wenn ein Termin angeklickt wird
   const handleSelectEvent = useCallback((event) => {
+    // Ignoriere Klicks auf Feiertage
+    if (event.isHoliday) return;
+    
     navigate(`/events/${event.id}/edit`);
   }, [navigate]);
 
@@ -145,6 +209,35 @@ const CalendarView = () => {
 
   // Anpassen der Darstellung von Terminen
   const eventStyleGetter = (event) => {
+    // Spezielle Darstellung für Feiertage
+    if (event.isHoliday) {
+      // Verschiedene Farben je nach Feiertagstyp
+      let holidayColor = '#8e24aa'; // Standard-Lila für Feiertage
+      
+      if (event.holidayType === 'public') {
+        holidayColor = '#8e24aa'; // Lila für öffentliche Feiertage
+      } else if (event.holidayType === 'bank') {
+        holidayColor = '#6a1b9a'; // Dunkleres Lila für Bankfeiertage
+      } else if (event.holidayType === 'observance') {
+        holidayColor = '#ba68c8'; // Helleres Lila für Gedenktage
+      }
+      
+      return {
+        style: {
+          backgroundColor: holidayColor,
+          borderRadius: '4px',
+          opacity: 0.7,
+          color: 'white',
+          border: '0px',
+          display: 'block',
+          textAlign: 'center',
+          fontStyle: 'italic'
+        },
+        className: 'holiday'
+      };
+    }
+    
+    // Normale Termine
     let backgroundColor = '#3174ad'; // Standard-Blau
     
     // Verschiedene Farben je nach Termintyp
@@ -181,6 +274,25 @@ const CalendarView = () => {
 
   const handleViewChange = (newView) => {
     setView(newView);
+  };
+
+  // Lösche einen Termin
+  // eslint-disable-next-line no-unused-vars
+  const handleDeleteEvent = async (eventId) => {
+    if (window.confirm('Möchten Sie diesen Termin wirklich löschen?')) {
+      try {
+        await api.delete(`/api/events/${eventId}`);
+        
+        // Aktualisiere die Terminliste
+        setRegularEvents(regularEvents.filter(event => event.id !== eventId));
+        
+        // Zeige Erfolgsmeldung
+        alert('Termin erfolgreich gelöscht');
+      } catch (error) {
+        console.error('Fehler beim Löschen des Termins:', error);
+        alert('Fehler beim Löschen des Termins');
+      }
+    }
   };
 
   return (
