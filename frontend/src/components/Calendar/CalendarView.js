@@ -12,7 +12,9 @@ import {
   Alert, 
   IconButton, 
   Tooltip,
-  ButtonGroup
+  ButtonGroup,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
 import { 
   Add as AddIcon, 
@@ -68,6 +70,96 @@ const eventTooltipAccessor = (event) => {
   return `${event.title}\n${start} - ${end}${event.location ? `\nOrt: ${event.location}` : ''}`;
 };
 
+// Benutzerdefinierte Agenda-Komponente
+const CustomAgendaView = ({ events, date, onSelectEvent, showHolidays }) => {
+  // Filtere Feiertage, wenn sie ausgeblendet werden sollen
+  const filteredEvents = showHolidays 
+    ? events 
+    : events.filter(event => !event.isHoliday);
+  
+  // Sortiere Termine nach Startdatum
+  const sortedEvents = [...filteredEvents].sort((a, b) => new Date(a.start) - new Date(b.start));
+  
+  // Gruppiere Termine nach Monat
+  const groupedEvents = sortedEvents.reduce((groups, event) => {
+    const monthYear = moment(event.start).format('MMMM YYYY');
+    if (!groups[monthYear]) {
+      groups[monthYear] = [];
+    }
+    groups[monthYear].push(event);
+    return groups;
+  }, {});
+
+  return (
+    <Box sx={{ p: 2, overflowY: 'auto', height: '100%' }}>
+      <Typography variant="h6" gutterBottom>
+        Terminübersicht
+      </Typography>
+      
+      {Object.keys(groupedEvents).length === 0 ? (
+        <Typography>Keine Termine gefunden.</Typography>
+      ) : (
+        Object.entries(groupedEvents).map(([monthYear, monthEvents]) => (
+          <Box key={monthYear} sx={{ mb: 4 }}>
+            <Typography variant="h6" sx={{ mb: 2, borderBottom: '1px solid #ddd', pb: 1 }}>
+              {monthYear}
+            </Typography>
+            
+            {monthEvents.map((event, index) => {
+              // Erstelle einen eindeutigen Schlüssel für jeden Termin
+              const eventKey = event.id 
+                ? `event-${event.id}` 
+                : `holiday-${event.title.replace(/\s+/g, '-')}-${moment(event.start).format('YYYY-MM-DD')}-${index}`;
+              
+              return (
+                <Box 
+                  key={eventKey}
+                  sx={{ 
+                    mb: 2, 
+                    p: 2, 
+                    borderLeft: event.isHoliday ? '4px solid #8e24aa' : '4px solid #3174ad',
+                    backgroundColor: '#f5f5f5',
+                    borderRadius: '4px',
+                    cursor: event.isHoliday ? 'default' : 'pointer',
+                    '&:hover': {
+                      backgroundColor: event.isHoliday ? '#f5f5f5' : '#e0e0e0'
+                    }
+                  }}
+                  onClick={() => !event.isHoliday && onSelectEvent(event)}
+                >
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                    {event.title}
+                  </Typography>
+                  
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    {event.isHoliday ? (
+                      'Ganztägig'
+                    ) : (
+                      `${moment(event.start).format('DD.MM.YYYY HH:mm')} - ${moment(event.end).format('HH:mm')} Uhr`
+                    )}
+                  </Typography>
+                  
+                  {event.location && (
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      <strong>Ort:</strong> {event.location}
+                    </Typography>
+                  )}
+                  
+                  {event.description && (
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      <strong>Beschreibung:</strong> {event.description}
+                    </Typography>
+                  )}
+                </Box>
+              );
+            })}
+          </Box>
+        ))
+      )}
+    </Box>
+  );
+};
+
 const CalendarView = () => {
   const [date, setDate] = useState(new Date());
   const [events, setEvents] = useState([]);
@@ -80,6 +172,7 @@ const CalendarView = () => {
   const navigate = useNavigate();
   const [userState, setUserState] = useState(localStorage.getItem('userState') || 'BY');
   const [regularEvents, setRegularEvents] = useState([]);
+  const [showHolidays, setShowHolidays] = useState(true);
   const [lastStateChange, setLastStateChange] = useState(Date.now()); // Zeitstempel der letzten Änderung
 
   // Überwache Änderungen am Bundesland im lokalen Speicher
@@ -114,6 +207,15 @@ const CalendarView = () => {
     };
   }, [userState]);
 
+  // Funktion zum Aktualisieren der angezeigten Termine
+  const updateEventsDisplay = useCallback(() => {
+    if (showHolidays) {
+      setEvents([...regularEvents, ...holidays]);
+    } else {
+      setEvents([...regularEvents]);
+    }
+  }, [showHolidays, regularEvents, holidays]);
+
   // Lade Feiertage basierend auf dem Bundesland
   useEffect(() => {
     // Verhindere mehrfache Ausführungen in kurzer Zeit
@@ -131,8 +233,8 @@ const CalendarView = () => {
           const holidaysList = hd.getHolidays(year);
           
           // Formatiere Feiertage für den Kalender
-          const formattedHolidays = holidaysList.map(holiday => ({
-            id: `holiday-${holiday.date}`,
+          const formattedHolidays = holidaysList.map((holiday, index) => ({
+            id: `holiday-${holiday.name.replace(/\s+/g, '-')}-${holiday.date}-${index}`,
             title: holiday.name,
             start: new Date(holiday.start),
             end: new Date(holiday.end),
@@ -146,9 +248,6 @@ const CalendarView = () => {
         
         setHolidays(allHolidays);
         console.log(`Geladene Feiertage für ${userState}: ${allHolidays.length}`);
-        
-        // Kombiniere reguläre Termine und Feiertage
-        setEvents([...regularEvents, ...allHolidays]);
       };
       
       loadHolidays();
@@ -156,7 +255,14 @@ const CalendarView = () => {
     
     // Bereinige den Timeout beim Unmount oder bei Änderungen
     return () => clearTimeout(debounceTimeout);
-  }, [userState, regularEvents, lastStateChange]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userState, lastStateChange]);
+
+  // Aktualisiere die Termine, wenn sich showHolidays, regularEvents oder holidays ändern
+  useEffect(() => {
+    updateEventsDisplay();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [updateEventsDisplay]);
 
   // Lade Termine vom Backend
   useEffect(() => {
@@ -295,20 +401,38 @@ const CalendarView = () => {
     }
   };
 
+  // Toggle für Feiertage
+  const handleToggleHolidays = () => {
+    setShowHolidays(!showHolidays);
+  };
+
   return (
     <Paper elevation={3} sx={{ p: 3, height: 'calc(100vh - 180px)', mb: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5" component="h2">
           Kalender
         </Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          startIcon={<AddIcon />}
-          onClick={handleAddEvent}
-        >
-          Neuer Termin
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showHolidays}
+                onChange={handleToggleHolidays}
+                color="primary"
+              />
+            }
+            label="Feiertage anzeigen"
+            sx={{ mr: 2 }}
+          />
+          <Button 
+            variant="contained" 
+            color="primary" 
+            startIcon={<AddIcon />}
+            onClick={handleAddEvent}
+          >
+            Neuer Termin
+          </Button>
+        </Box>
       </Box>
       
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -387,29 +511,38 @@ const CalendarView = () => {
             </ButtonGroup>
           </Box>
           
-          <Calendar
-            localizer={momentLocalizer(moment)}
-            events={events}
-            startAccessor="start"
-            endAccessor="end"
-            style={{ height: 'calc(100% - 50px)' }}
-            tooltipAccessor={eventTooltipAccessor}
-            onSelectEvent={handleSelectEvent}
-            onSelectSlot={handleSelectSlot}
-            selectable
-            messages={messages}
-            eventPropGetter={eventStyleGetter}
-            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-            view={view}
-            onView={handleViewChange}
-            date={date}
-            onNavigate={handleNavigate}
-            popup
-            formats={formats}
-            components={{
-              toolbar: () => null // Verstecke die eingebaute Toolbar
-            }}
-          />
+          {view === 'agenda' ? (
+            <CustomAgendaView 
+              events={events} 
+              date={date} 
+              onSelectEvent={handleSelectEvent} 
+              showHolidays={showHolidays}
+            />
+          ) : (
+            <Calendar
+              localizer={momentLocalizer(moment)}
+              events={events}
+              startAccessor="start"
+              endAccessor="end"
+              style={{ height: 'calc(100% - 50px)' }}
+              tooltipAccessor={eventTooltipAccessor}
+              onSelectEvent={handleSelectEvent}
+              onSelectSlot={handleSelectSlot}
+              selectable
+              messages={messages}
+              eventPropGetter={eventStyleGetter}
+              views={[Views.MONTH, Views.WEEK, Views.DAY]}
+              view={view}
+              onView={handleViewChange}
+              date={date}
+              onNavigate={handleNavigate}
+              popup
+              formats={formats}
+              components={{
+                toolbar: () => null // Verstecke die eingebaute Toolbar
+              }}
+            />
+          )}
         </Box>
       )}
     </Paper>

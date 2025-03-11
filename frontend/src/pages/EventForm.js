@@ -23,7 +23,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import 'dayjs/locale/de';
-import axios from 'axios';
+import api from '../utils/api';
 
 // Setze die Sprache auf Deutsch
 dayjs.locale('de');
@@ -61,22 +61,7 @@ const EventForm = () => {
       try {
         setLoading(true);
         
-        // Hole den Token aus dem localStorage
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setError('Du bist nicht angemeldet. Bitte melde dich an, um Termine zu bearbeiten.');
-          setLoading(false);
-          return;
-        }
-        
-        // Setze den Authorization-Header
-        const config = {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        };
-        
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/events/${id}`, config);
+        const response = await api.get(`/api/events/${id}`);
         const event = response.data;
         
         setTitle(event.title);
@@ -99,7 +84,7 @@ const EventForm = () => {
         setLoading(false);
       }
     };
-
+    
     fetchEvent();
   }, [id, isEditMode]);
   
@@ -125,28 +110,13 @@ const EventForm = () => {
       setLoading(true);
       setError(null);
       
-      // Hole den Token aus dem localStorage
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Du bist nicht angemeldet. Bitte melde dich an, um Termine zu speichern.');
-        setLoading(false);
-        return;
-      }
-      
-      // Setze den Authorization-Header
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-      
       if (isEditMode) {
         // Termin aktualisieren
-        await axios.put(`${process.env.REACT_APP_API_URL}/events/${id}`, eventData, config);
+        await api.put(`/api/events/${id}`, eventData);
         setSuccess('Termin erfolgreich aktualisiert!');
       } else {
         // Neuen Termin erstellen
-        await axios.post(`${process.env.REACT_APP_API_URL}/events`, eventData, config);
+        await api.post('/api/events', eventData);
         setSuccess('Termin erfolgreich erstellt!');
       }
       
@@ -171,23 +141,7 @@ const EventForm = () => {
     try {
       setLoading(true);
       
-      // Hole den Token aus dem localStorage
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Du bist nicht angemeldet. Bitte melde dich an, um Termine zu löschen.');
-        setLoading(false);
-        setDeleteDialogOpen(false);
-        return;
-      }
-      
-      // Setze den Authorization-Header
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      };
-      
-      await axios.delete(`${process.env.REACT_APP_API_URL}/events/${id}`, config);
+      await api.delete(`/api/events/${id}`);
       
       setSuccess('Termin erfolgreich gelöscht!');
       setDeleteDialogOpen(false);
