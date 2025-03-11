@@ -7,7 +7,8 @@ import {
   Button, 
   Drawer, 
   List, 
-  ListItem, 
+  ListItem,
+  ListItemButton, 
   ListItemIcon, 
   ListItemText,
   Container,
@@ -55,29 +56,37 @@ const Layout = ({ children }) => {
         <Toolbar />
         <Box sx={{ overflow: 'auto' }}>
           <List>
-            <ListItem button component={Link} to="/">
-              <ListItemIcon>
-                <DashboardIcon />
-              </ListItemIcon>
-              <ListItemText primary="Dashboard" />
+            <ListItem disablePadding>
+              <ListItemButton component={Link} to="/">
+                <ListItemIcon>
+                  <DashboardIcon />
+                </ListItemIcon>
+                <ListItemText primary="Dashboard" />
+              </ListItemButton>
             </ListItem>
-            <ListItem button component={Link} to="/calendar">
-              <ListItemIcon>
-                <EventIcon />
-              </ListItemIcon>
-              <ListItemText primary="Kalender" />
+            <ListItem disablePadding>
+              <ListItemButton component={Link} to="/calendar">
+                <ListItemIcon>
+                  <EventIcon />
+                </ListItemIcon>
+                <ListItemText primary="Kalender" />
+              </ListItemButton>
             </ListItem>
-            <ListItem button component={Link} to="/health-intervals">
-              <ListItemIcon>
-                <HealingIcon />
-              </ListItemIcon>
-              <ListItemText primary="Gesundheitsintervalle" />
+            <ListItem disablePadding>
+              <ListItemButton component={Link} to="/health-intervals">
+                <ListItemIcon>
+                  <HealingIcon />
+                </ListItemIcon>
+                <ListItemText primary="Gesundheitsintervalle" />
+              </ListItemButton>
             </ListItem>
-            <ListItem button component={Link} to="/settings">
-              <ListItemIcon>
-                <SettingsIcon />
-              </ListItemIcon>
-              <ListItemText primary="Einstellungen" />
+            <ListItem disablePadding>
+              <ListItemButton component={Link} to="/settings">
+                <ListItemIcon>
+                  <SettingsIcon />
+                </ListItemIcon>
+                <ListItemText primary="Einstellungen" />
+              </ListItemButton>
             </ListItem>
           </List>
         </Box>
