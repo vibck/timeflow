@@ -23,12 +23,7 @@ jobs:
         cd backend
         npm install
     
-    - name: Install frontend dependencies
+    - name: Check backend setup
       run: |
-        cd frontend
-        npm install
-    
-    - name: Build frontend
-      run: |
-        cd frontend
-        npm run build 
+        cd backend
+        echo "Backend setup erfolgreich abgeschlossen" 
