@@ -1,0 +1,40 @@
+name: TimeFlow CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+    
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        npm ci
+    
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm ci
+    
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+    
+    - name: Upload frontend build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-build
+        path: frontend/build 

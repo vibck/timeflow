@@ -1,106 +1,56 @@
-# TimeFlow - Eigenständiger Kalender mit Terminverwaltung
+# TimeFlow
 
-Ein umfassendes Kalendersystem mit Fokus auf Gesundheitstermine, Erinnerungen und Telegram-Integration.
+TimeFlow ist eine Termin- und Erinnerungsmanagement-Anwendung, die es Benutzern ermöglicht, Termine zu verwalten und Erinnerungen zu erstellen.
 
 ## Funktionen
 
-- Kalenderansicht mit Monats-, Wochen- und Tagesansicht
-- Terminverwaltung mit wiederkehrenden Ereignissen
-- Erinnerungen für bevorstehende Termine
-- Gesundheitsintervall-Vorschläge basierend auf vergangenen Terminen
-- Telegram Bot-Integration für Terminverwaltung per Chat
-- Google OAuth 2.0 Authentifizierung
+- **Terminverwaltung**: Erstellen, bearbeiten und löschen von Terminen
+- **Erinnerungen**: Automatische Erinnerungen für bevorstehende Termine
+- **Kalender**: Übersichtliche Kalenderansicht mit Monats-, Wochen-, Tag- und Agenda-Ansicht
+- **Feiertage**: Anzeige von Feiertagen basierend auf dem ausgewählten Bundesland
 
 ## Technologie-Stack
 
-- **Frontend**: React mit react-big-calendar
-- **Backend**: Express (Node.js)
-- **Datenbank**: PostgreSQL
-- **Authentifizierung**: OAuth 2.0 (Google Login)
-- **Benachrichtigungen**: E-Mail und Telegram
-- **Deployment**: Docker Swarm
+### Backend
+- Node.js mit Express
+- PostgreSQL-Datenbank
+- JWT-Authentifizierung
+- Nodemailer für E-Mail-Benachrichtigungen
 
-## Schnellstart
+### Frontend
+- React mit React Router
+- Material-UI für das Design
+- Dayjs für Datums- und Zeitoperationen
+- React Big Calendar für die Kalenderansicht
+
+## CI/CD-Pipeline
+
+Das Projekt verwendet GitHub Actions für Continuous Integration:
+
+1. **Build**: Automatisches Bauen der Anwendung bei jedem Push
+2. **Artefakte**: Speicherung der Build-Artefakte für spätere Verwendung
+
+## Lokale Entwicklung
 
 ### Voraussetzungen
-
 - Node.js (v14 oder höher)
-- Docker und Docker Compose
-- PostgreSQL
-- Google OAuth Credentials
-- Telegram Bot Token
+- PostgreSQL (v12 oder höher)
+- npm oder yarn
 
-### Installation und Start
-
-1. Repository klonen:
-   ```bash
-   git clone https://github.com/vibck/timeflow.git
-   cd timeflow
-   ```
-
-2. Umgebungsvariablen konfigurieren:
-   ```bash
-   # Backend .env Datei anpassen
-   cp backend/.env.example backend/.env
-   
-   # Frontend .env Datei anpassen
-   cp frontend/.env.example frontend/.env
-   ```
-
-3. Mit Docker starten:
-   ```bash
-   # Entwicklung
-   docker-compose up
-   
-   # Produktion
-   docker stack deploy -c docker-stack.yml timeflow
-   ```
-
-4. Ohne Docker:
-   ```bash
-   # Backend starten
-   cd backend
-   npm install
-   npm start
-   
-   # Frontend starten (in einem neuen Terminal)
-   cd frontend
-   npm install
-   npm start
-   ```
-
-## Projektstruktur
-
-```
-timeflow/
-├── frontend/                  # React Frontend
-├── backend/                   # Express Backend
-│   ├── config/                # Konfigurationsdateien
-│   ├── controllers/           # Controller für Routen
-│   ├── db/                    # Datenbankzugriff und Migrationen
-│   ├── middleware/            # Express Middleware
-│   ├── models/                # Datenmodelle
-│   ├── routes/                # API-Routen
-│   ├── services/              # Dienste (Telegram, Erinnerungen)
-│   └── utils/                 # Hilfsfunktionen
-├── docker-compose.yml         # Docker Compose für Entwicklung
-└── docker-stack.yml           # Docker Stack für Produktion
+### Backend starten
+```bash
+cd backend
+npm install
+cp .env.example .env  # Konfiguriere deine Umgebungsvariablen
+npm start
 ```
 
-## API-Endpunkte
-
-- `/api/auth` - Authentifizierung
-- `/api/events` - Terminverwaltung
-- `/api/reminders` - Erinnerungen
-- `/api/health-intervals` - Gesundheitsintervalle
-- `/api/telegram` - Telegram-Integration
-
-## Telegram Bot-Befehle
-
-- `/start` - Bot starten
-- `/connect [email]` - Account verbinden
-- `/events` - Kommende Termine anzeigen
-- `/add [Titel] | [Datum] | [Uhrzeit] | [Ort]` - Termin hinzufügen
+### Frontend starten
+```bash
+cd frontend
+npm install
+npm start
+```
 
 ## Lizenz
 
