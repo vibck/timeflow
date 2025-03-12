@@ -17,7 +17,8 @@ import {
 import { 
   Notifications as NotificationsIcon,
   Event as EventIcon,
-  AccessTime as TimeIcon
+  AccessTime as TimeIcon,
+  Healing as HealingIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -33,6 +34,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [upcomingReminders, setUpcomingReminders] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [healthIntervals, setHealthIntervals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -83,7 +85,17 @@ const Dashboard = () => {
           .sort((a, b) => dayjs(a.start_time).diff(dayjs(b.start_time)));
         
         setUpcomingEvents(futureEvents.slice(0, 5)); // Zeige maximal 5 an
+
+        // Lade Gesundheitsintervalle
+        const healthIntervalsResponse = await api.get('/api/health-intervals');
         
+        // Sortiere nach dem nächsten empfohlenen Termin
+        const sortedHealthIntervals = healthIntervalsResponse.data
+          .sort((a, b) => dayjs(a.next_suggested_date).diff(dayjs(b.next_suggested_date)));
+        
+        setHealthIntervals(sortedHealthIntervals.slice(0, 5)); // Zeige nur die nächsten 5 an
+        
+        setError(null);
       } catch (err) {
         console.error('Fehler beim Laden der Dashboard-Daten:', err);
         setError('Fehler beim Laden der Dashboard-Daten. Bitte versuche es später erneut.');
@@ -95,7 +107,12 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
   
-  // Formatiere das Datum für die Anzeige
+  // Formatiere Datum für die Anzeige (ohne Uhrzeit)
+  const formatDate = (date) => {
+    return dayjs(date).format('DD.MM.YYYY');
+  };
+
+  // Formatiere Datum und Uhrzeit für die Anzeige
   const formatDateTime = (dateTime) => {
     const date = dayjs(dateTime);
     return date.format('DD.MM.YYYY HH:mm');
@@ -132,6 +149,21 @@ const Dashboard = () => {
       case 'health': return 'Gesundheit';
       case 'personal': return 'Persönlich';
       default: return 'Sonstiges';
+    }
+  };
+
+  // Berechne den Status eines Gesundheitsintervalls
+  const getHealthIntervalStatus = (nextDate) => {
+    const now = dayjs();
+    const next = dayjs(nextDate);
+    const diffDays = next.diff(now, 'day');
+    
+    if (diffDays < 0) {
+      return { text: 'Überfällig', color: 'error' };
+    } else if (diffDays < 30) {
+      return { text: 'Bald fällig', color: 'warning' };
+    } else {
+      return { text: 'OK', color: 'success' };
     }
   };
 
@@ -272,6 +304,72 @@ const Dashboard = () => {
                   onClick={() => navigate('/events/new')}
                 >
                   Neuen Termin erstellen
+                </Button>
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* Gesundheitsintervalle */}
+          <Grid item xs={12} md={6}>
+            <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <HealingIcon color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h6">Gesundheitsintervalle</Typography>
+              </Box>
+              
+              {healthIntervals.length > 0 ? (
+                <List>
+                  {healthIntervals.map((interval, index) => {
+                    const status = getHealthIntervalStatus(interval.next_suggested_date);
+                    return (
+                      <React.Fragment key={interval.id}>
+                        {index > 0 && <Divider />}
+                        <ListItem 
+                          component="div"
+                          onClick={() => navigate('/health-intervals')}
+                          sx={{ py: 1.5, cursor: 'pointer' }}
+                        >
+                          <ListItemIcon>
+                            <HealingIcon />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={interval.interval_type}
+                            secondary={
+                              <>
+                                <Typography variant="body2" component="span">
+                                  Letzter Termin: {formatDate(interval.last_appointment)}
+                                </Typography>
+                                <br />
+                                <Typography variant="body2" component="span">
+                                  Nächster empfohlener Termin: {formatDate(interval.next_suggested_date)}
+                                </Typography>
+                              </>
+                            }
+                          />
+                          <Chip 
+                            label={status.text} 
+                            color={status.color}
+                            size="small"
+                            sx={{ ml: 1 }}
+                          />
+                        </ListItem>
+                      </React.Fragment>
+                    );
+                  })}
+                </List>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  Keine Gesundheitsintervalle gefunden.
+                </Typography>
+              )}
+              
+              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                <Button 
+                  variant="outlined" 
+                  size="small"
+                  onClick={() => navigate('/health-intervals')}
+                >
+                  Alle anzeigen
                 </Button>
               </Box>
             </Paper>
