@@ -16,7 +16,6 @@ import api from '../utils/api';
 
 const Settings = () => {
   const [settings, setSettings] = useState({
-    language: 'de',
     state: 'BY'
   });
   const [loading, setLoading] = useState(true);
@@ -143,24 +142,7 @@ const Settings = () => {
       
       <Paper sx={{ p: 3, mb: 3 }}>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel id="language-label">Sprache</InputLabel>
-              <Select
-                labelId="language-label"
-                id="language"
-                name="language"
-                value={settings.language}
-                label="Sprache"
-                onChange={handleChange}
-              >
-                <MenuItem value="de">Deutsch</MenuItem>
-                <MenuItem value="en">Englisch</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12}>
             <FormControl fullWidth>
               <InputLabel id="state-label">Bundesland</InputLabel>
               <Select

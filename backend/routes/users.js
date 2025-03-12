@@ -10,7 +10,7 @@ router.get('/settings', authenticateJWT, async (req, res) => {
     const userId = req.user.id;
     
     const result = await db.query(
-      'SELECT language, state FROM users WHERE id = $1',
+      'SELECT state FROM users WHERE id = $1',
       [userId]
     );
     
@@ -29,13 +29,9 @@ router.get('/settings', authenticateJWT, async (req, res) => {
 router.put('/settings', authenticateJWT, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { language, state } = req.body;
+    const { state } = req.body;
     
     // Validiere die Eingaben
-    if (language && typeof language !== 'string') {
-      return res.status(400).json({ message: 'Ungültiges Sprachformat' });
-    }
-    
     if (state && typeof state !== 'string') {
       return res.status(400).json({ message: 'Ungültiges Bundeslandformat' });
     }
@@ -45,19 +41,13 @@ router.put('/settings', authenticateJWT, async (req, res) => {
     const values = [];
     let paramCount = 1;
     
-    if (language) {
-      query += `, language = $${paramCount}`;
-      values.push(language);
-      paramCount++;
-    }
-    
     if (state) {
       query += `, state = $${paramCount}`;
       values.push(state);
       paramCount++;
     }
     
-    query += ` WHERE id = $${paramCount} RETURNING id, language, state`;
+    query += ` WHERE id = $${paramCount} RETURNING id, state`;
     values.push(userId);
     
     const result = await db.query(query, values);
