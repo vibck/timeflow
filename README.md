@@ -28,7 +28,6 @@ TimeFlow ist eine Termin- und Erinnerungsmanagement-Anwendung, die es Benutzern 
 Das Projekt verwendet GitHub Actions für Continuous Integration:
 
 1. **Build**: Automatisches Bauen der Anwendung bei jedem Push
-2. **Artefakte**: Speicherung der Build-Artefakte für spätere Verwendung
 
 ## Lokale Entwicklung
 
