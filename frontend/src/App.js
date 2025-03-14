@@ -75,6 +75,13 @@ function App() {
                 </Layout>
               </PrivateRoute>
             } />
+            <Route path="/events/:id" element={
+              <PrivateRoute>
+                <Layout>
+                  <EventForm />
+                </Layout>
+              </PrivateRoute>
+            } />
             <Route path="/events/:id/edit" element={
               <PrivateRoute>
                 <Layout>

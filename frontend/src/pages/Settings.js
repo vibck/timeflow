@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Typography, 
   Box, 
@@ -9,7 +9,6 @@ import {
   Button, 
   Paper, 
   Grid,
-  Snackbar,
   Alert
 } from '@mui/material';
 import api from '../utils/api';
@@ -125,12 +124,23 @@ const Settings = () => {
   };
 
   // Schließe Snackbar
-  const handleCloseSnackbar = () => {
-    setSnackbar({
-      ...snackbar,
+  const handleCloseSnackbar = useCallback(() => {
+    setSnackbar(prevState => ({
+      ...prevState,
       open: false
-    });
-  };
+    }));
+  }, []);
+
+  // Automatische Ausblendung der Benachrichtigung
+  useEffect(() => {
+    if (snackbar.open) {
+      const timer = setTimeout(() => {
+        handleCloseSnackbar();
+      }, 6000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [snackbar.open, handleCloseSnackbar]);
 
   if (loading) {
     return <Typography>Lade Einstellungen...</Typography>;
@@ -178,19 +188,22 @@ const Settings = () => {
         </Grid>
       </Paper>
       
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={6000} 
-        onClose={handleCloseSnackbar}
-      >
+      {snackbar.open && (
         <Alert 
-          onClose={handleCloseSnackbar} 
           severity={snackbar.severity} 
-          sx={{ width: '100%' }}
+          sx={{ 
+            position: 'fixed', 
+            bottom: 16, 
+            left: '50%', 
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            minWidth: 300
+          }}
+          onClose={handleCloseSnackbar}
         >
           {snackbar.message}
         </Alert>
-      </Snackbar>
+      )}
     </Box>
   );
 };
