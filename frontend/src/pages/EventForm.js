@@ -16,7 +16,8 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle
+  DialogTitle,
+  Divider
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -24,6 +25,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import 'dayjs/locale/de';
 import api from '../utils/api';
+import ReminderForm from '../components/Reminders/ReminderForm';
 
 // Setze die Sprache auf Deutsch
 dayjs.locale('de');
@@ -32,7 +34,8 @@ const EventForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const isEditMode = !!id;
+  const [isEditMode, setIsEditMode] = useState(!!id);
+  const [eventId, setEventId] = useState(id);
   
   // Hole Standardwerte aus dem Location-State (wenn von Kalender-Slot ausgewählt)
   const defaultStart = location.state?.defaultStart ? dayjs(location.state.defaultStart) : dayjs();
@@ -45,6 +48,8 @@ const EventForm = () => {
   const [startTime, setStartTime] = useState(defaultStart);
   const [endTime, setEndTime] = useState(defaultEnd);
   const [eventType, setEventType] = useState('personal');
+  const [reminders, setReminders] = useState([]);
+  const [showReminderForm, setShowReminderForm] = useState(false);
   
   // UI-Status
   const [loading, setLoading] = useState(false);
@@ -53,16 +58,17 @@ const EventForm = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   
-  // Lade Termindaten, wenn im Bearbeitungsmodus
+  // Lade Termindaten und Erinnerungen, wenn im Bearbeitungsmodus
   useEffect(() => {
-    const fetchEvent = async () => {
+    const fetchEventAndReminders = async () => {
       if (!isEditMode) return;
       
       try {
         setLoading(true);
         
-        const response = await api.get(`/api/events/${id}`);
-        const event = response.data;
+        // Lade Termindaten
+        const eventResponse = await api.get(`/api/events/${eventId}`);
+        const event = eventResponse.data;
         
         setTitle(event.title);
         setDescription(event.description || '');
@@ -70,6 +76,13 @@ const EventForm = () => {
         setStartTime(dayjs(event.start_time));
         setEndTime(dayjs(event.end_time));
         setEventType(event.event_type || 'personal');
+        
+        // Lade Erinnerungen für diesen Termin
+        const remindersResponse = await api.get(`/api/reminders/event/${eventId}`);
+        setReminders(remindersResponse.data);
+        
+        // Zeige das Erinnerungsformular an, wenn der Termin bereits existiert
+        setShowReminderForm(true);
         
       } catch (err) {
         console.error('Fehler beim Laden des Termins:', err);
@@ -85,8 +98,26 @@ const EventForm = () => {
       }
     };
     
-    fetchEvent();
+    fetchEventAndReminders();
   }, [id, isEditMode]);
+  
+  // Behandle erfolgreiche Terminerstellung
+  const handleSuccessfulCreate = async (createdEvent) => {
+    setSuccess('Termin erfolgreich erstellt!');
+    
+    // Zeige das Erinnerungsformular an, nachdem der Termin erstellt wurde
+    setEventId(createdEvent.id);
+    setShowReminderForm(true);
+    setIsEditMode(true);
+    
+    // Lade Erinnerungen für den neuen Termin (sollten keine sein, aber für die Konsistenz)
+    try {
+      const remindersResponse = await api.get(`/api/reminders/event/${createdEvent.id}`);
+      setReminders(remindersResponse.data);
+    } catch (err) {
+      console.error('Fehler beim Laden der Erinnerungen:', err);
+    }
+  };
   
   // Formular absenden
   const handleSubmit = async (e) => {
@@ -112,18 +143,16 @@ const EventForm = () => {
       
       if (isEditMode) {
         // Termin aktualisieren
-        await api.put(`/api/events/${id}`, eventData);
+        const response = await api.put(`/api/events/${id}`, eventData);
         setSuccess('Termin erfolgreich aktualisiert!');
+        
+        // Aktualisiere die Startzeit für die Erinnerungen
+        setStartTime(dayjs(response.data.start_time));
       } else {
         // Neuen Termin erstellen
-        await api.post('/api/events', eventData);
-        setSuccess('Termin erfolgreich erstellt!');
+        const response = await api.post('/api/events', eventData);
+        handleSuccessfulCreate(response.data);
       }
-      
-      // Nach erfolgreicher Aktion zur Kalenderansicht zurückkehren
-      setTimeout(() => {
-        navigate('/calendar');
-      }, 1500);
     } catch (err) {
       console.error('Fehler beim Speichern des Termins:', err);
       if (err.response && err.response.status === 401) {
@@ -315,6 +344,16 @@ const EventForm = () => {
           </Grid>
         </Grid>
       </Box>
+      
+      {/* Erinnerungsformular hinzufügen (nur wenn der Termin bereits existiert) */}
+      {showReminderForm && (
+        <ReminderForm 
+          eventId={id}
+          eventStartTime={startTime}
+          existingReminders={reminders}
+          onReminderChange={setReminders}
+        />
+      )}
       
       {/* Bestätigungsdialog für das Löschen */}
       <Dialog
