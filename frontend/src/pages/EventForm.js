@@ -16,8 +16,7 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle,
-  Divider
+  DialogTitle
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -35,7 +34,24 @@ const EventForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isEditMode, setIsEditMode] = useState(!!id);
+  const [isViewMode, setIsViewMode] = useState(false);
   const [eventId, setEventId] = useState(id);
+  
+  // Bestimme den Modus basierend auf der URL
+  useEffect(() => {
+    if (id) {
+      // Wenn die URL /events/:id/edit ist, sind wir im Bearbeitungsmodus
+      const isEditUrl = location.pathname.endsWith('/edit');
+      setIsEditMode(true);
+      setIsViewMode(!isEditUrl);
+      setEventId(id);
+    } else {
+      // Wenn keine ID vorhanden ist, sind wir im Erstellungsmodus
+      setIsEditMode(false);
+      setIsViewMode(false);
+      setEventId(null);
+    }
+  }, [id, location.pathname]);
   
   // Hole Standardwerte aus dem Location-State (wenn von Kalender-Slot ausgewählt)
   const defaultStart = location.state?.defaultStart ? dayjs(location.state.defaultStart) : dayjs();
@@ -99,7 +115,7 @@ const EventForm = () => {
     };
     
     fetchEventAndReminders();
-  }, [id, isEditMode]);
+  }, [id, isEditMode, eventId]);
   
   // Behandle erfolgreiche Terminerstellung
   const handleSuccessfulCreate = async (createdEvent) => {
@@ -143,7 +159,12 @@ const EventForm = () => {
       
       if (isEditMode) {
         // Termin aktualisieren
-        const response = await api.put(`/api/events/${id}`, eventData);
+        if (!eventId) {
+          setError('Termin-ID fehlt. Bitte lade die Seite neu oder kehre zum Kalender zurück.');
+          setLoading(false);
+          return;
+        }
+        const response = await api.put(`/api/events/${eventId}`, eventData);
         setSuccess('Termin erfolgreich aktualisiert!');
         
         // Aktualisiere die Startzeit für die Erinnerungen
@@ -170,7 +191,14 @@ const EventForm = () => {
     try {
       setLoading(true);
       
-      await api.delete(`/api/events/${id}`);
+      if (!eventId) {
+        setError('Termin-ID fehlt. Bitte lade die Seite neu oder kehre zum Kalender zurück.');
+        setLoading(false);
+        setDeleteDialogOpen(false);
+        return;
+      }
+      
+      await api.delete(`/api/events/${eventId}`);
       
       setSuccess('Termin erfolgreich gelöscht!');
       setDeleteDialogOpen(false);
@@ -212,14 +240,14 @@ const EventForm = () => {
     <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" component="h2">
-          {isEditMode ? 'Termin bearbeiten' : 'Neuer Termin'}
+          {isViewMode ? 'Termin anzeigen' : (isEditMode ? 'Termin bearbeiten' : 'Neuer Termin')}
         </Typography>
       </Box>
       
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
       
-      <Box component="form" onSubmit={handleSubmit}>
+      <Box component={isViewMode ? 'div' : 'form'} onSubmit={!isViewMode ? handleSubmit : undefined}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <TextField
@@ -228,7 +256,10 @@ const EventForm = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              disabled={loading}
+              disabled={loading || isViewMode}
+              InputProps={{
+                readOnly: isViewMode
+              }}
             />
           </Grid>
           
@@ -238,14 +269,20 @@ const EventForm = () => {
                 label="Startzeit"
                 value={startTime}
                 onChange={(newValue) => setStartTime(newValue)}
-                disabled={loading}
+                disabled={loading || isViewMode}
                 ampm={false}
-                slotProps={{
-                  textField: {
-                    fullWidth: true,
-                    error: !!validationErrors.time
-                  }
-                }}
+                readOnly={isViewMode}
+                renderInput={(params) => (
+                  <TextField 
+                    {...params} 
+                    fullWidth 
+                    error={!!validationErrors.time}
+                    InputProps={{
+                      ...params.InputProps,
+                      readOnly: isViewMode
+                    }}
+                  />
+                )}
               />
             </LocalizationProvider>
           </Grid>
@@ -256,15 +293,21 @@ const EventForm = () => {
                 label="Endzeit"
                 value={endTime}
                 onChange={(newValue) => setEndTime(newValue)}
-                disabled={loading}
+                disabled={loading || isViewMode}
                 ampm={false}
-                slotProps={{
-                  textField: {
-                    fullWidth: true,
-                    error: !!validationErrors.time,
-                    helperText: validationErrors.time || ''
-                  }
-                }}
+                readOnly={isViewMode}
+                renderInput={(params) => (
+                  <TextField 
+                    {...params} 
+                    fullWidth 
+                    error={!!validationErrors.time}
+                    helperText={validationErrors.time || ''}
+                    InputProps={{
+                      ...params.InputProps,
+                      readOnly: isViewMode
+                    }}
+                  />
+                )}
               />
             </LocalizationProvider>
           </Grid>
@@ -276,7 +319,10 @@ const EventForm = () => {
                 value={eventType}
                 onChange={(e) => setEventType(e.target.value)}
                 label="Termintyp"
-                disabled={loading}
+                disabled={loading || isViewMode}
+                inputProps={{
+                  readOnly: isViewMode
+                }}
               >
                 <MenuItem value="personal">Persönlich</MenuItem>
                 <MenuItem value="work">Arbeit</MenuItem>
@@ -292,7 +338,10 @@ const EventForm = () => {
               label="Ort"
               value={location_}
               onChange={(e) => setLocation(e.target.value)}
-              disabled={loading}
+              disabled={loading || isViewMode}
+              InputProps={{
+                readOnly: isViewMode
+              }}
             />
           </Grid>
           
@@ -304,7 +353,10 @@ const EventForm = () => {
               onChange={(e) => setDescription(e.target.value)}
               multiline
               rows={4}
-              disabled={loading}
+              disabled={loading || isViewMode}
+              InputProps={{
+                readOnly: isViewMode
+              }}
             />
           </Grid>
           
@@ -315,30 +367,43 @@ const EventForm = () => {
                 onClick={() => navigate('/calendar')}
                 disabled={loading}
               >
-                Abbrechen
+                {isViewMode ? 'Zurück zum Kalender' : 'Abbrechen'}
               </Button>
               
               <Box>
-                {isEditMode && (
+                {isViewMode ? (
                   <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={() => setDeleteDialogOpen(true)}
+                    variant="contained"
+                    color="primary"
+                    onClick={() => navigate(`/events/${eventId}/edit`)}
                     disabled={loading}
-                    sx={{ mr: 1 }}
                   >
-                    Löschen
+                    Bearbeiten
                   </Button>
+                ) : (
+                  <>
+                    {isEditMode && (
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => setDeleteDialogOpen(true)}
+                        disabled={loading}
+                        sx={{ mr: 1 }}
+                      >
+                        Löschen
+                      </Button>
+                    )}
+                    
+                    <Button 
+                      type="submit" 
+                      variant="contained" 
+                      color="primary"
+                      disabled={loading}
+                    >
+                      {loading ? 'Wird gespeichert...' : (isEditMode ? 'Aktualisieren' : 'Erstellen')}
+                    </Button>
+                  </>
                 )}
-                
-                <Button 
-                  type="submit" 
-                  variant="contained" 
-                  color="primary"
-                  disabled={loading}
-                >
-                  {loading ? 'Wird gespeichert...' : (isEditMode ? 'Aktualisieren' : 'Erstellen')}
-                </Button>
               </Box>
             </Box>
           </Grid>
@@ -348,10 +413,11 @@ const EventForm = () => {
       {/* Erinnerungsformular hinzufügen (nur wenn der Termin bereits existiert) */}
       {showReminderForm && (
         <ReminderForm 
-          eventId={id}
+          eventId={eventId}
           eventStartTime={startTime}
           existingReminders={reminders}
           onReminderChange={setReminders}
+          readOnly={isViewMode}
         />
       )}
       

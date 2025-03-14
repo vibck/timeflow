@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Box, 
   Button, 
@@ -10,16 +10,14 @@ import {
   IconButton,
   List,
   ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Snackbar,
   Alert,
-  Tooltip
+  Tooltip,
+  TextField
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -32,7 +30,7 @@ import api from '../../utils/api';
 // Setze die Sprache auf Deutsch
 dayjs.locale('de');
 
-const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderChange }) => {
+const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderChange, readOnly = false }) => {
   const [reminderTime, setReminderTime] = useState(dayjs(eventStartTime).subtract(30, 'minute'));
   const [presetOption, setPresetOption] = useState('30min');
   const [loading, setLoading] = useState(false);
@@ -184,12 +182,23 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
   };
 
   // Schließe die Snackbar
-  const handleCloseSnackbar = () => {
-    setSnackbar({
-      ...snackbar,
+  const handleCloseSnackbar = useCallback(() => {
+    setSnackbar(prevState => ({
+      ...prevState,
       open: false
-    });
-  };
+    }));
+  }, []);
+
+  // Automatische Ausblendung der Benachrichtigung
+  useEffect(() => {
+    if (snackbar.open) {
+      const timer = setTimeout(() => {
+        handleCloseSnackbar();
+      }, 6000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [snackbar.open, handleCloseSnackbar]);
 
   // Formatiere das Datum für die Anzeige
   const formatReminderTime = (time) => {
@@ -226,51 +235,54 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
         </Alert>
       )}
       
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 3 }}>
-        <FormControl sx={{ minWidth: 200, mr: 2 }}>
-          <InputLabel>Erinnerung</InputLabel>
-          <Select
-            value={presetOption}
-            onChange={handlePresetChange}
-            label="Erinnerung"
-            disabled={loading}
-          >
-            {presetOptions.map(option => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        
-        {presetOption === 'custom' && (
-          <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="de">
-            <DateTimePicker
-              label="Erinnerungszeit"
-              value={reminderTime}
-              onChange={(newValue) => setReminderTime(newValue)}
+      {!readOnly && (
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 3 }}>
+          <FormControl sx={{ minWidth: 200, mr: 2 }}>
+            <InputLabel>Erinnerung</InputLabel>
+            <Select
+              value={presetOption}
+              onChange={handlePresetChange}
+              label="Erinnerung"
               disabled={loading}
-              slotProps={{
-                textField: {
-                  size: "small",
-                  sx: { minWidth: 250 }
-                }
-              }}
-            />
-          </LocalizationProvider>
-        )}
-        
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleAddReminder}
-          disabled={loading}
-          sx={{ ml: 2, mt: presetOption === 'custom' ? 0 : 1 }}
-        >
-          Hinzufügen
-        </Button>
-      </Box>
+            >
+              {presetOptions.map(option => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
+          {presetOption === 'custom' && (
+            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="de">
+              <DateTimePicker
+                label="Erinnerungszeit"
+                value={reminderTime}
+                onChange={(newValue) => setReminderTime(newValue)}
+                disabled={loading}
+                renderInput={(params) => (
+                  <TextField 
+                    {...params} 
+                    size="small"
+                    sx={{ minWidth: 250 }}
+                  />
+                )}
+              />
+            </LocalizationProvider>
+          )}
+          
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={handleAddReminder}
+            disabled={loading}
+            sx={{ ml: 2, mt: presetOption === 'custom' ? 0 : 1 }}
+          >
+            Hinzufügen
+          </Button>
+        </Box>
+      )}
       
       {existingReminders && existingReminders.length > 0 ? (
         <List sx={{ bgcolor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
@@ -291,25 +303,27 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
                     </Typography>
                   )}
                 </Box>
-                <Tooltip title={reminder.is_sent ? "Bereits gesendete Erinnerungen können nicht gelöscht werden" : "Erinnerung löschen"}>
-                  <span>
-                    <IconButton 
-                      edge="end" 
-                      aria-label="delete"
-                      onClick={() => openDeleteDialog(reminder)}
-                      disabled={loading || reminder.is_sent}
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </span>
-                </Tooltip>
+                {!readOnly && (
+                  <Tooltip title={reminder.is_sent ? "Bereits gesendete Erinnerungen können nicht gelöscht werden" : "Erinnerung löschen"}>
+                    <span>
+                      <IconButton 
+                        edge="end" 
+                        aria-label="delete"
+                        onClick={() => openDeleteDialog(reminder)}
+                        disabled={loading || reminder.is_sent}
+                        color="error"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                )}
               </ListItem>
             ))}
         </List>
       ) : (
         <Alert severity="info" sx={{ mb: 2 }}>
-          Keine Erinnerungen für diesen Termin. Füge eine Erinnerung hinzu, um per E-Mail oder Telegram benachrichtigt zu werden.
+          Keine Erinnerungen für diesen Termin. {!readOnly && 'Füge eine Erinnerung hinzu, um per E-Mail oder Telegram benachrichtigt zu werden.'}
         </Alert>
       )}
       
@@ -345,16 +359,22 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
       </Dialog>
       
       {/* Snackbar für Feedback-Meldungen */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+      {snackbar.open && (
+        <Alert 
+          severity={snackbar.severity} 
+          sx={{ 
+            position: 'fixed', 
+            bottom: 16, 
+            left: '50%', 
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            minWidth: 300
+          }}
+          onClose={handleCloseSnackbar}
+        >
           {snackbar.message}
         </Alert>
-      </Snackbar>
+      )}
     </Box>
   );
 };
