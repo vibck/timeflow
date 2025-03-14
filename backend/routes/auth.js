@@ -1,6 +1,7 @@
 const express = require('express');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const db = require('../db');
 require('../config/passport');
 
@@ -75,10 +76,13 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Diese E-Mail-Adresse wird bereits verwendet' });
     }
     
+    // Passwort hashen
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
     // Erstelle einen neuen Benutzer
     const result = await db.query(
       'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email',
-      [name, email, password] // In einer Produktionsumgebung würdest du das Passwort hashen
+      [name, email, hashedPassword]
     );
     
     const user = result.rows[0];
@@ -121,9 +125,10 @@ router.post('/login', async (req, res) => {
     
     const user = userResult.rows[0];
     
-    // Überprüfe das Passwort
-    // In einer Produktionsumgebung würdest du hier das Passwort mit bcrypt vergleichen
-    if (user.password !== password) {
+    // Überprüfe das Passwort mit bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    
+    if (!isPasswordValid) {
       return res.status(401).json({ message: 'Ungültige Anmeldedaten' });
     }
     

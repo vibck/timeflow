@@ -19,9 +19,22 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   const { interval_type, interval_months, last_appointment } = req.body;
 
+  // Validierung hinzufügen
+  if (!interval_type || !interval_months || !last_appointment) {
+    return res.status(400).json({ message: 'Alle Felder sind erforderlich' });
+  }
+
+  if (isNaN(interval_months) || interval_months <= 0) {
+    return res.status(400).json({ message: 'Intervall muss eine positive Zahl sein' });
+  }
+
+  const lastDate = new Date(last_appointment);
+  if (isNaN(lastDate.getTime())) {
+    return res.status(400).json({ message: 'Ungültiges Datum für den letzten Termin' });
+  }
+
   try {
     // Berechne das nächste vorgeschlagene Datum
-    const lastDate = new Date(last_appointment);
     const nextDate = new Date(lastDate);
     nextDate.setMonth(lastDate.getMonth() + interval_months);
 

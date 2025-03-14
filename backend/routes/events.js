@@ -103,24 +103,57 @@ router.put('/:id', async (req, res) => {
 // Ein Event löschen
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
+  const client = await db.getClient();
 
   try {
+    await client.query('BEGIN');
+    
     // Prüfe, ob Event dem Benutzer gehört
-    const eventCheck = await db.query(
+    const eventCheck = await client.query(
       'SELECT * FROM events WHERE id = $1 AND user_id = $2',
       [id, req.user.id]
     );
 
     if (eventCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ message: 'Event nicht gefunden' });
     }
 
-    await db.query('DELETE FROM events WHERE id = $1 AND user_id = $2', [
+    // Lösche zuerst abhängige Erinnerungen
+    await client.query('DELETE FROM reminders WHERE event_id = $1', [id]);
+    
+    // Dann lösche das Event
+    await client.query('DELETE FROM events WHERE id = $1 AND user_id = $2', [
       id,
       req.user.id,
     ]);
-
+    
+    await client.query('COMMIT');
     res.json({ message: 'Event erfolgreich gelöscht' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Fehler beim Löschen des Events:', error);
+    res.status(500).json({ message: 'Serverfehler', error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// Ein einzelnes Event abrufen
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { rows } = await db.query(
+      'SELECT * FROM events WHERE id = $1 AND user_id = $2',
+      [id, req.user.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Event nicht gefunden' });
+    }
+
+    res.json(rows[0]);
   } catch (error) {
     res.status(500).json({ message: 'Serverfehler', error: error.message });
   }

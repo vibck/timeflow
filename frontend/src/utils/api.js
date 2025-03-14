@@ -19,4 +19,22 @@ api.interceptors.request.use(
   }
 );
 
+// Füge einen Response-Interceptor hinzu
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Nur wichtige Fehler loggen oder für Produktionsumgebung deaktivieren
+    if (process.env.NODE_ENV !== 'production') {
+      if (error.response) {
+        console.error(`API-Fehler: ${error.response.status} - ${error.response.statusText}`);
+      } else if (error.request) {
+        console.error('Keine Antwort vom Server erhalten');
+      } else {
+        console.error('Fehler beim Erstellen der Anfrage:', error.message);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api; 

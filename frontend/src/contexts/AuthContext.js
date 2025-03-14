@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      axios.get(`${process.env.REACT_APP_API_URL}/auth/me`)
+      axios.get(`${process.env.REACT_APP_API_URL}/api/auth/me`)
         .then(response => {
           setCurrentUser(response.data.user);
           setIsAuthenticated(true);
@@ -33,16 +33,21 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = (token) => {
+  const login = async (token) => {
     localStorage.setItem('token', token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
-    return axios.get(`${process.env.REACT_APP_API_URL}/auth/me`)
-      .then(response => {
-        setCurrentUser(response.data.user);
-        setIsAuthenticated(true);
-        return response.data.user;
-      });
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/auth/me`);
+      setCurrentUser(response.data.user);
+      setIsAuthenticated(true);
+      return response.data.user;
+    } catch (error) {
+      console.error('Fehler beim Abrufen der Benutzerinformationen:', error);
+      localStorage.removeItem('token');
+      delete axios.defaults.headers.common['Authorization'];
+      throw error;
+    }
   };
 
   const logout = () => {

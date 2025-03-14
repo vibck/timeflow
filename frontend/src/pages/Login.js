@@ -3,7 +3,13 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Container, Paper, Alert } from '@mui/material';
 import { Google as GoogleIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
+import api from '../utils/api';
+
+// E-Mail-Validierungsfunktion außerhalb der Komponente definieren
+const validateEmail = (email) => {
+  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return re.test(email);
+};
 
 const Login = () => {
   const { isAuthenticated, login } = useAuth();
@@ -25,13 +31,8 @@ const Login = () => {
     return <Navigate to="/" />;
   }
 
-  const validateEmail = (email) => {
-    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return re.test(email);
-  };
-
   const handleGoogleLogin = () => {
-    window.location.href = `${process.env.REACT_APP_API_URL}/auth/google`;
+    window.location.href = `${process.env.REACT_APP_API_URL}/api/auth/google`;
   };
 
   const handleLogin = async (e) => {
@@ -47,13 +48,16 @@ const Login = () => {
     }
     
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, { 
+      console.log('Login-Anfrage wird gesendet...');
+      const response = await api.post('/api/auth/login', { 
         email,
         password 
       });
       
+      console.log('Server-Antwort:', response.data);
+      
       if (response.data.token) {
-        login(response.data.token);
+        await login(response.data.token);
       } else {
         setError('Anmeldung fehlgeschlagen. Bitte überprüfe deine Anmeldedaten.');
       }

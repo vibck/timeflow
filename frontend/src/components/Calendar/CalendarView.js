@@ -220,7 +220,6 @@ const CalendarView = () => {
     const debounceTimeout = setTimeout(() => {
       // Konfiguriere Feiertage für das ausgewählte Bundesland
       hd.init('DE', userState);
-      console.log(`Bundesland für Feiertage geändert auf: ${userState}`);
       
       const loadHolidays = () => {
         const currentYear = new Date().getFullYear();
@@ -245,7 +244,6 @@ const CalendarView = () => {
         }
         
         setHolidays(allHolidays);
-        console.log(`Geladene Feiertage für ${userState}: ${allHolidays.length}`);
       };
       
       loadHolidays();

@@ -209,15 +209,14 @@ const EventForm = () => {
                 label="Startzeit"
                 value={startTime}
                 onChange={(newValue) => setStartTime(newValue)}
-                renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    fullWidth 
-                    error={validationErrors.time ? true : false}
-                  />
-                )}
                 disabled={loading}
                 ampm={false}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    error: !!validationErrors.time
+                  }
+                }}
               />
             </LocalizationProvider>
           </Grid>
@@ -228,16 +227,15 @@ const EventForm = () => {
                 label="Endzeit"
                 value={endTime}
                 onChange={(newValue) => setEndTime(newValue)}
-                renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    fullWidth 
-                    error={validationErrors.time ? true : false}
-                    helperText={validationErrors.time || ''}
-                  />
-                )}
                 disabled={loading}
                 ampm={false}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    error: !!validationErrors.time,
+                    helperText: validationErrors.time || ''
+                  }
+                }}
               />
             </LocalizationProvider>
           </Grid>

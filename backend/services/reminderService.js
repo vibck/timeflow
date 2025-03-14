@@ -26,43 +26,63 @@ const sendReminders = async () => {
     );
 
     for (const reminder of reminderResult.rows) {
-      // Sende E-Mail
-      await transporter.sendMail({
-        from: `"TimeFlow" <${process.env.EMAIL_USER}>`,
-        to: reminder.email,
-        subject: `Erinnerung: ${reminder.title}`,
-        html: `
-          <h2>Hallo ${reminder.name},</h2>
-          <p>dies ist eine Erinnerung an deinen bevorstehenden Termin:</p>
-          <h3>${reminder.title}</h3>
-          <p><strong>Datum:</strong> ${new Date(reminder.start_time).toLocaleString('de-DE')}</p>
-          ${reminder.location ? `<p><strong>Ort:</strong> ${reminder.location}</p>` : ''}
-          <p>Viele Grüße,<br>Dein TimeFlow-Team</p>
-        `,
-      });
+      try {
+        // Sende E-Mail
+        await transporter.sendMail({
+          from: `"TimeFlow" <${process.env.EMAIL_USER}>`,
+          to: reminder.email,
+          subject: `Erinnerung: ${reminder.title}`,
+          html: `
+            <h2>Hallo ${reminder.name},</h2>
+            <p>dies ist eine Erinnerung an deinen bevorstehenden Termin:</p>
+            <h3>${reminder.title}</h3>
+            <p><strong>Datum:</strong> ${new Date(reminder.start_time).toLocaleString('de-DE')}</p>
+            ${reminder.location ? `<p><strong>Ort:</strong> ${reminder.location}</p>` : ''}
+            <p>Viele Grüße,<br>Dein TimeFlow-Team</p>
+          `,
+        });
 
-      // Sende Telegram-Nachricht, falls verknüpft
-      const telegramResult = await db.query(
-        `SELECT tu.telegram_chat_id 
-         FROM telegram_users tu
-         JOIN users u ON tu.user_id = u.id
-         WHERE u.id = (SELECT user_id FROM events WHERE id = $1)`,
-        [reminder.event_id]
-      );
+        // Sende Telegram-Nachricht, falls verknüpft
+        const telegramResult = await db.query(
+          `SELECT tu.telegram_chat_id 
+           FROM telegram_users tu
+           JOIN users u ON tu.user_id = u.id
+           WHERE u.id = (SELECT user_id FROM events WHERE id = $1)`,
+          [reminder.event_id]
+        );
 
-      if (telegramResult.rows.length > 0) {
-        const chatId = telegramResult.rows[0].telegram_chat_id;
-        telegramBot.sendEventReminder(chatId, reminder);
+        if (telegramResult.rows.length > 0) {
+          const chatId = telegramResult.rows[0].telegram_chat_id;
+          telegramBot.sendEventReminder(chatId, reminder);
+        }
+
+        // Markiere Erinnerung als gesendet
+        await db.query(
+          'UPDATE reminders SET is_sent = TRUE WHERE id = $1',
+          [reminder.id]
+        );
+      } catch (reminderError) {
+        console.error(`Fehler beim Senden der Erinnerung ID ${reminder.id}:`, reminderError);
+        
+        // Spezifischere Fehlerbehandlung
+        if (reminderError.code === 'ECONNREFUSED') {
+          console.error('E-Mail-Server nicht erreichbar. Bitte überprüfe die SMTP-Einstellungen.');
+        } else if (reminderError.response) {
+          console.error(`SMTP-Fehler: ${reminderError.response}`);
+        }
+        
+        // Wir setzen die Schleife fort, um andere Erinnerungen zu verarbeiten
+        continue;
       }
-
-      // Markiere Erinnerung als gesendet
-      await db.query(
-        'UPDATE reminders SET is_sent = TRUE WHERE id = $1',
-        [reminder.id]
-      );
     }
   } catch (error) {
-    console.error('Fehler beim Senden von Erinnerungen:', error);
+    console.error('Fehler beim Abrufen von Erinnerungen:', error);
+    
+    if (error.code === 'ECONNREFUSED') {
+      console.error('Datenbankverbindung fehlgeschlagen. Bitte überprüfe die Datenbankeinstellungen.');
+    } else {
+      console.error('Unbekannter Fehler:', error.message);
+    }
   }
 };
 
