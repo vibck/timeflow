@@ -34,6 +34,7 @@ const Settings = () => {
     severity: 'success'
   });
   const [telegramConnected, setTelegramConnected] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [telegramBotName, setTelegramBotName] = useState('');
 
   // Liste der deutschen Bundesländer
