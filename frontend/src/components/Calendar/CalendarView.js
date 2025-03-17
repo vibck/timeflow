@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/de';
-import dayjs from 'dayjs';
+import { DateTime } from 'luxon';
 import Holidays from 'date-holidays';
 import { 
   Box, 
@@ -28,7 +28,8 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './CalendarView.css'; // Importiere benutzerdefinierte CSS-Datei
 
 // Setze die Sprache auf Deutsch
-moment.locale('de');
+// eslint-disable-next-line no-unused-vars
+const locale = 'de';
 
 // Initialisiere Feiertage für Deutschland (Bundesland wird dynamisch geladen)
 const hd = new Holidays();
@@ -65,8 +66,8 @@ const formats = {
 
 // Formatiere Datum für Tooltips
 const eventTooltipAccessor = (event) => {
-  const start = dayjs(event.start).format('DD.MM.YYYY HH:mm [Uhr]');
-  const end = dayjs(event.end).format('DD.MM.YYYY HH:mm [Uhr]');
+  const start = DateTime.fromISO(event.start).toLocaleString(DateTime.DATETIME_MED);
+  const end = DateTime.fromISO(event.end).toLocaleString(DateTime.DATETIME_MED);
   return `${event.title}\n${start} - ${end}${event.location ? `\nOrt: ${event.location}` : ''}`;
 };
 
@@ -80,7 +81,7 @@ const CustomAgendaView = ({ events, date, onSelectEvent, showHolidays }) => {
   
   // Gruppiere Termine nach Monat
   const groupedEvents = sortedEvents.reduce((groups, event) => {
-    const monthYear = moment(event.start).format('MMMM YYYY');
+    const monthYear = DateTime.fromJSDate(new Date(event.start)).toLocaleString({ month: 'long', year: 'numeric' });
     if (!groups[monthYear]) {
       groups[monthYear] = [];
     }
@@ -107,7 +108,7 @@ const CustomAgendaView = ({ events, date, onSelectEvent, showHolidays }) => {
               // Erstelle einen eindeutigen Schlüssel für jeden Termin
               const eventKey = event.id 
                 ? `event-${event.id}` 
-                : `holiday-${event.title.replace(/\s+/g, '-')}-${moment(event.start).format('YYYY-MM-DD')}-${index}`;
+                : `holiday-${event.title.replace(/\s+/g, '-')}-${DateTime.fromISO(event.start).toISODate()}-${index}`;
               
               return (
                 <Box 
@@ -133,7 +134,7 @@ const CustomAgendaView = ({ events, date, onSelectEvent, showHolidays }) => {
                     {event.isHoliday ? (
                       'Ganztägig'
                     ) : (
-                      `${moment(event.start).format('DD.MM.YYYY HH:mm')} - ${moment(event.end).format('HH:mm')} Uhr`
+                      `${DateTime.fromISO(event.start).toLocaleString({ month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })} - ${DateTime.fromISO(event.end).toLocaleString({ hour: '2-digit', minute: '2-digit' })} Uhr`
                     )}
                   </Typography>
                   
@@ -476,7 +477,7 @@ const CalendarView = () => {
               </Tooltip>
               
               <Typography variant="h6" sx={{ ml: 2 }}>
-                {moment(date).format(view === 'month' ? 'MMMM YYYY' : 'DD. MMMM YYYY')}
+                {DateTime.fromJSDate(date).toLocaleString({ month: 'long', year: 'numeric' })}
               </Typography>
             </Box>
             <ButtonGroup size="small">

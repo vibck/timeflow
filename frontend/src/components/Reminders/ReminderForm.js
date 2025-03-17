@@ -21,17 +21,16 @@ import {
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon';
 import { Add as AddIcon, Delete as DeleteIcon, Notifications as NotificationsIcon } from '@mui/icons-material';
-import dayjs from 'dayjs';
-import 'dayjs/locale/de';
+import { DateTime } from 'luxon';
 import api from '../../utils/api';
 
 // Setze die Sprache auf Deutsch
-dayjs.locale('de');
+const locale = 'de';
 
 const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderChange, readOnly = false }) => {
-  const [reminderTime, setReminderTime] = useState(dayjs(eventStartTime).subtract(30, 'minute'));
+  const [reminderTime, setReminderTime] = useState(DateTime.fromISO(eventStartTime).minus({ minutes: 30 }));
   const [presetOption, setPresetOption] = useState('30min');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -62,27 +61,27 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
     
     if (selectedOption !== 'custom') {
       const option = presetOptions.find(opt => opt.value === selectedOption);
-      setReminderTime(dayjs(eventStartTime).subtract(option.minutes, 'minute'));
+      setReminderTime(DateTime.fromISO(eventStartTime).minus({ minutes: option.minutes }));
     }
   };
 
   // Validiere die Erinnerungszeit
   const validateReminderTime = () => {
     // Prüfe, ob die Erinnerungszeit vor der Startzeit des Termins liegt
-    if (dayjs(reminderTime).isAfter(dayjs(eventStartTime))) {
+    if (reminderTime > DateTime.fromISO(eventStartTime)) {
       setError('Die Erinnerungszeit muss vor der Startzeit des Termins liegen.');
       return false;
     }
     
     // Prüfe, ob die Erinnerungszeit in der Zukunft liegt
-    if (dayjs(reminderTime).isBefore(dayjs())) {
+    if (reminderTime < DateTime.local()) {
       setError('Die Erinnerungszeit muss in der Zukunft liegen.');
       return false;
     }
     
     // Prüfe, ob bereits eine Erinnerung mit der gleichen Zeit existiert
     const duplicateReminder = existingReminders.find(
-      reminder => dayjs(reminder.reminder_time).isSame(dayjs(reminderTime), 'minute')
+      reminder => reminder.reminder_time === reminderTime.toISO()
     );
     
     if (duplicateReminder) {
@@ -108,7 +107,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
       
       const response = await api.post('/api/reminders', {
         event_id: eventId,
-        reminder_time: reminderTime.toISOString()
+        reminder_time: reminderTime.toISO()
       });
       
       // Aktualisiere die Liste der Erinnerungen
@@ -126,7 +125,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
       // Setze die Erinnerungszeit zurück
       const defaultOption = presetOptions.find(opt => opt.value === '30min');
       setPresetOption('30min');
-      setReminderTime(dayjs(eventStartTime).subtract(defaultOption.minutes, 'minute'));
+      setReminderTime(DateTime.fromISO(eventStartTime).minus({ minutes: defaultOption.minutes }));
       
     } catch (err) {
       console.error('Fehler beim Erstellen der Erinnerung:', err);
@@ -202,15 +201,24 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
 
   // Formatiere das Datum für die Anzeige
   const formatReminderTime = (time) => {
-    return dayjs(time).format('DD.MM.YYYY HH:mm');
+    // Stelle sicher, dass das Datum ein Luxon DateTime-Objekt ist
+    const dateTime = typeof time === 'string' ? DateTime.fromISO(time) : time;
+    return dateTime.toFormat('dd.MM.yyyy HH:mm');
   };
 
   // Berechne den relativen Zeitpunkt für die Anzeige
   const getRelativeTime = (reminderTime, eventTime) => {
-    const diff = dayjs(eventTime).diff(dayjs(reminderTime), 'minute');
+    // Konvertiere zu DateTime-Objekten, falls sie es noch nicht sind
+    const reminderDateTime = typeof reminderTime === 'string' ? DateTime.fromISO(reminderTime) : reminderTime;
+    const eventDateTime = typeof eventTime === 'string' ? DateTime.fromISO(eventTime) : eventTime;
     
-    if (diff < 60) {
-      return `${diff} Minuten vor dem Termin`;
+    // Berechne die Differenz in Minuten
+    const diff = eventDateTime.diff(reminderDateTime, 'minutes').minutes;
+    
+    if (diff < 0) {
+      return "Nach dem Termin";
+    } else if (diff < 60) {
+      return `${Math.round(diff)} Minuten vor dem Termin`;
     } else if (diff < 24 * 60) {
       const hours = Math.floor(diff / 60);
       return `${hours} Stunde${hours !== 1 ? 'n' : ''} vor dem Termin`;
@@ -254,12 +262,13 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
           </FormControl>
           
           {presetOption === 'custom' && (
-            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="de">
+            <LocalizationProvider dateAdapter={AdapterLuxon} adapterLocale={locale}>
               <DateTimePicker
                 label="Erinnerungszeit"
                 value={reminderTime}
                 onChange={(newValue) => setReminderTime(newValue)}
                 disabled={loading}
+                disableMaskedInput
                 renderInput={(params) => (
                   <TextField 
                     {...params} 
@@ -287,15 +296,15 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
       {existingReminders && existingReminders.length > 0 ? (
         <List sx={{ bgcolor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
           {existingReminders
-            .sort((a, b) => new Date(a.reminder_time) - new Date(b.reminder_time))
+            .sort((a, b) => a.reminder_time.localeCompare(b.reminder_time))
             .map(reminder => (
               <ListItem key={reminder.id} divider>
                 <Box sx={{ flexGrow: 1 }}>
                   <Typography variant="subtitle1">
-                    {formatReminderTime(reminder.reminder_time)}
+                    {formatReminderTime(DateTime.fromISO(reminder.reminder_time))}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {getRelativeTime(reminder.reminder_time, eventStartTime)}
+                    {getRelativeTime(DateTime.fromISO(reminder.reminder_time), DateTime.fromISO(eventStartTime))}
                   </Typography>
                   {reminder.is_sent && (
                     <Typography variant="body2" color="success.main" sx={{ mt: 0.5 }}>
@@ -340,10 +349,10 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
           {reminderToDelete && (
             <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
               <Typography variant="subtitle2">
-                Erinnerungszeit: {formatReminderTime(reminderToDelete.reminder_time)}
+                Erinnerungszeit: {formatReminderTime(DateTime.fromISO(reminderToDelete.reminder_time))}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {getRelativeTime(reminderToDelete.reminder_time, eventStartTime)}
+                {getRelativeTime(DateTime.fromISO(reminderToDelete.reminder_time), DateTime.fromISO(eventStartTime))}
               </Typography>
             </Box>
           )}

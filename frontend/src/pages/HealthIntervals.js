@@ -28,13 +28,12 @@ import {
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs from 'dayjs';
-import 'dayjs/locale/de';
+import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon';
+import { DateTime } from 'luxon';
 import api from '../utils/api';
 
 // Setze die Sprache auf Deutsch
-dayjs.locale('de');
+const locale = 'de';
 
 const HealthIntervals = () => {
   const [intervals, setIntervals] = useState([]);
@@ -45,7 +44,7 @@ const HealthIntervals = () => {
   const [formData, setFormData] = useState({
     interval_type: '',
     interval_months: 6,
-    last_appointment: dayjs()
+    last_appointment: DateTime.now()
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -101,7 +100,7 @@ const HealthIntervals = () => {
       setFormData({
         interval_type: interval.interval_type,
         interval_months: interval.interval_months,
-        last_appointment: dayjs(interval.last_appointment)
+        last_appointment: DateTime.fromISO(interval.last_appointment)
       });
     } else {
       // Neues Intervall erstellen
@@ -109,7 +108,7 @@ const HealthIntervals = () => {
       setFormData({
         interval_type: '',
         interval_months: 6,
-        last_appointment: dayjs()
+        last_appointment: DateTime.now()
       });
     }
     setOpenDialog(true);
@@ -142,7 +141,7 @@ const HealthIntervals = () => {
     try {
       const data = {
         ...formData,
-        last_appointment: formData.last_appointment.format('YYYY-MM-DD')
+        last_appointment: formData.last_appointment.toISO()
       };
 
       let response;
@@ -220,14 +219,16 @@ const HealthIntervals = () => {
 
   // Formatiere Datum für die Anzeige
   const formatDate = (date) => {
-    return dayjs(date).format('DD.MM.YYYY');
+    // Stelle sicher, dass das Datum ein Luxon DateTime-Objekt ist
+    const dateTime = typeof date === 'string' ? DateTime.fromISO(date) : date;
+    return dateTime.toFormat('dd.MM.yyyy');
   };
 
   // Berechne Status (überfällig, bald fällig, ok)
   const getStatus = (nextDate) => {
-    const now = dayjs();
-    const next = dayjs(nextDate);
-    const diffDays = next.diff(now, 'day');
+    const currentDate = DateTime.now();
+    const nextAppointment = DateTime.fromISO(nextDate);
+    const diffDays = nextAppointment.diff(currentDate, 'day').days;
     
     if (diffDays < 0) {
       return { text: 'Überfällig', color: 'error' };
@@ -368,7 +369,7 @@ const HealthIntervals = () => {
               ))}
             </TextField>
             
-            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="de">
+            <LocalizationProvider dateAdapter={AdapterLuxon} adapterLocale={locale}>
               <DatePicker
                 label="Letzter Termin"
                 value={formData.last_appointment}

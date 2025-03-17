@@ -21,14 +21,12 @@ import {
   Healing as HealingIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import dayjs from 'dayjs';
-import 'dayjs/locale/de';
-import relativeTime from 'dayjs/plugin/relativeTime';
+import { DateTime } from 'luxon';
 import api from '../utils/api';
 
-// Plugins für Datumsformatierung
-dayjs.locale('de');
-dayjs.extend(relativeTime);
+// Setze die Sprache auf Deutsch
+// eslint-disable-next-line no-unused-vars
+const locale = 'de';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -48,8 +46,8 @@ const Dashboard = () => {
         
         // Filtere Erinnerungen, die in der Zukunft liegen und noch nicht gesendet wurden
         const futureReminders = remindersResponse.data
-          .filter(reminder => !reminder.is_sent && dayjs(reminder.reminder_time).isAfter(dayjs()))
-          .sort((a, b) => dayjs(a.reminder_time).diff(dayjs(b.reminder_time)));
+          .filter(reminder => !reminder.is_sent && DateTime.fromISO(reminder.reminder_time).toMillis() > DateTime.now().toMillis())
+          .sort((a, b) => DateTime.fromISO(a.reminder_time).toMillis() - DateTime.fromISO(b.reminder_time).toMillis());
         
         // Lade Details zu den zugehörigen Terminen
         const remindersWithEvents = await Promise.all(
@@ -73,16 +71,16 @@ const Dashboard = () => {
         setUpcomingReminders(remindersWithEvents.slice(0, 5)); // Zeige maximal 5 an
         
         // Lade anstehende Termine (für die nächsten 7 Tage)
-        const now = dayjs();
-        const nextWeek = dayjs().add(7, 'day');
+        const now = DateTime.now();
+        const nextWeek = now.plus({ days: 7 });
         
         const eventsResponse = await api.get('/api/events');
         const futureEvents = eventsResponse.data
           .filter(event => {
-            const eventStart = dayjs(event.start_time);
-            return eventStart.isAfter(now) && eventStart.isBefore(nextWeek);
+            const eventStart = DateTime.fromISO(event.start_time);
+            return eventStart.toMillis() > now.toMillis() && eventStart.toMillis() < nextWeek.toMillis();
           })
-          .sort((a, b) => dayjs(a.start_time).diff(dayjs(b.start_time)));
+          .sort((a, b) => DateTime.fromISO(a.start_time).toMillis() - DateTime.fromISO(b.start_time).toMillis());
         
         setUpcomingEvents(futureEvents.slice(0, 5)); // Zeige maximal 5 an
 
@@ -91,7 +89,7 @@ const Dashboard = () => {
         
         // Sortiere nach dem nächsten empfohlenen Termin
         const sortedHealthIntervals = healthIntervalsResponse.data
-          .sort((a, b) => dayjs(a.next_suggested_date).diff(dayjs(b.next_suggested_date)));
+          .sort((a, b) => DateTime.fromISO(a.next_suggested_date).toMillis() - DateTime.fromISO(b.next_suggested_date).toMillis());
         
         setHealthIntervals(sortedHealthIntervals.slice(0, 5)); // Zeige nur die nächsten 5 an
         
@@ -109,23 +107,23 @@ const Dashboard = () => {
   
   // Formatiere Datum für die Anzeige (ohne Uhrzeit)
   const formatDate = (date) => {
-    return dayjs(date).format('DD.MM.YYYY');
+    return DateTime.fromISO(date).toFormat('dd.MM.yyyy');
   };
 
   // Formatiere Datum und Uhrzeit für die Anzeige
   const formatDateTime = (dateTime) => {
-    const date = dayjs(dateTime);
-    return date.format('DD.MM.YYYY HH:mm');
+    const date = DateTime.fromISO(dateTime);
+    return date.toFormat('dd.MM.yyyy HH:mm');
   };
   
   // Berechne den relativen Zeitpunkt für die Anzeige
   const getRelativeTime = (dateTime) => {
-    return dayjs(dateTime).fromNow();
+    return DateTime.fromISO(dateTime).toRelative();
   };
   
   // Bestimme die Farbe basierend auf der Dringlichkeit
   const getReminderColor = (reminderTime) => {
-    const hours = dayjs(reminderTime).diff(dayjs(), 'hour');
+    const hours = DateTime.fromISO(reminderTime).diffNow('hour').hours;
     
     if (hours < 1) return 'error';
     if (hours < 24) return 'warning';
@@ -154,9 +152,9 @@ const Dashboard = () => {
 
   // Berechne den Status eines Gesundheitsintervalls
   const getHealthIntervalStatus = (nextDate) => {
-    const now = dayjs();
-    const next = dayjs(nextDate);
-    const diffDays = next.diff(now, 'day');
+    const now = DateTime.now();
+    const next = DateTime.fromISO(nextDate);
+    const diffDays = next.diff(now, 'day').days;
     
     if (diffDays < 0) {
       return { text: 'Überfällig', color: 'error' };

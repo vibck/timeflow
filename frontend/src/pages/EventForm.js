@@ -20,14 +20,13 @@ import {
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs from 'dayjs';
-import 'dayjs/locale/de';
+import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon';
+import { DateTime } from 'luxon';
 import api from '../utils/api';
 import ReminderForm from '../components/Reminders/ReminderForm';
 
 // Setze die Sprache auf Deutsch
-dayjs.locale('de');
+const locale = 'de';
 
 const EventForm = () => {
   const { id } = useParams();
@@ -54,8 +53,8 @@ const EventForm = () => {
   }, [id, location.pathname]);
   
   // Hole Standardwerte aus dem Location-State (wenn von Kalender-Slot ausgewählt)
-  const defaultStart = location.state?.defaultStart ? dayjs(location.state.defaultStart) : dayjs();
-  const defaultEnd = location.state?.defaultEnd ? dayjs(location.state.defaultEnd) : dayjs().add(1, 'hour');
+  const defaultStart = location.state?.defaultStart ? DateTime.fromISO(location.state.defaultStart) : DateTime.now();
+  const defaultEnd = location.state?.defaultEnd ? DateTime.fromISO(location.state.defaultEnd) : DateTime.now().plus({ hours: 1 });
   
   // Formularstatus
   const [title, setTitle] = useState('');
@@ -89,8 +88,8 @@ const EventForm = () => {
         setTitle(event.title);
         setDescription(event.description || '');
         setLocation(event.location || '');
-        setStartTime(dayjs(event.start_time));
-        setEndTime(dayjs(event.end_time));
+        setStartTime(DateTime.fromISO(event.start_time));
+        setEndTime(DateTime.fromISO(event.end_time));
         setEventType(event.event_type || 'personal');
         
         // Lade Erinnerungen für diesen Termin
@@ -148,8 +147,8 @@ const EventForm = () => {
       title,
       description,
       location: location_,
-      start_time: startTime.toISOString(),
-      end_time: endTime.toISOString(),
+      start_time: startTime.toISO(),
+      end_time: endTime.toISO(),
       event_type: eventType
     };
     
@@ -168,7 +167,7 @@ const EventForm = () => {
         setSuccess('Termin erfolgreich aktualisiert!');
         
         // Aktualisiere die Startzeit für die Erinnerungen
-        setStartTime(dayjs(response.data.start_time));
+        setStartTime(DateTime.fromISO(response.data.start_time));
       } else {
         // Neuen Termin erstellen
         const response = await api.post('/api/events', eventData);
@@ -228,7 +227,7 @@ const EventForm = () => {
       errors.title = 'Titel ist erforderlich';
     }
     
-    if (startTime.isAfter(endTime)) {
+    if (startTime.toMillis() > endTime.toMillis()) {
       errors.time = 'Startzeit muss vor der Endzeit liegen';
     }
     
@@ -264,7 +263,7 @@ const EventForm = () => {
           </Grid>
           
           <Grid item xs={12} sm={6}>
-            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="de">
+            <LocalizationProvider dateAdapter={AdapterLuxon} adapterLocale={locale}>
               <DateTimePicker
                 label="Startzeit"
                 value={startTime}
@@ -272,6 +271,7 @@ const EventForm = () => {
                 disabled={loading || isViewMode}
                 ampm={false}
                 readOnly={isViewMode}
+                disableMaskedInput
                 renderInput={(params) => (
                   <TextField 
                     {...params} 
@@ -288,7 +288,7 @@ const EventForm = () => {
           </Grid>
           
           <Grid item xs={12} sm={6}>
-            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="de">
+            <LocalizationProvider dateAdapter={AdapterLuxon} adapterLocale={locale}>
               <DateTimePicker
                 label="Endzeit"
                 value={endTime}
@@ -296,6 +296,7 @@ const EventForm = () => {
                 disabled={loading || isViewMode}
                 ampm={false}
                 readOnly={isViewMode}
+                disableMaskedInput
                 renderInput={(params) => (
                   <TextField 
                     {...params} 
