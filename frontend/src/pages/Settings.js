@@ -280,6 +280,7 @@ const Settings = () => {
                 <Switch
                   checked={settings.showHolidays}
                   onChange={handleSwitchChange}
+                  name="showHolidays"
                 />
               }
               label="Feiertage anzeigen"
@@ -310,6 +311,7 @@ const Settings = () => {
                 <Switch
                   checked={settings.notificationPreferences.email}
                   onChange={handleNotificationPreferenceChange}
+                  name="email"
                 />
               }
               label="E-Mail-Benachrichtigungen"
@@ -325,6 +327,7 @@ const Settings = () => {
                 <Switch
                   checked={settings.notificationPreferences.telegram}
                   onChange={handleNotificationPreferenceChange}
+                  name="telegram"
                   disabled={!telegramConnected}
                 />
               }
@@ -337,7 +340,7 @@ const Settings = () => {
             <Box sx={{ 
               mt: 2, 
               p: 2, 
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+              bgcolor: 'transparent',
               borderRadius: 1
             }}>
               <TelegramConnect 
@@ -347,7 +350,12 @@ const Settings = () => {
                   
                   if (connected && !settings.notificationPreferences.telegram) {
                     // Aktiviere Telegram-Benachrichtigungen automatisch, wenn verbunden
-                    handleNotificationPreferenceChange({ target: { checked: true } });
+                    handleNotificationPreferenceChange({ 
+                      target: { 
+                        name: "telegram", 
+                        checked: true 
+                      } 
+                    });
                   }
                 }}
               />

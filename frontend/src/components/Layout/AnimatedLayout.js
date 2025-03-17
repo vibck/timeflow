@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   AppBar, 
   Toolbar, 
@@ -38,6 +38,7 @@ const AnimatedLayout = ({ children }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -49,24 +50,32 @@ const AnimatedLayout = ({ children }) => {
     { 
       label: 'Dashboard', 
       href: '/', 
-      icon: <LayoutDashboard size={20} className="text-neutral-800 dark:text-neutral-200" /> 
+      icon: <LayoutDashboard size={24} className="text-neutral-700 dark-text-neutral-200" /> 
     },
     { 
       label: 'Kalender', 
       href: '/calendar', 
-      icon: <Calendar size={20} className="text-neutral-800 dark:text-neutral-200" /> 
+      icon: <Calendar size={24} className="text-neutral-700 dark-text-neutral-200" /> 
     },
     { 
       label: 'Gesundheitsintervalle', 
       href: '/health-intervals', 
-      icon: <Activity size={20} className="text-neutral-800 dark:text-neutral-200" /> 
+      icon: <Activity size={24} className="text-neutral-700 dark-text-neutral-200" /> 
     },
     { 
       label: 'Einstellungen', 
       href: '/settings', 
-      icon: <Settings size={20} className="text-neutral-800 dark:text-neutral-200" /> 
+      icon: <Settings size={24} className="text-neutral-700 dark-text-neutral-200" /> 
     }
   ];
+
+  // Hilfsfunktion zum Überprüfen des aktiven Links
+  const isActiveLink = (href) => {
+    if (href === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(href);
+  };
 
   return (
     <Box 
@@ -81,11 +90,12 @@ const AnimatedLayout = ({ children }) => {
         position="fixed" 
         sx={{ 
           zIndex: (theme) => theme.zIndex.drawer + 1,
-          bgcolor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.8)',
           color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
           boxShadow: 'none',
           borderBottom: 1,
-          borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+          borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+          backdropFilter: 'blur(10px)'
         }}
       >
         <Toolbar>
@@ -104,6 +114,12 @@ const AnimatedLayout = ({ children }) => {
             color="inherit" 
             onClick={handleLogout}
             startIcon={<LogOut size={18} />}
+            sx={{ 
+              borderRadius: '20px',
+              '&:hover': {
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+              }
+            }}
           >
             Abmelden
           </Button>
@@ -115,7 +131,11 @@ const AnimatedLayout = ({ children }) => {
         <SidebarBody>
           <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', gap: 1 }}>
             {links.map(link => (
-              <SidebarLink key={link.href} link={link} />
+              <SidebarLink 
+                key={link.href} 
+                link={link} 
+                className={isActiveLink(link.href) ? 'active-link' : ''}
+              />
             ))}
           </Box>
         </SidebarBody>

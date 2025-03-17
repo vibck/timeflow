@@ -21,8 +21,6 @@ import AnimatedLayout from './components/Layout/AnimatedLayout';
 /**
  * React Router Future Flags
  * Diese Konfiguration bereitet die App auf React Router v7 vor:
- * - v7_startTransition: Nutzt React.startTransition für flüssigere Navigation
- * - v7_relativeSplatPath: Verbessert die relative Pfadauflösung in Splat-Routen
  */
 const router = {
   future: {
@@ -76,6 +74,19 @@ const AppWithTheme = () => {
         '"Segoe UI Emoji"',
         '"Segoe UI Symbol"',
       ].join(','),
+    },
+    components: {
+      MuiButton: {
+        styleOverrides: {
+          containedPrimary: {
+            backgroundColor: '#2196f3',
+            color: '#ffffff',
+            '&:hover': {
+              backgroundColor: '#1976d2',
+            },
+          },
+        },
+      },
     },
   });
 
