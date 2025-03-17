@@ -199,6 +199,17 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
     }
   }, [snackbar.open, handleCloseSnackbar]);
 
+  // Aktualisiere die Erinnerungszeit, wenn sich die Startzeit des Termins ändert
+  useEffect(() => {
+    // Setze die Standard-Erinnerungszeit basierend auf der aktuellen Voreinstellung
+    if (presetOption !== 'custom') {
+      const option = presetOptions.find(opt => opt.value === presetOption);
+      if (option) {
+        setReminderTime(DateTime.fromISO(eventStartTime).minus({ minutes: option.minutes }));
+      }
+    }
+  }, [eventStartTime, presetOption]);
+
   // Formatiere das Datum für die Anzeige
   const formatReminderTime = (time) => {
     // Stelle sicher, dass das Datum ein Luxon DateTime-Objekt ist

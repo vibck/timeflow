@@ -65,6 +65,7 @@ const EventForm = () => {
   const [eventType, setEventType] = useState('personal');
   const [reminders, setReminders] = useState([]);
   const [showReminderForm, setShowReminderForm] = useState(false);
+  const [originalStartTime, setOriginalStartTime] = useState(null);
   
   // UI-Status
   const [loading, setLoading] = useState(false);
@@ -88,7 +89,9 @@ const EventForm = () => {
         setTitle(event.title);
         setDescription(event.description || '');
         setLocation(event.location || '');
-        setStartTime(DateTime.fromISO(event.start_time));
+        const eventStartTime = DateTime.fromISO(event.start_time);
+        setStartTime(eventStartTime);
+        setOriginalStartTime(eventStartTime);
         setEndTime(DateTime.fromISO(event.end_time));
         setEventType(event.event_type || 'personal');
         
@@ -134,6 +137,17 @@ const EventForm = () => {
     }
   };
   
+  // Aktualisiere die Startzeit für die Erinnerungen
+  const handleStartTimeChange = (newValue) => {
+    setStartTime(newValue);
+    
+    // Wenn es Erinnerungen gibt und wir im Bearbeitungsmodus sind,
+    // zeige einen Hinweis an, dass die Erinnerungen angepasst werden müssen
+    if (isEditMode && reminders.length > 0) {
+      setSuccess('Hinweis: Bestehende Erinnerungen werden automatisch an die neue Startzeit angepasst, wenn du den Termin speicherst.');
+    }
+  };
+  
   // Formular absenden
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -167,7 +181,14 @@ const EventForm = () => {
         setSuccess('Termin erfolgreich aktualisiert!');
         
         // Aktualisiere die Startzeit für die Erinnerungen
-        setStartTime(DateTime.fromISO(response.data.start_time));
+        const updatedStartTime = DateTime.fromISO(response.data.start_time);
+        setStartTime(updatedStartTime);
+        setOriginalStartTime(updatedStartTime);
+        
+        // Wenn es Erinnerungen gibt, aktualisiere sie entsprechend der neuen Startzeit
+        if (reminders.length > 0) {
+          await updateRemindersForNewEventTime(response.data.start_time);
+        }
       } else {
         // Neuen Termin erstellen
         const response = await api.post('/api/events', eventData);
@@ -182,6 +203,67 @@ const EventForm = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Aktualisiere die Erinnerungen für die neue Terminzeit
+  const updateRemindersForNewEventTime = async (newEventStartTime) => {
+    try {
+      // Lade die aktuellen Erinnerungen neu
+      const remindersResponse = await api.get(`/api/reminders/event/${eventId}`);
+      const currentReminders = remindersResponse.data;
+      
+      // Speichere die alte und neue Startzeit als DateTime-Objekte
+      const oldEventStart = originalStartTime; // Verwende originalStartTime statt startTime
+      const newEventStart = DateTime.fromISO(newEventStartTime);
+      
+      // Berechne die Zeitdifferenz zwischen alter und neuer Startzeit
+      const timeDiff = newEventStart.diff(oldEventStart).milliseconds;
+      
+      // Nur für Entwicklungszwecke - kann später entfernt werden
+      console.log(`Terminzeit geändert: ${oldEventStart.toFormat('dd.MM.yyyy HH:mm')} → ${newEventStart.toFormat('dd.MM.yyyy HH:mm')} (${timeDiff > 0 ? '+' : ''}${Math.round(timeDiff / 60000)} Min.)`);
+      
+      // Nur fortfahren, wenn es eine tatsächliche Zeitdifferenz gibt
+      if (timeDiff === 0) {
+        console.log('Keine Zeitänderung erkannt, Erinnerungen bleiben unverändert.');
+        return;
+      }
+      
+      // Aktualisiere jede Erinnerung
+      const updatedReminders = await Promise.all(
+        currentReminders.map(async (reminder) => {
+          // Konvertiere die Erinnerungszeit zu einem DateTime-Objekt
+          const oldReminderTime = DateTime.fromISO(reminder.reminder_time);
+          
+          // Berechne die neue Erinnerungszeit, indem die gleiche Zeitdifferenz hinzugefügt wird
+          const newReminderTime = oldReminderTime.plus({ milliseconds: timeDiff });
+          
+          // Aktualisiere die Erinnerung in der Datenbank
+          if (!reminder.is_sent) {
+            try {
+              const updatedReminder = await api.put(`/api/reminders/${reminder.id}`, {
+                reminder_time: newReminderTime.toISO()
+              });
+              console.log(`Erinnerung angepasst: ${oldReminderTime.toFormat('dd.MM.yyyy HH:mm')} → ${newReminderTime.toFormat('dd.MM.yyyy HH:mm')}`);
+              return updatedReminder.data;
+            } catch (err) {
+              console.error(`Fehler beim Aktualisieren der Erinnerung ${reminder.id}:`, err);
+              return reminder;
+            }
+          }
+          
+          // Wenn die Erinnerung bereits gesendet wurde, nicht aktualisieren
+          return reminder;
+        })
+      );
+      
+      // Aktualisiere den State mit den neuen Erinnerungen
+      setReminders(updatedReminders);
+      
+      setSuccess('Termin und Erinnerungen erfolgreich aktualisiert!');
+    } catch (err) {
+      console.error('Fehler beim Aktualisieren der Erinnerungen:', err);
+      setError('Die Erinnerungen konnten nicht aktualisiert werden. Bitte versuche es später erneut.');
     }
   };
   
@@ -267,7 +349,7 @@ const EventForm = () => {
               <DateTimePicker
                 label="Startzeit"
                 value={startTime}
-                onChange={(newValue) => setStartTime(newValue)}
+                onChange={handleStartTimeChange}
                 disabled={loading || isViewMode}
                 ampm={false}
                 readOnly={isViewMode}

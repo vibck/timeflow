@@ -98,4 +98,38 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Eine Erinnerung aktualisieren
+router.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { reminder_time } = req.body;
+
+  try {
+    // Prüfe, ob Erinnerung zu einem Event des Benutzers gehört
+    const reminderCheck = await db.query(
+      `SELECT r.* FROM reminders r
+       JOIN events e ON r.event_id = e.id
+       WHERE r.id = $1 AND e.user_id = $2`,
+      [id, req.user.id]
+    );
+
+    if (reminderCheck.rows.length === 0) {
+      return res.status(404).json({ message: 'Erinnerung nicht gefunden' });
+    }
+
+    // Prüfe, ob die Erinnerung bereits gesendet wurde
+    if (reminderCheck.rows[0].is_sent) {
+      return res.status(400).json({ message: 'Bereits gesendete Erinnerungen können nicht aktualisiert werden' });
+    }
+
+    const { rows } = await db.query(
+      'UPDATE reminders SET reminder_time = $1 WHERE id = $2 RETURNING *',
+      [reminder_time, id]
+    );
+
+    res.json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ message: 'Serverfehler', error: error.message });
+  }
+});
+
 module.exports = router;
