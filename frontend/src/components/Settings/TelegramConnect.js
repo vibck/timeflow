@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Button, Typography, CircularProgress, Paper } from '@mui/material';
-import axios from 'axios';
 import api from '../../utils/api';
 
 const TelegramConnect = () => {
@@ -16,6 +15,7 @@ const TelegramConnect = () => {
   // Lade den Telegram-Status beim Laden der Komponente
   useEffect(() => {
     fetchTelegramStatus();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Hole den Telegram-Status vom Backend

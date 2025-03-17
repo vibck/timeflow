@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Box, 
   Button, 
@@ -42,8 +42,8 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
     severity: 'success'
   });
 
-  // Voreingestellte Erinnerungsoptionen
-  const presetOptions = [
+  // Voreingestellte Erinnerungsoptionen mit useMemo
+  const presetOptions = useMemo(() => [
     { value: '15min', label: '15 Minuten vorher', minutes: 15 },
     { value: '30min', label: '30 Minuten vorher', minutes: 30 },
     { value: '1hour', label: '1 Stunde vorher', minutes: 60 },
@@ -52,7 +52,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
     { value: '2days', label: '2 Tage vorher', minutes: 2 * 24 * 60 },
     { value: '1week', label: '1 Woche vorher', minutes: 7 * 24 * 60 },
     { value: 'custom', label: 'Benutzerdefiniert', minutes: 0 }
-  ];
+  ], []);
 
   // Behandle Änderung der Voreinstellung
   const handlePresetChange = (event) => {
@@ -208,7 +208,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
         setReminderTime(DateTime.fromISO(eventStartTime).minus({ minutes: option.minutes }));
       }
     }
-  }, [eventStartTime, presetOption]);
+  }, [eventStartTime, presetOption, presetOptions]);
 
   // Formatiere das Datum für die Anzeige
   const formatReminderTime = (time) => {
