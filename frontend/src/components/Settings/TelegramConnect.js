@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Button, Typography, CircularProgress, Paper } from '@mui/material';
 import api from '../../utils/api';
+import { useTheme } from '@mui/material/styles';
 
 const TelegramConnect = () => {
   const [loading, setLoading] = useState(true);
@@ -11,6 +12,7 @@ const TelegramConnect = () => {
   });
   const [qrCode, setQrCode] = useState(null);
   const [telegramLink, setTelegramLink] = useState('');
+  const theme = useTheme();
 
   // Lade den Telegram-Status beim Laden der Komponente
   useEffect(() => {
@@ -114,7 +116,7 @@ const TelegramConnect = () => {
       
       {telegramStatus.connected ? (
         <Box>
-          <Typography variant="body1" sx={{ mb: 2 }}>
+          <Typography variant="body1" sx={{ mb: 2, color: 'text.primary' }}>
             Dein Account ist mit Telegram verbunden. Du erhältst Benachrichtigungen über den Bot <strong>@{telegramStatus.botName}</strong>.
           </Typography>
           <Button 
@@ -127,12 +129,12 @@ const TelegramConnect = () => {
         </Box>
       ) : (
         <Box>
-          <Typography variant="body1" sx={{ mb: 2 }}>
+          <Typography variant="body1" sx={{ mb: 2, color: 'text.primary' }}>
             Verbinde deinen Account mit Telegram, um Benachrichtigungen zu erhalten.
           </Typography>
           
           <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" sx={{ mb: 1 }}>
+            <Typography variant="body2" sx={{ mb: 1, color: 'text.primary' }}>
               Scanne den QR-Code mit deiner Telegram-App oder klicke auf den Link unten:
             </Typography>
             
@@ -142,9 +144,11 @@ const TelegramConnect = () => {
                   display: 'flex', 
                   justifyContent: 'center', 
                   mb: 2,
-                  border: '1px solid #eee',
+                  border: '1px solid',
+                  borderColor: 'divider',
                   p: 2,
-                  borderRadius: 1
+                  borderRadius: 1,
+                  bgcolor: 'background.paper'
                 }}
               >
                 <img 
@@ -157,17 +161,26 @@ const TelegramConnect = () => {
             
             <Button 
               variant="contained" 
-              color="primary" 
               href={telegramLink} 
               target="_blank" 
               rel="noopener noreferrer"
               fullWidth
-              sx={{ mb: 1 }}
+              disableElevation
+              style={{ 
+                backgroundColor: '#2196f3', 
+                color: '#ffffff',
+                textTransform: 'none',
+                fontWeight: 500,
+                padding: '10px 16px',
+                boxShadow: 'none',
+                marginBottom: '16px',
+                marginTop: '8px'
+              }}
             >
               Mit @{telegramStatus.botName} verbinden
             </Button>
             
-            <Typography variant="body2" color="textSecondary">
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               Nach dem Öffnen des Links, starte den Bot mit dem Befehl, der automatisch angezeigt wird.
             </Typography>
           </Box>
