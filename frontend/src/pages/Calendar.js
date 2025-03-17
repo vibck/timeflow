@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Typography, Box, Paper, Alert } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Typography, Box, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { format, isSameDay } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { format } from 'date-fns';
+// Nicht verwendete Imports auskommentiert
+// import { de } from 'date-fns/locale';
 import Holidays from 'date-holidays';
 import FullScreenCalendar from '../components/Calendar/FullScreenCalendar';
 import api from '../utils/api';

@@ -18,8 +18,9 @@ import {
   Dashboard as DashboardIcon,
   Event as EventIcon,
   Healing as HealingIcon,
-  Settings as SettingsIcon,
-  CalendarViewMonth as CalendarViewMonthIcon
+  Settings as SettingsIcon
+  // Nicht verwendeter Import auskommentiert
+  // CalendarViewMonthIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 

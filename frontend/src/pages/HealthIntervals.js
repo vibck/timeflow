@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Typography, 
   Box, 
@@ -15,7 +15,6 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  MenuItem,
   IconButton,
   CircularProgress,
   Alert,
@@ -54,26 +53,6 @@ const HealthIntervals = () => {
     message: '',
     severity: 'success'
   });
-
-  // Intervalltypen
-  const intervalTypes = [
-    { value: 'Zahnarzt', label: 'Zahnarzt' },
-    { value: 'Hausarzt', label: 'Hausarzt' },
-    { value: 'Augenarzt', label: 'Augenarzt' },
-    { value: 'Gynäkologe', label: 'Gynäkologe' },
-    { value: 'Hautarzt', label: 'Hautarzt' },
-    { value: 'Orthopäde', label: 'Orthopäde' },
-    { value: 'Sonstiges', label: 'Sonstiges' }
-  ];
-
-  // Intervalloptionen in Monaten
-  const intervalOptions = [
-    { value: 1, label: '1 Monat' },
-    { value: 3, label: '3 Monate' },
-    { value: 6, label: '6 Monate' },
-    { value: 12, label: '1 Jahr' },
-    { value: 24, label: '2 Jahre' }
-  ];
 
   // Lade Gesundheitsintervalle beim Seitenaufruf
   useEffect(() => {
