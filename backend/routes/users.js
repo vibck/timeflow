@@ -10,7 +10,10 @@ router.get('/settings', authenticateJWT, async (req, res) => {
     const userId = req.user.id;
     
     const result = await db.query(
-      'SELECT state FROM users WHERE id = $1',
+      `SELECT 
+        state, 
+        notification_preferences AS "notificationPreferences"
+      FROM users WHERE id = $1`,
       [userId]
     );
     
@@ -29,11 +32,15 @@ router.get('/settings', authenticateJWT, async (req, res) => {
 router.put('/settings', authenticateJWT, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { state } = req.body;
+    const { state, notificationPreferences } = req.body;
     
     // Validiere die Eingaben
     if (state && typeof state !== 'string') {
       return res.status(400).json({ message: 'Ungültiges Bundeslandformat' });
+    }
+    
+    if (notificationPreferences && typeof notificationPreferences !== 'object') {
+      return res.status(400).json({ message: 'Ungültiges Format für Benachrichtigungspräferenzen' });
     }
     
     // Baue die Abfrage dynamisch auf
@@ -47,7 +54,13 @@ router.put('/settings', authenticateJWT, async (req, res) => {
       paramCount++;
     }
     
-    query += ` WHERE id = $${paramCount} RETURNING id, state`;
+    if (notificationPreferences) {
+      query += `, notification_preferences = $${paramCount}`;
+      values.push(JSON.stringify(notificationPreferences));
+      paramCount++;
+    }
+    
+    query += ` WHERE id = $${paramCount} RETURNING id, state, notification_preferences AS "notificationPreferences"`;
     values.push(userId);
     
     const result = await db.query(query, values);
@@ -63,6 +76,27 @@ router.put('/settings', authenticateJWT, async (req, res) => {
   } catch (error) {
     console.error('Error updating user settings:', error);
     res.status(500).json({ message: 'Serverfehler beim Aktualisieren der Benutzereinstellungen' });
+  }
+});
+
+// Telegram-Status abrufen
+router.get('/telegram-status', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const result = await db.query(
+      `SELECT EXISTS (
+        SELECT 1 FROM telegram_users WHERE user_id = $1
+      ) AS connected`,
+      [userId]
+    );
+    
+    res.json({
+      connected: result.rows[0].connected
+    });
+  } catch (error) {
+    console.error('Error fetching telegram status:', error);
+    res.status(500).json({ message: 'Serverfehler beim Abrufen des Telegram-Status' });
   }
 });
 

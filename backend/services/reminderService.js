@@ -25,6 +25,8 @@ const sendReminders = async () => {
        WHERE r.reminder_time <= NOW() AND r.is_sent = FALSE`
     );
 
+    console.log(`${reminderResult.rows.length} fällige Erinnerungen gefunden.`);
+
     for (const reminder of reminderResult.rows) {
       try {
         // Sende E-Mail
@@ -42,6 +44,8 @@ const sendReminders = async () => {
           `,
         });
 
+        console.log(`E-Mail-Erinnerung gesendet an ${reminder.email} für Termin "${reminder.title}"`);
+
         // Sende Telegram-Nachricht, falls verknüpft
         const telegramResult = await db.query(
           `SELECT tu.telegram_chat_id 
@@ -54,6 +58,7 @@ const sendReminders = async () => {
         if (telegramResult.rows.length > 0) {
           const chatId = telegramResult.rows[0].telegram_chat_id;
           telegramBot.sendEventReminder(chatId, reminder);
+          console.log(`Telegram-Erinnerung gesendet an Chat-ID ${chatId} für Termin "${reminder.title}"`);
         }
 
         // Markiere Erinnerung als gesendet
@@ -61,6 +66,7 @@ const sendReminders = async () => {
           'UPDATE reminders SET is_sent = TRUE WHERE id = $1',
           [reminder.id]
         );
+        console.log(`Erinnerung ID ${reminder.id} als gesendet markiert.`);
       } catch (reminderError) {
         console.error(`Fehler beim Senden der Erinnerung ID ${reminder.id}:`, reminderError);
         
@@ -75,6 +81,8 @@ const sendReminders = async () => {
         continue;
       }
     }
+    
+    return { success: true, count: reminderResult.rows.length };
   } catch (error) {
     console.error('Fehler beim Abrufen von Erinnerungen:', error);
     
@@ -83,6 +91,8 @@ const sendReminders = async () => {
     } else {
       console.error('Unbekannter Fehler:', error.message);
     }
+    
+    return { success: false, error: error.message };
   }
 };
 
@@ -141,4 +151,4 @@ const start = () => {
   console.log('Reminder-Service gestartet');
 };
 
-module.exports = { start };
+module.exports = { start, sendReminders, checkHealthIntervals };

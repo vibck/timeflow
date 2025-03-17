@@ -501,6 +501,7 @@ const EventForm = () => {
           existingReminders={reminders}
           onReminderChange={setReminders}
           readOnly={isViewMode}
+          eventType={eventType}
         />
       )}
       

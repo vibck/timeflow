@@ -29,7 +29,7 @@ import api from '../../utils/api';
 // Setze die Sprache auf Deutsch
 const locale = 'de';
 
-const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderChange, readOnly = false }) => {
+const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderChange, readOnly = false, eventType = 'personal' }) => {
   const [reminderTime, setReminderTime] = useState(DateTime.fromISO(eventStartTime).minus({ minutes: 30 }));
   const [presetOption, setPresetOption] = useState('30min');
   const [loading, setLoading] = useState(false);
