@@ -9,13 +9,21 @@ import {
   Button, 
   Paper, 
   Grid,
-  Alert
+  Alert,
+  Divider,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
 import api from '../utils/api';
+import TelegramConnect from '../components/Settings/TelegramConnect';
 
 const Settings = () => {
   const [settings, setSettings] = useState({
-    state: 'BY'
+    state: 'BY',
+    notificationPreferences: {
+      email: true,
+      telegram: false
+    }
   });
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({
@@ -23,6 +31,8 @@ const Settings = () => {
     message: '',
     severity: 'success'
   });
+  const [telegramConnected, setTelegramConnected] = useState(false);
+  const [telegramBotName, setTelegramBotName] = useState('');
 
   // Liste der deutschen Bundesländer
   const states = [
@@ -44,7 +54,7 @@ const Settings = () => {
     { code: 'TH', name: 'Thüringen' }
   ];
 
-  // Lade Benutzereinstellungen beim Seitenaufruf
+  // Lade Benutzereinstellungen und Telegram-Status beim Seitenaufruf
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -54,9 +64,30 @@ const Settings = () => {
           return;
         }
 
-        const response = await api.get('/api/users/settings');
-
-        setSettings(response.data);
+        // Lade Benutzereinstellungen
+        const settingsResponse = await api.get('/api/users/settings');
+        
+        // Wenn keine Benachrichtigungspräferenzen in den Einstellungen vorhanden sind, verwende die Standardwerte
+        const loadedSettings = {
+          ...settingsResponse.data,
+          notificationPreferences: settingsResponse.data.notificationPreferences || {
+            email: true,
+            telegram: false
+          }
+        };
+        
+        setSettings(loadedSettings);
+        
+        // Prüfe Telegram-Verbindung
+        try {
+          const telegramResponse = await api.get('/api/telegram/status');
+          setTelegramConnected(telegramResponse.data.connected);
+          setTelegramBotName(telegramResponse.data.botName || 'TimeFlow_bot');
+        } catch (telegramError) {
+          console.error('Fehler beim Laden des Telegram-Status:', telegramError);
+          setTelegramConnected(false);
+        }
+        
         setLoading(false);
       } catch (error) {
         console.error('Fehler beim Laden der Einstellungen:', error);
@@ -122,6 +153,17 @@ const Settings = () => {
       [event.target.name]: event.target.value
     });
   };
+  
+  // Behandle Änderungen an den Benachrichtigungspräferenzen
+  const handleNotificationPreferenceChange = (event) => {
+    setSettings({
+      ...settings,
+      notificationPreferences: {
+        ...settings.notificationPreferences,
+        [event.target.name]: event.target.checked
+      }
+    });
+  };
 
   // Schließe Snackbar
   const handleCloseSnackbar = useCallback(() => {
@@ -151,6 +193,8 @@ const Settings = () => {
       <Typography variant="h4" gutterBottom>Einstellungen</Typography>
       
       <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>Allgemeine Einstellungen</Typography>
+        
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <FormControl fullWidth>
@@ -170,23 +214,64 @@ const Settings = () => {
                 ))}
               </Select>
             </FormControl>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Das ausgewählte Bundesland wird für die Anzeige von Feiertagen im Kalender verwendet.
+            </Typography>
+          </Grid>
+        </Grid>
+        
+        <Divider sx={{ my: 3 }} />
+        
+        <Typography variant="h6" gutterBottom>Benachrichtigungseinstellungen</Typography>
+        
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.notificationPreferences.email}
+                  onChange={handleNotificationPreferenceChange}
+                  name="email"
+                />
+              }
+              label="E-Mail-Benachrichtigungen"
+            />
           </Grid>
           
           <Grid item xs={12}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Das ausgewählte Bundesland wird für die Anzeige von Feiertagen im Kalender verwendet.
-            </Typography>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.notificationPreferences.telegram}
+                  onChange={handleNotificationPreferenceChange}
+                  name="telegram"
+                  disabled={!telegramConnected}
+                />
+              }
+              label="Telegram-Benachrichtigungen"
+            />
             
-            <Button 
-              variant="contained" 
-              color="primary" 
-              onClick={handleSaveSettings}
-            >
-              Einstellungen speichern
-            </Button>
+            {!telegramConnected && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
+                Um Telegram-Benachrichtigungen zu erhalten, verbinde deinen Account mit Telegram.
+              </Typography>
+            )}
           </Grid>
         </Grid>
+        
+        <Box sx={{ mt: 3 }}>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleSaveSettings}
+          >
+            Einstellungen speichern
+          </Button>
+        </Box>
       </Paper>
+      
+      {/* Telegram-Verbindung Komponente */}
+      <TelegramConnect />
       
       {snackbar.open && (
         <Alert 
