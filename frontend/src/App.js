@@ -5,7 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
-// Seiten importieren (werden später erstellt)
+// App-Seiten
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -16,9 +16,25 @@ import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 
 // Layout-Komponente
-import Layout from './components/Layout';
+import AnimatedLayout from './components/Layout/AnimatedLayout';
 
-// Geschützte Route-Komponente
+/**
+ * React Router Future Flags
+ * Diese Konfiguration bereitet die App auf React Router v7 vor:
+ * - v7_startTransition: Nutzt React.startTransition für flüssigere Navigation
+ * - v7_relativeSplatPath: Verbessert die relative Pfadauflösung in Splat-Routen
+ */
+const router = {
+  future: {
+    v7_startTransition: true,
+    v7_relativeSplatPath: true,
+  },
+};
+
+/**
+ * PrivateRoute - Schützt Routen für nicht authentifizierte Benutzer
+ * Leitet zur Login-Seite weiter, wenn der Benutzer nicht angemeldet ist
+ */
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -29,11 +45,14 @@ const PrivateRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
-// App-Komponente mit Theme-Unterstützung
+/**
+ * AppWithTheme - Hauptanwendung mit Theme-Unterstützung
+ * Verwaltet das Theme und die Routen der Anwendung
+ */
 const AppWithTheme = () => {
   const { mode } = useTheme();
   
-  // Erstelle ein MUI-Theme basierend auf dem ausgewählten Modus
+  // MUI-Theme basierend auf dem ausgewählten Modus (hell/dunkel)
   const theme = createTheme({
     palette: {
       mode: mode,
@@ -60,62 +79,70 @@ const AppWithTheme = () => {
     },
   });
 
+  // Animierte Layout-Komponente für die gesamte Anwendung
+  const AppLayout = AnimatedLayout;
+
   return (
     <MuiThemeProvider theme={theme}>
       <CssBaseline />
-      <BrowserRouter>
+      <BrowserRouter future={router.future}>
         <Routes>
+          {/* Öffentliche Routen */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          
+          {/* Geschützte Routen */}
           <Route path="/" element={
             <PrivateRoute>
-              <Layout>
+              <AppLayout>
                 <Dashboard />
-              </Layout>
+              </AppLayout>
             </PrivateRoute>
           } />
           <Route path="/calendar" element={
             <PrivateRoute>
-              <Layout>
+              <AppLayout>
                 <Calendar />
-              </Layout>
+              </AppLayout>
             </PrivateRoute>
           } />
           <Route path="/events/new" element={
             <PrivateRoute>
-              <Layout>
+              <AppLayout>
                 <EventForm />
-              </Layout>
+              </AppLayout>
             </PrivateRoute>
           } />
           <Route path="/events/:id" element={
             <PrivateRoute>
-              <Layout>
+              <AppLayout>
                 <EventForm />
-              </Layout>
+              </AppLayout>
             </PrivateRoute>
           } />
           <Route path="/events/:id/edit" element={
             <PrivateRoute>
-              <Layout>
+              <AppLayout>
                 <EventForm />
-              </Layout>
+              </AppLayout>
             </PrivateRoute>
           } />
           <Route path="/health-intervals" element={
             <PrivateRoute>
-              <Layout>
+              <AppLayout>
                 <HealthIntervals />
-              </Layout>
+              </AppLayout>
             </PrivateRoute>
           } />
           <Route path="/settings" element={
             <PrivateRoute>
-              <Layout>
+              <AppLayout>
                 <Settings />
-              </Layout>
+              </AppLayout>
             </PrivateRoute>
           } />
+          
+          {/* 404-Seite */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
@@ -123,7 +150,10 @@ const AppWithTheme = () => {
   );
 };
 
-// Hauptkomponente, die den AuthProvider und ThemeProvider umschließt
+/**
+ * App - Einstiegspunkt mit Kontext-Providern
+ * Umschließt die Anwendung mit den notwendigen Providern
+ */
 const App = () => {
   return (
     <AuthProvider>

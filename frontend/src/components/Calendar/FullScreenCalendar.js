@@ -13,14 +13,8 @@ import {
   parse,
   startOfToday,
   startOfWeek,
-  endOfDay,
-  startOfDay,
   addDays,
   subDays,
-  getHours,
-  getMinutes,
-  setHours,
-  setMinutes
 } from 'date-fns';
 import { de } from 'date-fns/locale';
 import {
@@ -41,7 +35,6 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Add as AddIcon,
-  Search as SearchIcon,
   ViewDay as ViewDayIcon,
   ViewWeek as ViewWeekIcon,
   CalendarViewMonth as CalendarViewMonthIcon
