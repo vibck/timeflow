@@ -29,12 +29,68 @@ const sendHealthIntervalReminder = (chatId, interval) => {
 
 const start = () => {
   // Befehl /start
-  bot.onText(/\/start/, async (msg) => {
+  bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
     const chatId = msg.chat.id;
-    bot.sendMessage(
-      chatId,
-      'Willkommen beim TimeFlow Bot! Bitte verbinde deinen Account mit dem Befehl /connect [deine E-Mail]'
-    );
+    const startParam = match[1];
+    
+    // Prüfe, ob ein Start-Parameter vorhanden ist
+    if (startParam && startParam.startsWith('connect_')) {
+      // Extrahiere die E-Mail-Adresse aus dem Parameter
+      try {
+        const encodedEmail = startParam.replace('connect_', '');
+        const email = Buffer.from(encodedEmail, 'base64').toString('utf-8');
+        
+        // Prüfe, ob Benutzer existiert
+        const userResult = await db.query('SELECT * FROM users WHERE email = $1', [
+          email,
+        ]);
+
+        if (userResult.rows.length === 0) {
+          return bot.sendMessage(
+            chatId,
+            'Kein Benutzer mit dieser E-Mail gefunden. Bitte registriere dich zuerst in der TimeFlow App.'
+          );
+        }
+
+        const userId = userResult.rows[0].id;
+
+        // Prüfe, ob Telegram-Verbindung bereits existiert
+        const telegramResult = await db.query(
+          'SELECT * FROM telegram_users WHERE telegram_chat_id = $1',
+          [chatId.toString()]
+        );
+
+        if (telegramResult.rows.length > 0) {
+          return bot.sendMessage(
+            chatId,
+            'Dieser Telegram-Account ist bereits mit einem TimeFlow-Konto verbunden.'
+          );
+        }
+
+        // Erstelle neue Telegram-Verbindung
+        await db.query(
+          'INSERT INTO telegram_users (user_id, telegram_chat_id) VALUES ($1, $2)',
+          [userId, chatId.toString()]
+        );
+
+        bot.sendMessage(
+          chatId,
+          'Dein Telegram-Account wurde erfolgreich mit TimeFlow verbunden!'
+        );
+      } catch (error) {
+        console.error('Telegram connect error:', error);
+        bot.sendMessage(
+          chatId,
+          'Es ist ein Fehler aufgetreten. Bitte versuche es später erneut.'
+        );
+      }
+    } else {
+      // Standardnachricht für /start ohne Parameter
+      bot.sendMessage(
+        chatId,
+        'Willkommen beim TimeFlow Bot! Bitte verbinde deinen Account mit dem Befehl /connect [deine E-Mail]'
+      );
+    }
   });
 
   // Befehl /connect [email]
