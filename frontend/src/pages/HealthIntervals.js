@@ -18,12 +18,15 @@ import {
   MenuItem,
   IconButton,
   CircularProgress,
-  Alert
+  Alert,
+  useTheme,
+  Chip
 } from '@mui/material';
 import { 
   Add as AddIcon,
   Edit as EditIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -35,6 +38,7 @@ import api from '../utils/api';
 const locale = 'de';
 
 const HealthIntervals = () => {
+  const theme = useTheme();
   const [intervals, setIntervals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -208,29 +212,17 @@ const HealthIntervals = () => {
     }
   };
 
-  // Snackbar schließen
-  const handleCloseSnackbar = useCallback(() => {
-    setSnackbar(prevState => ({
-      ...prevState,
-      open: false
-    }));
-  }, []);
-
-  // Automatische Ausblendung der Benachrichtigung
-  useEffect(() => {
-    if (snackbar.open) {
-      const timer = setTimeout(() => {
-        handleCloseSnackbar();
-      }, 6000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [snackbar.open, handleCloseSnackbar]);
-
   // Formatiere Datum für die Anzeige
   const formatDate = (date) => {
+    // Prüfe, ob das Datum definiert ist
+    if (!date) return 'Nicht definiert';
+    
     // Stelle sicher, dass das Datum ein Luxon DateTime-Objekt ist
     const dateTime = typeof date === 'string' ? DateTime.fromISO(date) : date;
+    
+    // Prüfe, ob das DateTime-Objekt gültig ist
+    if (!dateTime.isValid) return 'Ungültiges Datum';
+    
     return dateTime.toFormat('dd.MM.yyyy');
   };
 
@@ -251,12 +243,18 @@ const HealthIntervals = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>Gesundheitsintervalle</Typography>
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          mb: 3
+        }}
+      >
+        <Typography variant="h4">Gesundheitsintervalle</Typography>
         <Button 
           variant="contained" 
-          color="primary" 
-          startIcon={<AddIcon />}
+          startIcon={<AddIcon />} 
           onClick={() => handleOpenDialog()}
         >
           Neues Intervall
@@ -269,137 +267,186 @@ const HealthIntervals = () => {
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />
         </Box>
-      ) : intervals.length === 0 ? (
-        <Paper sx={{ p: 3, textAlign: 'center' }}>
-          <Typography variant="body1">
-            Keine Gesundheitsintervalle gefunden. Erstelle dein erstes Intervall mit dem Button oben.
-          </Typography>
-        </Paper>
       ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Typ</TableCell>
-                <TableCell>Intervall</TableCell>
-                <TableCell>Letzter Termin</TableCell>
-                <TableCell>Nächster Termin</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Aktionen</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {intervals.map((interval) => {
-                const status = getStatus(interval.next_suggested_date);
-                return (
-                  <TableRow key={interval.id}>
-                    <TableCell>{interval.interval_type}</TableCell>
-                    <TableCell>
-                      {interval.interval_months === 1 
-                        ? '1 Monat' 
-                        : interval.interval_months === 12 
-                          ? '1 Jahr' 
-                          : interval.interval_months === 24 
-                            ? '2 Jahre' 
-                            : `${interval.interval_months} Monate`}
-                    </TableCell>
-                    <TableCell>{formatDate(interval.last_appointment)}</TableCell>
-                    <TableCell>{formatDate(interval.next_suggested_date)}</TableCell>
-                    <TableCell>
-                      <Typography color={status.color}>{status.text}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <IconButton 
-                        color="primary" 
-                        onClick={() => handleOpenDialog(interval)}
-                        size="small"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton 
-                        color="error" 
-                        onClick={() => handleDelete(interval.id)}
-                        size="small"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            border: 1, 
+            borderColor: 'divider',
+            borderRadius: 2,
+            overflow: 'hidden'
+          }}
+        >
+          {intervals.length > 0 ? (
+            <TableContainer>
+              <Table>
+                <TableHead sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
+                }}>
+                  <TableRow>
+                    <TableCell>Typ</TableCell>
+                    <TableCell>Intervall</TableCell>
+                    <TableCell>Letzter Termin</TableCell>
+                    <TableCell>Nächster Termin</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="right">Aktionen</TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {intervals.map((interval) => {
+                    const status = getStatus(interval.next_appointment);
+                    return (
+                      <TableRow 
+                        key={interval.id}
+                        sx={{ 
+                          '&:last-child td, &:last-child th': { border: 0 },
+                          '&:hover': { 
+                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
+                          }
+                        }}
+                      >
+                        <TableCell component="th" scope="row">
+                          {interval.interval_type}
+                        </TableCell>
+                        <TableCell>{interval.interval_months} Monate</TableCell>
+                        <TableCell>{formatDate(interval.last_appointment)}</TableCell>
+                        <TableCell>{formatDate(interval.next_appointment)}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={status.text} 
+                            color={status.color} 
+                            size="small" 
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton 
+                            aria-label="bearbeiten" 
+                            onClick={() => handleOpenDialog(interval)}
+                            size="small"
+                            sx={{ mr: 1 }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton 
+                            aria-label="löschen" 
+                            onClick={() => handleDelete(interval.id)}
+                            size="small"
+                            color="error"
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box sx={{ 
+              p: 4, 
+              textAlign: 'center',
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
+            }}>
+              <Typography variant="body1" color="text.secondary">
+                Keine Gesundheitsintervalle definiert. Klicke auf "Neues Intervall", um ein Intervall hinzuzufügen.
+              </Typography>
+              <Button 
+                variant="contained" 
+                startIcon={<AddIcon />} 
+                onClick={() => handleOpenDialog()}
+                sx={{ mt: 2 }}
+              >
+                Neues Intervall
+              </Button>
+            </Box>
+          )}
+        </Paper>
       )}
       
-      {/* Dialog zum Erstellen/Bearbeiten von Intervallen */}
+      {/* Dialog zum Hinzufügen/Bearbeiten eines Intervalls */}
       <Dialog 
         open={openDialog} 
-        onClose={handleCloseDialog} 
-        maxWidth="sm" 
+        onClose={handleCloseDialog}
         fullWidth
-        disableRestoreFocus
+        maxWidth="sm"
       >
         <DialogTitle>
-          {editingInterval ? 'Gesundheitsintervall bearbeiten' : 'Neues Gesundheitsintervall'}
+          {editingInterval ? 'Intervall bearbeiten' : 'Neues Intervall hinzufügen'}
+          <IconButton
+            aria-label="close"
+            onClick={handleCloseDialog}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 2 }}>
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <TextField
-              select
+              label="Typ des Intervalls"
+              variant="outlined"
               fullWidth
-              label="Typ"
-              name="interval_type"
               value={formData.interval_type}
               onChange={handleFormChange}
-              margin="normal"
+              name="interval_type"
+              placeholder="z.B. Zahnarzt, Augenarzt, Bluttest"
               required
-            >
-              {intervalTypes.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
+            />
             
             <TextField
-              select
+              label="Intervall in Monaten"
+              variant="outlined"
               fullWidth
-              label="Intervall"
-              name="interval_months"
+              type="number"
               value={formData.interval_months}
               onChange={handleFormChange}
-              margin="normal"
+              name="interval_months"
+              InputProps={{ inputProps: { min: 1, max: 60 } }}
               required
-            >
-              {intervalOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
+            />
             
             <LocalizationProvider dateAdapter={AdapterLuxon} adapterLocale={locale}>
               <DatePicker
                 label="Letzter Termin"
                 value={formData.last_appointment}
                 onChange={handleDateChange}
-                disableMaskedInput
-                renderInput={(params) => <TextField {...params} fullWidth margin="normal" required />}
-                sx={{ width: '100%', mt: 2 }}
+                renderInput={(params) => <TextField {...params} fullWidth required />}
+                disableFuture
               />
             </LocalizationProvider>
+            
+            {formData.last_appointment && formData.interval_months && (
+              <Box sx={{ 
+                p: 2, 
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                borderRadius: 1
+              }}>
+                <Typography variant="body2">
+                  Nächster empfohlener Termin: <strong>{formatDate(DateTime.fromISO(formData.last_appointment.toISO()).plus({ months: formData.interval_months }))}</strong>
+                </Typography>
+              </Box>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Abbrechen</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">
-            Speichern
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained" 
+            disabled={!formData.interval_type || !formData.interval_months || !formData.last_appointment}
+          >
+            {editingInterval ? 'Speichern' : 'Hinzufügen'}
           </Button>
         </DialogActions>
       </Dialog>
       
-      {/* Snackbar für Benachrichtigungen */}
+      {/* Snackbar für Feedback-Meldungen */}
       {snackbar.open && (
         <Alert 
           severity={snackbar.severity} 
@@ -411,7 +458,7 @@ const HealthIntervals = () => {
             zIndex: 9999,
             minWidth: 300
           }}
-          onClose={handleCloseSnackbar}
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
         >
           {snackbar.message}
         </Alert>

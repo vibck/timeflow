@@ -12,16 +12,19 @@ import {
   Alert,
   Divider,
   FormControlLabel,
-  Switch
+  Switch,
+  useTheme
 } from '@mui/material';
 import api from '../utils/api';
 import TelegramConnect from '../components/Settings/TelegramConnect';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme as useAppTheme } from '../contexts/ThemeContext';
 
 const Settings = () => {
-  const { mode, toggleTheme } = useTheme();
+  const theme = useTheme();
+  const { mode, toggleTheme } = useAppTheme();
   const [settings, setSettings] = useState({
     state: 'BY',
+    showHolidays: true,
     notificationPreferences: {
       email: true,
       telegram: false
@@ -73,6 +76,7 @@ const Settings = () => {
         // Wenn keine Benachrichtigungspräferenzen in den Einstellungen vorhanden sind, verwende die Standardwerte
         const loadedSettings = {
           ...settingsResponse.data,
+          showHolidays: settingsResponse.data.showHolidays !== undefined ? settingsResponse.data.showHolidays : true,
           notificationPreferences: settingsResponse.data.notificationPreferences || {
             email: true,
             telegram: false
@@ -149,12 +153,22 @@ const Settings = () => {
     }
   };
 
-  // Behandle Änderungen an den Einstellungen
+  // Behandle Änderungen an den Formularfeldern
   const handleChange = (event) => {
-    setSettings({
-      ...settings,
-      [event.target.name]: event.target.value
-    });
+    const { name, value } = event.target;
+    setSettings(prevSettings => ({
+      ...prevSettings,
+      [name]: value
+    }));
+  };
+
+  // Behandle Änderungen an den Schaltern
+  const handleSwitchChange = (event) => {
+    const { name, checked } = event.target;
+    setSettings(prevSettings => ({
+      ...prevSettings,
+      [name]: checked
+    }));
   };
   
   // Behandle Änderungen an den Benachrichtigungspräferenzen
@@ -192,10 +206,28 @@ const Settings = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>Einstellungen</Typography>
+    <Box>
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          mb: 3
+        }}
+      >
+        <Typography variant="h4">Einstellungen</Typography>
+      </Box>
       
-      <Paper sx={{ p: 3, mb: 3 }}>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, 
+          mb: 3, 
+          border: 1, 
+          borderColor: 'divider',
+          borderRadius: 2
+        }}
+      >
         <Typography variant="h6" gutterBottom>Erscheinungsbild</Typography>
         
         <Grid container spacing={3}>
@@ -226,7 +258,6 @@ const Settings = () => {
               <Select
                 labelId="state-label"
                 id="state"
-                name="state"
                 value={settings.state}
                 label="Bundesland"
                 onChange={handleChange}
@@ -239,14 +270,38 @@ const Settings = () => {
               </Select>
             </FormControl>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Das ausgewählte Bundesland wird für die Anzeige von Feiertagen im Kalender verwendet.
+              Wähle dein Bundesland für die korrekte Anzeige von Feiertagen.
+            </Typography>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.showHolidays}
+                  onChange={handleSwitchChange}
+                />
+              }
+              label="Feiertage anzeigen"
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Zeige Feiertage im Kalender an.
             </Typography>
           </Grid>
         </Grid>
-        
-        <Divider sx={{ my: 3 }} />
-        
-        <Typography variant="h6" gutterBottom>Benachrichtigungseinstellungen</Typography>
+      </Paper>
+      
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, 
+          mb: 3, 
+          border: 1, 
+          borderColor: 'divider',
+          borderRadius: 2
+        }}
+      >
+        <Typography variant="h6" gutterBottom>Benachrichtigungen</Typography>
         
         <Grid container spacing={3}>
           <Grid item xs={12}>
@@ -255,11 +310,13 @@ const Settings = () => {
                 <Switch
                   checked={settings.notificationPreferences.email}
                   onChange={handleNotificationPreferenceChange}
-                  name="email"
                 />
               }
               label="E-Mail-Benachrichtigungen"
             />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Erhalte Erinnerungen per E-Mail.
+            </Typography>
           </Grid>
           
           <Grid item xs={12}>
@@ -268,35 +325,48 @@ const Settings = () => {
                 <Switch
                   checked={settings.notificationPreferences.telegram}
                   onChange={handleNotificationPreferenceChange}
-                  name="telegram"
                   disabled={!telegramConnected}
                 />
               }
               label="Telegram-Benachrichtigungen"
             />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Erhalte Erinnerungen über Telegram.
+            </Typography>
             
-            {!telegramConnected && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-                Um Telegram-Benachrichtigungen zu erhalten, verbinde deinen Account mit Telegram.
-              </Typography>
-            )}
+            <Box sx={{ 
+              mt: 2, 
+              p: 2, 
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+              borderRadius: 1
+            }}>
+              <TelegramConnect 
+                onConnected={(connected, botName) => {
+                  setTelegramConnected(connected);
+                  setTelegramBotName(botName);
+                  
+                  if (connected && !settings.notificationPreferences.telegram) {
+                    // Aktiviere Telegram-Benachrichtigungen automatisch, wenn verbunden
+                    handleNotificationPreferenceChange({ target: { checked: true } });
+                  }
+                }}
+              />
+            </Box>
           </Grid>
         </Grid>
-        
-        <Box sx={{ mt: 3 }}>
-          <Button 
-            variant="contained" 
-            color="primary" 
-            onClick={handleSaveSettings}
-          >
-            Einstellungen speichern
-          </Button>
-        </Box>
       </Paper>
       
-      {/* Telegram-Verbindung Komponente */}
-      <TelegramConnect />
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+        <Button 
+          variant="contained" 
+          onClick={handleSaveSettings}
+          disabled={loading}
+        >
+          Einstellungen speichern
+        </Button>
+      </Box>
       
+      {/* Snackbar für Feedback-Meldungen */}
       {snackbar.open && (
         <Alert 
           severity={snackbar.severity} 
@@ -308,7 +378,7 @@ const Settings = () => {
             zIndex: 9999,
             minWidth: 300
           }}
-          onClose={handleCloseSnackbar}
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
         >
           {snackbar.message}
         </Alert>

@@ -18,7 +18,8 @@ import {
   Dashboard as DashboardIcon,
   Event as EventIcon,
   Healing as HealingIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  CalendarViewMonth as CalendarViewMonthIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 

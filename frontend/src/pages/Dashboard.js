@@ -12,13 +12,15 @@ import {
   Chip,
   Button,
   CircularProgress,
-  Alert
+  Alert,
+  useTheme
 } from '@mui/material';
 import { 
   Notifications as NotificationsIcon,
   Event as EventIcon,
   AccessTime as TimeIcon,
-  Healing as HealingIcon
+  Healing as HealingIcon,
+  Add as AddIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { DateTime } from 'luxon';
@@ -29,6 +31,7 @@ import api from '../utils/api';
 const locale = 'de';
 
 const Dashboard = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [upcomingReminders, setUpcomingReminders] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
@@ -167,7 +170,16 @@ const Dashboard = () => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>Dashboard</Typography>
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          mb: 3
+        }}
+      >
+        <Typography variant="h4">Dashboard</Typography>
+      </Box>
       
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       
@@ -179,21 +191,50 @@ const Dashboard = () => {
         <Grid container spacing={3}>
           {/* Anstehende Erinnerungen */}
           <Grid item xs={12} md={6}>
-            <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <NotificationsIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Anstehende Erinnerungen</Typography>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 3, 
+                height: '100%', 
+                border: 1, 
+                borderColor: 'divider',
+                borderRadius: 2
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <NotificationsIcon color="primary" sx={{ mr: 1 }} />
+                  <Typography variant="h6">Anstehende Erinnerungen</Typography>
+                </Box>
+                <Button 
+                  variant="outlined" 
+                  size="small"
+                  onClick={() => navigate('/calendar')}
+                  startIcon={<EventIcon />}
+                >
+                  Zum Kalender
+                </Button>
               </Box>
               
               {upcomingReminders.length > 0 ? (
-                <List>
+                <List sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  borderRadius: 1,
+                  overflow: 'hidden'
+                }}>
                   {upcomingReminders.map((reminder, index) => (
                     <React.Fragment key={reminder.id}>
                       {index > 0 && <Divider />}
                       <ListItem 
                         component="div"
                         onClick={() => navigate(`/events/${reminder.event_id}`)}
-                        sx={{ py: 1.5, cursor: 'pointer' }}
+                        sx={{ 
+                          py: 1.5, 
+                          cursor: 'pointer',
+                          '&:hover': { 
+                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)'
+                          }
+                        }}
                       >
                         <ListItemIcon>
                           <TimeIcon />
@@ -223,40 +264,66 @@ const Dashboard = () => {
                   ))}
                 </List>
               ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Keine anstehenden Erinnerungen.
-                </Typography>
+                <Box sx={{ 
+                  p: 3, 
+                  textAlign: 'center',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  borderRadius: 1
+                }}>
+                  <Typography variant="body1" color="text.secondary">
+                    Keine anstehenden Erinnerungen.
+                  </Typography>
+                </Box>
               )}
-              
-              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button 
-                  variant="outlined" 
-                  size="small"
-                  onClick={() => navigate('/calendar')}
-                >
-                  Zum Kalender
-                </Button>
-              </Box>
             </Paper>
           </Grid>
           
           {/* Anstehende Termine */}
           <Grid item xs={12} md={6}>
-            <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <EventIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Anstehende Termine</Typography>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 3, 
+                height: '100%', 
+                border: 1, 
+                borderColor: 'divider',
+                borderRadius: 2
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <EventIcon color="primary" sx={{ mr: 1 }} />
+                  <Typography variant="h6">Anstehende Termine</Typography>
+                </Box>
+                <Button 
+                  variant="contained" 
+                  size="small"
+                  onClick={() => navigate('/events/new')}
+                  startIcon={<AddIcon />}
+                >
+                  Neuer Termin
+                </Button>
               </Box>
               
               {upcomingEvents.length > 0 ? (
-                <List>
+                <List sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  borderRadius: 1,
+                  overflow: 'hidden'
+                }}>
                   {upcomingEvents.map((event, index) => (
                     <React.Fragment key={event.id}>
                       {index > 0 && <Divider />}
                       <ListItem 
                         component="div"
                         onClick={() => navigate(`/events/${event.id}`)}
-                        sx={{ py: 1.5, cursor: 'pointer' }}
+                        sx={{ 
+                          py: 1.5, 
+                          cursor: 'pointer',
+                          '&:hover': { 
+                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)'
+                          }
+                        }}
                       >
                         <ListItemIcon>
                           <EventIcon />
@@ -290,78 +357,36 @@ const Dashboard = () => {
                   ))}
                 </List>
               ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Keine anstehenden Termine in den nächsten 7 Tagen.
-                </Typography>
+                <Box sx={{ 
+                  p: 3, 
+                  textAlign: 'center',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  borderRadius: 1
+                }}>
+                  <Typography variant="body1" color="text.secondary">
+                    Keine anstehenden Termine in den nächsten 7 Tagen.
+                  </Typography>
+                </Box>
               )}
-              
-              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button 
-                  variant="outlined" 
-                  size="small"
-                  onClick={() => navigate('/events/new')}
-                >
-                  Neuen Termin erstellen
-                </Button>
-              </Box>
             </Paper>
           </Grid>
 
           {/* Gesundheitsintervalle */}
-          <Grid item xs={12} md={6}>
-            <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <HealingIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Gesundheitsintervalle</Typography>
-              </Box>
-              
-              {healthIntervals.length > 0 ? (
-                <List>
-                  {healthIntervals.map((interval, index) => {
-                    const status = getHealthIntervalStatus(interval.next_suggested_date);
-                    return (
-                      <React.Fragment key={interval.id}>
-                        {index > 0 && <Divider />}
-                        <ListItem 
-                          component="div"
-                          onClick={() => navigate('/health-intervals')}
-                          sx={{ py: 1.5, cursor: 'pointer' }}
-                        >
-                          <ListItemIcon>
-                            <HealingIcon />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={interval.interval_type}
-                            secondary={
-                              <>
-                                <Typography variant="body2" component="span">
-                                  Letzter Termin: {formatDate(interval.last_appointment)}
-                                </Typography>
-                                <br />
-                                <Typography variant="body2" component="span">
-                                  Nächster empfohlener Termin: {formatDate(interval.next_suggested_date)}
-                                </Typography>
-                              </>
-                            }
-                          />
-                          <Chip 
-                            label={status.text} 
-                            color={status.color}
-                            size="small"
-                            sx={{ ml: 1 }}
-                          />
-                        </ListItem>
-                      </React.Fragment>
-                    );
-                  })}
-                </List>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Keine Gesundheitsintervalle gefunden.
-                </Typography>
-              )}
-              
-              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+          <Grid item xs={12}>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 3, 
+                border: 1, 
+                borderColor: 'divider',
+                borderRadius: 2
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <HealingIcon color="primary" sx={{ mr: 1 }} />
+                  <Typography variant="h6">Gesundheitsintervalle</Typography>
+                </Box>
                 <Button 
                   variant="outlined" 
                   size="small"
@@ -370,6 +395,66 @@ const Dashboard = () => {
                   Alle anzeigen
                 </Button>
               </Box>
+              
+              {healthIntervals.length > 0 ? (
+                <List sx={{ 
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  borderRadius: 1,
+                  overflow: 'hidden'
+                }}>
+                  {healthIntervals.map((interval, index) => (
+                    <React.Fragment key={interval.id}>
+                      {index > 0 && <Divider />}
+                      <ListItem 
+                        component="div"
+                        onClick={() => navigate('/health-intervals')}
+                        sx={{ 
+                          py: 1.5, 
+                          cursor: 'pointer',
+                          '&:hover': { 
+                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)'
+                          }
+                        }}
+                      >
+                        <ListItemIcon>
+                          <HealingIcon />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={interval.interval_type}
+                          secondary={
+                            <>
+                              <Typography variant="body2" component="span">
+                                Letzter Termin: {formatDate(interval.last_appointment)}
+                              </Typography>
+                              <br />
+                              <Typography variant="body2" component="span">
+                                Nächster Termin: {formatDate(interval.next_appointment)}
+                              </Typography>
+                            </>
+                          }
+                        />
+                        <Chip 
+                          label={getHealthIntervalStatus(interval.next_appointment).text} 
+                          color={getHealthIntervalStatus(interval.next_appointment).color}
+                          size="small"
+                          sx={{ ml: 1 }}
+                        />
+                      </ListItem>
+                    </React.Fragment>
+                  ))}
+                </List>
+              ) : (
+                <Box sx={{ 
+                  p: 3, 
+                  textAlign: 'center',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  borderRadius: 1
+                }}>
+                  <Typography variant="body1" color="text.secondary">
+                    Keine Gesundheitsintervalle definiert.
+                  </Typography>
+                </Box>
+              )}
             </Paper>
           </Grid>
         </Grid>
