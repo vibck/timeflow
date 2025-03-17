@@ -165,7 +165,6 @@ const CalendarView = () => {
   // eslint-disable-next-line no-unused-vars
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(false);
-  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState(null);
   const [view, setView] = useState('month');
   const navigate = useNavigate();
