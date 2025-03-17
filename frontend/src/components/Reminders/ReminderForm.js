@@ -17,7 +17,8 @@ import {
   DialogTitle,
   Alert,
   Tooltip,
-  TextField
+  TextField,
+  useTheme
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -30,6 +31,7 @@ import api from '../../utils/api';
 const locale = 'de';
 
 const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderChange, readOnly = false }) => {
+  const theme = useTheme();
   const [reminderTime, setReminderTime] = useState(DateTime.fromISO(eventStartTime).minus({ minutes: 30 }));
   const [presetOption, setPresetOption] = useState('30min');
   const [loading, setLoading] = useState(false);
@@ -305,7 +307,11 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
       )}
       
       {existingReminders && existingReminders.length > 0 ? (
-        <List sx={{ bgcolor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
+        <List sx={{ 
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f5f5f5', 
+          borderRadius: 1, 
+          mb: 2 
+        }}>
           {existingReminders
             .sort((a, b) => a.reminder_time.localeCompare(b.reminder_time))
             .map(reminder => (
@@ -358,7 +364,12 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
             Möchtest du diese Erinnerung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
           </DialogContentText>
           {reminderToDelete && (
-            <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+            <Box sx={{ 
+              mt: 2, 
+              p: 2, 
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#f5f5f5', 
+              borderRadius: 1 
+            }}>
               <Typography variant="subtitle2">
                 Erinnerungszeit: {formatReminderTime(DateTime.fromISO(reminderToDelete.reminder_time))}
               </Typography>
