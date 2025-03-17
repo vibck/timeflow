@@ -16,8 +16,10 @@ import {
 } from '@mui/material';
 import api from '../utils/api';
 import TelegramConnect from '../components/Settings/TelegramConnect';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Settings = () => {
+  const { mode, toggleTheme } = useTheme();
   const [settings, setSettings] = useState({
     state: 'BY',
     notificationPreferences: {
@@ -193,6 +195,27 @@ const Settings = () => {
       <Typography variant="h4" gutterBottom>Einstellungen</Typography>
       
       <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>Erscheinungsbild</Typography>
+        
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={mode === 'dark'}
+                  onChange={toggleTheme}
+                />
+              }
+              label={mode === 'dark' ? 'Dunkelmodus' : 'Hellmodus'}
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Wähle zwischen Hell- und Dunkelmodus für die Benutzeroberfläche.
+            </Typography>
+          </Grid>
+        </Grid>
+        
+        <Divider sx={{ my: 3 }} />
+        
         <Typography variant="h6" gutterBottom>Allgemeine Einstellungen</Typography>
         
         <Grid container spacing={3}>
