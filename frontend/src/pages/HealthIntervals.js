@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Typography, 
   Box, 
@@ -18,8 +18,7 @@ import {
   MenuItem,
   IconButton,
   CircularProgress,
-  Alert,
-  Snackbar
+  Alert
 } from '@mui/material';
 import { 
   Add as AddIcon,
@@ -210,12 +209,23 @@ const HealthIntervals = () => {
   };
 
   // Snackbar schließen
-  const handleCloseSnackbar = () => {
-    setSnackbar({
-      ...snackbar,
+  const handleCloseSnackbar = useCallback(() => {
+    setSnackbar(prevState => ({
+      ...prevState,
       open: false
-    });
-  };
+    }));
+  }, []);
+
+  // Automatische Ausblendung der Benachrichtigung
+  useEffect(() => {
+    if (snackbar.open) {
+      const timer = setTimeout(() => {
+        handleCloseSnackbar();
+      }, 6000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [snackbar.open, handleCloseSnackbar]);
 
   // Formatiere Datum für die Anzeige
   const formatDate = (date) => {
@@ -374,6 +384,7 @@ const HealthIntervals = () => {
                 label="Letzter Termin"
                 value={formData.last_appointment}
                 onChange={handleDateChange}
+                disableMaskedInput
                 renderInput={(params) => <TextField {...params} fullWidth margin="normal" required />}
                 sx={{ width: '100%', mt: 2 }}
               />
@@ -389,15 +400,22 @@ const HealthIntervals = () => {
       </Dialog>
       
       {/* Snackbar für Benachrichtigungen */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+      {snackbar.open && (
+        <Alert 
+          severity={snackbar.severity} 
+          sx={{ 
+            position: 'fixed', 
+            bottom: 16, 
+            left: '50%', 
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            minWidth: 300
+          }}
+          onClose={handleCloseSnackbar}
+        >
           {snackbar.message}
         </Alert>
-      </Snackbar>
+      )}
     </Box>
   );
 };
