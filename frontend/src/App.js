@@ -14,6 +14,7 @@ import EventForm from './pages/EventForm';
 import HealthIntervals from './pages/HealthIntervals';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
+import AuthCallback from './pages/AuthCallback';
 
 // Layout-Komponente
 import AnimatedLayout from './components/Layout/AnimatedLayout';
@@ -101,6 +102,7 @@ const AppWithTheme = () => {
           {/* Öffentliche Routen */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           
           {/* Geschützte Routen */}
           <Route path="/" element={
