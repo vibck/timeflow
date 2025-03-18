@@ -24,7 +24,7 @@ router.post('/', async (req, res) => {
     end_time,
     location,
     event_type,
-    recurrence_rule,
+    recurrence_rule
   } = req.body;
 
   try {
@@ -41,7 +41,7 @@ router.post('/', async (req, res) => {
         end_time,
         location,
         event_type,
-        recurrence_rule,
+        recurrence_rule
       ]
     );
 
@@ -61,7 +61,7 @@ router.put('/:id', async (req, res) => {
     end_time,
     location,
     event_type,
-    recurrence_rule,
+    recurrence_rule
   } = req.body;
 
   try {
@@ -90,7 +90,7 @@ router.put('/:id', async (req, res) => {
         event_type,
         recurrence_rule,
         id,
-        req.user.id,
+        req.user.id
       ]
     );
 
@@ -125,7 +125,7 @@ router.delete('/:id', async (req, res) => {
     // Dann lösche das Event
     await client.query('DELETE FROM events WHERE id = $1 AND user_id = $2', [
       id,
-      req.user.id,
+      req.user.id
     ]);
     
     await client.query('COMMIT');

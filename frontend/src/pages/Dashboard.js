@@ -54,7 +54,7 @@ const Dashboard = () => {
         
         // Lade Details zu den zugehörigen Terminen
         const remindersWithEvents = await Promise.all(
-          futureReminders.map(async (reminder) => {
+          futureReminders.map(async reminder => {
             try {
               const eventResponse = await api.get(`/api/events/${reminder.event_id}`);
               return {
@@ -109,23 +109,23 @@ const Dashboard = () => {
   }, []);
   
   // Formatiere Datum für die Anzeige (ohne Uhrzeit)
-  const formatDate = (date) => {
+  const formatDate = date => {
     return DateTime.fromISO(date).toFormat('dd.MM.yyyy');
   };
 
   // Formatiere Datum und Uhrzeit für die Anzeige
-  const formatDateTime = (dateTime) => {
+  const formatDateTime = dateTime => {
     const date = DateTime.fromISO(dateTime);
     return date.toFormat('dd.MM.yyyy HH:mm');
   };
   
   // Berechne den relativen Zeitpunkt für die Anzeige
-  const getRelativeTime = (dateTime) => {
+  const getRelativeTime = dateTime => {
     return DateTime.fromISO(dateTime).toRelative();
   };
   
   // Bestimme die Farbe basierend auf der Dringlichkeit
-  const getReminderColor = (reminderTime) => {
+  const getReminderColor = reminderTime => {
     const hours = DateTime.fromISO(reminderTime).diffNow('hour').hours;
     
     if (hours < 1) return 'error';
@@ -134,7 +134,7 @@ const Dashboard = () => {
   };
   
   // Bestimme die Farbe basierend auf dem Termintyp
-  const getEventTypeColor = (eventType) => {
+  const getEventTypeColor = eventType => {
     switch (eventType) {
       case 'work': return 'primary';
       case 'health': return 'success';
@@ -144,7 +144,7 @@ const Dashboard = () => {
   };
   
   // Übersetze den Termintyp
-  const translateEventType = (eventType) => {
+  const translateEventType = eventType => {
     switch (eventType) {
       case 'work': return 'Arbeit';
       case 'health': return 'Gesundheit';
@@ -154,7 +154,7 @@ const Dashboard = () => {
   };
 
   // Berechne den Status eines Gesundheitsintervalls
-  const getHealthIntervalStatus = (nextDate) => {
+  const getHealthIntervalStatus = nextDate => {
     const now = DateTime.now();
     const next = DateTime.fromISO(nextDate);
     const diffDays = next.diff(now, 'day').days;

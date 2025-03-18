@@ -33,7 +33,7 @@ export const ThemeProvider = ({ children }) => {
     }
     
     // Höre auf Änderungen der Systemeinstellung
-    const handleChange = (e) => {
+    const handleChange = e => {
       if (!localStorage.getItem('themeMode')) {
         setMode(e.matches ? 'dark' : 'light');
       }

@@ -37,7 +37,7 @@ const Layout = ({ children }) => {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <AppBar position="fixed" sx={{ zIndex: theme => theme.zIndex.drawer + 1 }}>
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             TimeFlow
@@ -52,7 +52,7 @@ const Layout = ({ children }) => {
         sx={{
           width: drawerWidth,
           flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
+          '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box' }
         }}
       >
         <Toolbar />

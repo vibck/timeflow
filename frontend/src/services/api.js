@@ -14,29 +14,29 @@ if (token) {
 // Events API
 export const eventsApi = {
   getAll: () => axios.get('/events'),
-  getById: (id) => axios.get(`/events/${id}`),
-  create: (data) => axios.post('/events', data),
+  getById: id => axios.get(`/events/${id}`),
+  create: data => axios.post('/events', data),
   update: (id, data) => axios.put(`/events/${id}`, data),
-  delete: (id) => axios.delete(`/events/${id}`),
+  delete: id => axios.delete(`/events/${id}`)
 };
 
 // Reminders API
 export const remindersApi = {
-  getByEventId: (eventId) => axios.get(`/reminders/event/${eventId}`),
-  create: (data) => axios.post('/reminders', data),
-  delete: (id) => axios.delete(`/reminders/${id}`),
+  getByEventId: eventId => axios.get(`/reminders/event/${eventId}`),
+  create: data => axios.post('/reminders', data),
+  delete: id => axios.delete(`/reminders/${id}`)
 };
 
 // Health Intervals API
 export const healthIntervalsApi = {
   getAll: () => axios.get('/health-intervals'),
-  create: (data) => axios.post('/health-intervals', data),
+  create: data => axios.post('/health-intervals', data),
   update: (id, data) => axios.put(`/health-intervals/${id}`, data),
-  delete: (id) => axios.delete(`/health-intervals/${id}`),
+  delete: id => axios.delete(`/health-intervals/${id}`)
 };
 
 // Telegram API
 export const telegramApi = {
   getConnection: () => axios.get('/telegram/connection'),
-  deleteConnection: () => axios.delete('/telegram/connection'),
+  deleteConnection: () => axios.delete('/telegram/connection')
 };

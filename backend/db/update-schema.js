@@ -7,7 +7,7 @@ const pool = new Pool({
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
   password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
+  port: process.env.DB_PORT
 });
 
 async function updateSchema() {
@@ -37,9 +37,9 @@ async function updateSchema() {
 updateSchema()
   .then(() => {
     console.log('Skript erfolgreich abgeschlossen.');
-    process.exit(0);
+    return true;
   })
   .catch((error) => {
     console.error('Skript fehlgeschlagen:', error);
-    process.exit(1);
+    throw error;
   }); 

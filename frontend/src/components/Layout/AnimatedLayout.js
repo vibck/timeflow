@@ -70,7 +70,7 @@ const AnimatedLayout = ({ children }) => {
   ];
 
   // Hilfsfunktion zum Überprüfen des aktiven Links
-  const isActiveLink = (href) => {
+  const isActiveLink = href => {
     if (href === '/') {
       return location.pathname === '/';
     }
@@ -89,7 +89,7 @@ const AnimatedLayout = ({ children }) => {
       <AppBar 
         position="fixed" 
         sx={{ 
-          zIndex: (theme) => theme.zIndex.drawer + 1,
+          zIndex: theme => theme.zIndex.drawer + 1,
           bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.8)',
           color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
           boxShadow: 'none',
@@ -117,7 +117,7 @@ const AnimatedLayout = ({ children }) => {
             sx={{ 
               borderRadius: '20px',
               '&:hover': {
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'
               }
             }}
           >

@@ -14,7 +14,7 @@ import {
   startOfToday,
   startOfWeek,
   addDays,
-  subDays,
+  subDays
 } from 'date-fns';
 import { de } from 'date-fns/locale';
 import {
@@ -81,20 +81,20 @@ const FullScreenCalendar = ({ data = [], onAddEvent, onSelectEvent, onSelectDay 
 
   const days = eachDayOfInterval({
     start: startOfWeek(firstDayCurrentMonth, { locale: de }),
-    end: endOfWeek(endOfMonth(firstDayCurrentMonth), { locale: de }),
+    end: endOfWeek(endOfMonth(firstDayCurrentMonth), { locale: de })
   });
 
   // Hilfsfunktion für die Bestimmung der Spaltenposition
-  const getColStartClass = (day) => {
+  const getColStartClass = day => {
     const dayOfWeek = getDay(day);
     const colStartClasses = [
-      "", // Sonntag (0) - keine Verschiebung
+      '', // Sonntag (0) - keine Verschiebung
       "gridColumn: '2 / 3'", // Montag (1)
       "gridColumn: '3 / 4'", // Dienstag (2)
       "gridColumn: '4 / 5'", // Mittwoch (3)
       "gridColumn: '5 / 6'", // Donnerstag (4)
       "gridColumn: '6 / 7'", // Freitag (5)
-      "gridColumn: '7 / 8'", // Samstag (6)
+      "gridColumn: '7 / 8'" // Samstag (6)
     ];
     return colStartClasses[dayOfWeek];
   };
@@ -136,14 +136,14 @@ const FullScreenCalendar = ({ data = [], onAddEvent, onSelectEvent, onSelectDay 
     setSelectedDay(today);
   };
 
-  const handleDayClick = (day) => {
+  const handleDayClick = day => {
     setSelectedDay(day);
     if (onSelectDay) {
       onSelectDay(day);
     }
   };
 
-  const handleEventClick = (event) => {
+  const handleEventClick = event => {
     if (onSelectEvent) {
       onSelectEvent(event);
     }
@@ -285,7 +285,7 @@ const FullScreenCalendar = ({ data = [], onAddEvent, onSelectEvent, onSelectDay 
                 {events.map(event => (
                   <Box
                     key={event.id}
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       handleEventClick(event);
                     }}
@@ -388,13 +388,13 @@ const FullScreenCalendar = ({ data = [], onAddEvent, onSelectEvent, onSelectDay 
               borderColor: 'divider'
             }}
           >
-            {days.map((day, dayIdx) => {
+            {days.map(day => {
               // Finde Ereignisse für diesen Tag
               const dayEvents = data.filter(item => isSameDay(item.day, day));
               const events = dayEvents.length > 0 ? dayEvents[0].events : [];
               
               // Bestimme die Spaltenposition für den ersten Tag des Monats
-              const gridColumnStyle = dayIdx === 0 ? { sx: { [getColStartClass(day)]: true } } : {};
+              const gridColumnStyle = day === 0 ? { sx: { [getColStartClass(day)]: true } } : {};
 
               return (
                 <Box
@@ -445,7 +445,7 @@ const FullScreenCalendar = ({ data = [], onAddEvent, onSelectEvent, onSelectDay 
                     {events.slice(0, 1).map(event => (
                       <Box
                         key={event.id}
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
                           handleEventClick(event);
                         }}
@@ -515,7 +515,7 @@ const FullScreenCalendar = ({ data = [], onAddEvent, onSelectEvent, onSelectDay 
               borderColor: 'divider'
             }}
           >
-            {days.map((day, dayIdx) => {
+            {days.map(day => {
               // Finde Ereignisse für diesen Tag
               const dayEvents = data.filter(item => isSameDay(item.day, day));
               const events = dayEvents.length > 0 ? dayEvents[0].events : [];

@@ -19,12 +19,12 @@ const Register = () => {
     return <Navigate to="/" />;
   }
 
-  const validateEmail = (email) => {
+  const validateEmail = email => {
     const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     return re.test(email);
   };
 
-  const handleRegister = async (e) => {
+  const handleRegister = async e => {
     e.preventDefault();
     setError('');
     setEmailError('');
@@ -73,7 +73,7 @@ const Register = () => {
           marginTop: 8,
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
+          alignItems: 'center'
         }}
       >
         <Paper
@@ -83,7 +83,7 @@ const Register = () => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            width: '100%',
+            width: '100%'
           }}
         >
           <Typography component="h1" variant="h4" gutterBottom>
@@ -106,7 +106,7 @@ const Register = () => {
               autoComplete="name"
               autoFocus
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
             />
             <TextField
               margin="normal"
@@ -118,7 +118,7 @@ const Register = () => {
               autoComplete="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               error={!!emailError}
               helperText={emailError}
             />
@@ -132,7 +132,7 @@ const Register = () => {
               id="password"
               autoComplete="new-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               error={!!passwordError}
             />
             <TextField
@@ -145,7 +145,7 @@ const Register = () => {
               id="confirmPassword"
               autoComplete="new-password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={e => setConfirmPassword(e.target.value)}
               error={!!passwordError}
               helperText={passwordError}
             />

@@ -59,11 +59,9 @@ if (require.main === module) {
   up()
     .then(() => {
       console.log('Migration abgeschlossen');
-      process.exit(0);
     })
     .catch(err => {
       console.error('Migration fehlgeschlagen:', err);
-      process.exit(1);
     });
 }
 

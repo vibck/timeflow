@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
 
 // E-Mail-Validierungsfunktion außerhalb der Komponente definieren
-const validateEmail = (email) => {
+const validateEmail = email => {
   const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return re.test(email);
 };
@@ -35,7 +35,7 @@ const Login = () => {
     window.location.href = `${process.env.REACT_APP_API_URL}/api/auth/google`;
   };
 
-  const handleLogin = async (e) => {
+  const handleLogin = async e => {
     e.preventDefault();
     setError('');
     setEmailError('');
@@ -75,7 +75,7 @@ const Login = () => {
           marginTop: 8,
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
+          alignItems: 'center'
         }}
       >
         <Paper
@@ -85,7 +85,7 @@ const Login = () => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            width: '100%',
+            width: '100%'
           }}
         >
           <Typography component="h1" variant="h4" gutterBottom>
@@ -121,7 +121,7 @@ const Login = () => {
                 variant="outlined"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 margin="normal"
                 required
                 error={!!emailError}
@@ -133,7 +133,7 @@ const Login = () => {
                 variant="outlined"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 margin="normal"
                 required
               />

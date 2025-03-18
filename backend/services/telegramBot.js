@@ -42,7 +42,7 @@ const start = () => {
         
         // Prüfe, ob Benutzer existiert
         const userResult = await db.query('SELECT * FROM users WHERE email = $1', [
-          email,
+          email
         ]);
 
         if (userResult.rows.length === 0) {
@@ -101,7 +101,7 @@ const start = () => {
     try {
       // Prüfe, ob Benutzer existiert
       const userResult = await db.query('SELECT * FROM users WHERE email = $1', [
-        email,
+        email
       ]);
 
       if (userResult.rows.length === 0) {
@@ -185,7 +185,7 @@ const start = () => {
         const date = new Date(event.start_time).toLocaleDateString('de-DE');
         const time = new Date(event.start_time).toLocaleTimeString('de-DE', {
           hour: '2-digit',
-          minute: '2-digit',
+          minute: '2-digit'
         });
         message += `📅 ${date} um ${time}: ${event.title}\n`;
         if (event.location) message += `📍 ${event.location}\n`;

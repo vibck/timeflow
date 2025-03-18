@@ -77,30 +77,36 @@ const createTestReminder = async () => {
 
 // Hauptfunktion
 const runTest = async () => {
-  console.log('Starte Test für E-Mail- und Telegram-Benachrichtigungen...');
-  
-  // Erstelle Testeeinnerung
-  const reminderCreated = await createTestReminder();
-  if (!reminderCreated) {
-    console.error('Test abgebrochen: Konnte keine Testeeinnerung erstellen.');
-    process.exit(1);
+  try {
+    console.log('Starte Test für E-Mail- und Telegram-Benachrichtigungen...');
+    
+    // Erstelle Testeeinnerung
+    const reminderCreated = await createTestReminder();
+    if (!reminderCreated) {
+      console.error('Test abgebrochen: Konnte keine Testeeinnerung erstellen.');
+      throw new Error('Konnte keine Testeeinnerung erstellen');
+    }
+    
+    // Sende Erinnerungen
+    console.log('Sende Erinnerungen...');
+    const result = await reminderService.sendReminders();
+    
+    console.log('Testergebnis:', result);
+    
+    if (result.success) {
+      console.log(`Test erfolgreich: ${result.count} Erinnerungen gesendet.`);
+    } else {
+      console.error(`Test fehlgeschlagen: ${result.error}`);
+      throw new Error(`Test fehlgeschlagen: ${result.error}`);
+    }
+    
+    console.log('Test abgeschlossen.');
+  } catch (error) {
+    console.error('Test fehlgeschlagen:', error.message);
+    // Hier keinen process.exit verwenden, lass den Prozess natürlich enden
   }
-  
-  // Sende Erinnerungen
-  console.log('Sende Erinnerungen...');
-  const result = await reminderService.sendReminders();
-  
-  console.log('Testergebnis:', result);
-  
-  if (result.success) {
-    console.log(`Test erfolgreich: ${result.count} Erinnerungen gesendet.`);
-  } else {
-    console.error(`Test fehlgeschlagen: ${result.error}`);
-  }
-  
-  // Beende den Prozess
-  process.exit(0);
 };
 
 // Führe den Test aus
+// HINWEIS: Diese Datei ist nur für manuelle Tests und nicht für den Produktionseinsatz gedacht
 runTest(); 

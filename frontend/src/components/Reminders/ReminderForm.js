@@ -57,7 +57,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
   ], []);
 
   // Behandle Änderung der Voreinstellung
-  const handlePresetChange = (event) => {
+  const handlePresetChange = event => {
     const selectedOption = event.target.value;
     setPresetOption(selectedOption);
     
@@ -138,7 +138,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
   };
 
   // Öffne den Bestätigungsdialog zum Löschen einer Erinnerung
-  const openDeleteDialog = (reminder) => {
+  const openDeleteDialog = reminder => {
     setReminderToDelete(reminder);
     setDeleteDialogOpen(true);
   };
@@ -213,7 +213,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
   }, [eventStartTime, presetOption, presetOptions]);
 
   // Formatiere das Datum für die Anzeige
-  const formatReminderTime = (time) => {
+  const formatReminderTime = time => {
     // Stelle sicher, dass das Datum ein Luxon DateTime-Objekt ist
     const dateTime = typeof time === 'string' ? DateTime.fromISO(time) : time;
     return dateTime.toFormat('dd.MM.yyyy HH:mm');
@@ -229,7 +229,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
     const diff = eventDateTime.diff(reminderDateTime, 'minutes').minutes;
     
     if (diff < 0) {
-      return "Nach dem Termin";
+      return 'Nach dem Termin';
     } else if (diff < 60) {
       return `${Math.round(diff)} Minuten vor dem Termin`;
     } else if (diff < 24 * 60) {
@@ -279,10 +279,10 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
               <DateTimePicker
                 label="Erinnerungszeit"
                 value={reminderTime}
-                onChange={(newValue) => setReminderTime(newValue)}
+                onChange={newValue => setReminderTime(newValue)}
                 disabled={loading}
                 disableMaskedInput
-                renderInput={(params) => (
+                renderInput={params => (
                   <TextField 
                     {...params} 
                     size="small"
@@ -330,7 +330,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
                   )}
                 </Box>
                 {!readOnly && (
-                  <Tooltip title={reminder.is_sent ? "Bereits gesendete Erinnerungen können nicht gelöscht werden" : "Erinnerung löschen"}>
+                  <Tooltip title={reminder.is_sent ? 'Bereits gesendete Erinnerungen können nicht gelöscht werden' : 'Erinnerung löschen'}>
                     <span>
                       <IconButton 
                         edge="end" 

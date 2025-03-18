@@ -9,8 +9,8 @@ const transporter = nodemailer.createTransport({
   service: process.env.EMAIL_SERVICE,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
+    pass: process.env.EMAIL_PASSWORD
+  }
 });
 
 // Funktion zum Senden von Erinnerungen
@@ -39,7 +39,7 @@ const sendReminders = async () => {
             <p><strong>Datum:</strong> ${new Date(reminder.start_time).toLocaleString('de-DE')}</p>
             ${reminder.location ? `<p><strong>Ort:</strong> ${reminder.location}</p>` : ''}
             <p>Viele Grüße,<br>Dein TimeFlow-Team</p>
-          `,
+          `
         });
 
         // Sende Telegram-Nachricht, falls verknüpft
@@ -110,7 +110,7 @@ const checkHealthIntervals = async () => {
           <p>Dein letzter Termin war am ${new Date(interval.last_appointment).toLocaleDateString('de-DE')}.</p>
           <p>Bitte plane einen neuen Termin für die nächsten Tage.</p>
           <p>Viele Grüße,<br>Dein TimeFlow-Team</p>
-        `,
+        `
       });
 
       // Sende Telegram-Nachricht, falls verknüpft

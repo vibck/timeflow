@@ -149,7 +149,7 @@ const Calendar = () => {
   }, [regularEvents, holidays, showHolidays]);
 
   // Navigiere zur Termin-Erstellungsseite
-  const handleAddEvent = (day) => {
+  const handleAddEvent = day => {
     // Erstelle Start- und Endzeit für den neuen Termin (9:00 - 10:00 Uhr am ausgewählten Tag)
     const startTime = new Date(day);
     startTime.setHours(9, 0, 0, 0);
@@ -166,7 +166,7 @@ const Calendar = () => {
   };
 
   // Navigiere zur Termin-Bearbeitungsseite, wenn ein Termin angeklickt wird
-  const handleSelectEvent = (event) => {
+  const handleSelectEvent = event => {
     // Hole das ursprüngliche Event aus dem originalEvent-Feld
     const originalEvent = event.originalEvent;
     
@@ -177,7 +177,7 @@ const Calendar = () => {
   };
 
   // Behandle Klick auf einen Tag im Kalender
-  const handleSelectDay = (day) => {
+  const handleSelectDay = day => {
     // Prüfe, ob es bereits Termine an diesem Tag gibt
     const dateKey = format(day, 'yyyy-MM-dd');
     const dayEvents = calendarData.find(item => format(item.day, 'yyyy-MM-dd') === dateKey);

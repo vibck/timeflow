@@ -25,8 +25,8 @@ import AnimatedLayout from './components/Layout/AnimatedLayout';
 const router = {
   future: {
     v7_startTransition: true,
-    v7_relativeSplatPath: true,
-  },
+    v7_relativeSplatPath: true
+  }
 };
 
 /**
@@ -55,11 +55,11 @@ const AppWithTheme = () => {
     palette: {
       mode: mode,
       primary: {
-        main: '#2196f3',
+        main: '#2196f3'
       },
       secondary: {
-        main: '#f50057',
-      },
+        main: '#f50057'
+      }
     },
     typography: {
       fontFamily: [
@@ -72,8 +72,8 @@ const AppWithTheme = () => {
         'sans-serif',
         '"Apple Color Emoji"',
         '"Segoe UI Emoji"',
-        '"Segoe UI Symbol"',
-      ].join(','),
+        '"Segoe UI Symbol"'
+      ].join(',')
     },
     components: {
       MuiButton: {
@@ -82,12 +82,12 @@ const AppWithTheme = () => {
             backgroundColor: '#2196f3',
             color: '#ffffff',
             '&:hover': {
-              backgroundColor: '#1976d2',
-            },
-          },
-        },
-      },
-    },
+              backgroundColor: '#1976d2'
+            }
+          }
+        }
+      }
+    }
   });
 
   // Animierte Layout-Komponente für die gesamte Anwendung

@@ -86,23 +86,36 @@ const testTelegramIntegration = async () => {
 
 // Hauptfunktion
 const runTest = async () => {
-  console.log('Starte Test für Telegram-Integration...');
-  
-  // Teste Telegram-Integration
-  const success = await testTelegramIntegration();
-  
-  if (success) {
-    console.log('Test erfolgreich: Telegram-Benachrichtigungen gesendet.');
-  } else {
-    console.error('Test fehlgeschlagen: Konnte keine Telegram-Benachrichtigungen senden.');
-  }
-  
-  // Beende den Prozess nach 5 Sekunden (um sicherzustellen, dass die Nachrichten gesendet werden)
-  setTimeout(() => {
+  try {
+    console.log('Starte Telegram-Benachrichtigungstest...');
+    
+    // Hole Telegram-Bot
+    const bot = telegramBot.getBot();
+    if (!bot) {
+      console.error('Test abgebrochen: Telegram-Bot nicht initialisiert. Überprüfe deine BOT_TOKEN Umgebungsvariable.');
+      throw new Error('Telegram-Bot nicht initialisiert');
+    }
+    
+    // Simuliere Benachrichtigungen
+    const result = await testTelegramIntegration();
+    
+    if (result) {
+      console.log('Test erfolgreich: Telegram-Benachrichtigungen gesendet.');
+    } else {
+      console.error('Test fehlgeschlagen: Konnte keine Telegram-Benachrichtigungen senden.');
+      throw new Error('Konnte keine Telegram-Benachrichtigungen senden');
+    }
+    
+    // Warte 5 Sekunden, damit Nachrichten gesendet werden können, aber beende nicht den Prozess
+    console.log('Warte 5 Sekunden für das Senden der Nachrichten...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
     console.log('Test abgeschlossen.');
-    process.exit(0);
-  }, 5000);
+    
+  } catch (error) {
+    console.error('Test fehlgeschlagen:', error.message);
+  }
 };
 
 // Führe den Test aus
+// HINWEIS: Diese Datei ist nur für manuelle Tests und nicht für den Produktionseinsatz gedacht
 runTest(); 

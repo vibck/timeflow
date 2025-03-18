@@ -10,6 +10,8 @@ CREATE TABLE users (
   password VARCHAR(255),
   profile_picture VARCHAR(255),
   language VARCHAR(10) DEFAULT 'de',
+  show_holidays BOOLEAN DEFAULT TRUE,
+  state VARCHAR(50) DEFAULT 'BY',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

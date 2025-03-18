@@ -85,7 +85,7 @@ router.put('/:id', async (req, res) => {
         last_appointment,
         nextDate,
         id,
-        req.user.id,
+        req.user.id
       ]
     );
 
@@ -112,7 +112,7 @@ router.delete('/:id', async (req, res) => {
 
     await db.query('DELETE FROM health_intervals WHERE id = $1 AND user_id = $2', [
       id,
-      req.user.id,
+      req.user.id
     ]);
 
     res.json({ message: 'Intervall erfolgreich gelöscht' });

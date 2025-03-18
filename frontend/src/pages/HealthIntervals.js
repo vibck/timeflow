@@ -102,7 +102,7 @@ const HealthIntervals = () => {
   };
 
   // Formularänderungen verarbeiten
-  const handleFormChange = (e) => {
+  const handleFormChange = e => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -111,7 +111,7 @@ const HealthIntervals = () => {
   };
 
   // Datumsänderungen verarbeiten
-  const handleDateChange = (date) => {
+  const handleDateChange = date => {
     setFormData({
       ...formData,
       last_appointment: date
@@ -167,7 +167,7 @@ const HealthIntervals = () => {
   };
 
   // Intervall löschen
-  const handleDelete = async (id) => {
+  const handleDelete = async id => {
     if (window.confirm('Möchtest du dieses Gesundheitsintervall wirklich löschen?')) {
       try {
         await api.delete(`/api/health-intervals/${id}`);
@@ -192,7 +192,7 @@ const HealthIntervals = () => {
   };
 
   // Formatiere Datum für die Anzeige
-  const formatDate = (date) => {
+  const formatDate = date => {
     // Prüfe, ob das Datum definiert ist
     if (!date) return 'Nicht definiert';
     
@@ -206,7 +206,7 @@ const HealthIntervals = () => {
   };
 
   // Berechne Status (überfällig, bald fällig, ok)
-  const getStatus = (nextDate) => {
+  const getStatus = nextDate => {
     const currentDate = DateTime.now();
     const nextAppointment = DateTime.fromISO(nextDate);
     const diffDays = nextAppointment.diff(currentDate, 'day').days;
@@ -272,7 +272,7 @@ const HealthIntervals = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {intervals.map((interval) => {
+                  {intervals.map(interval => {
                     const status = getStatus(interval.next_appointment);
                     return (
                       <TableRow 
@@ -359,7 +359,7 @@ const HealthIntervals = () => {
               position: 'absolute',
               right: 8,
               top: 8,
-              color: (theme) => theme.palette.grey[500],
+              color: theme => theme.palette.grey[500]
             }}
           >
             <CloseIcon />
@@ -395,7 +395,7 @@ const HealthIntervals = () => {
                 label="Letzter Termin"
                 value={formData.last_appointment}
                 onChange={handleDateChange}
-                renderInput={(params) => <TextField {...params} fullWidth required />}
+                renderInput={params => <TextField {...params} fullWidth required />}
                 disableFuture
               />
             </LocalizationProvider>

@@ -58,7 +58,7 @@ passport.use(
             profile.id,
             profile.emails[0].value,
             profile.displayName,
-            profile.photos?.[0]?.value || null,
+            profile.photos?.[0]?.value || null
           ]
         );
 

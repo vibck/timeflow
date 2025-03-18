@@ -155,7 +155,7 @@ const Settings = () => {
   };
 
   // Behandle Änderungen an den Formularfeldern
-  const handleChange = (event) => {
+  const handleChange = event => {
     const { name, value } = event.target;
     setSettings(prevSettings => ({
       ...prevSettings,
@@ -164,7 +164,7 @@ const Settings = () => {
   };
 
   // Behandle Änderungen an den Schaltern
-  const handleSwitchChange = (event) => {
+  const handleSwitchChange = event => {
     const { name, checked } = event.target;
     setSettings(prevSettings => ({
       ...prevSettings,
@@ -173,7 +173,7 @@ const Settings = () => {
   };
   
   // Behandle Änderungen an den Benachrichtigungspräferenzen
-  const handleNotificationPreferenceChange = (event) => {
+  const handleNotificationPreferenceChange = event => {
     setSettings({
       ...settings,
       notificationPreferences: {
@@ -263,7 +263,7 @@ const Settings = () => {
                 label="Bundesland"
                 onChange={handleChange}
               >
-                {states.map((state) => (
+                {states.map(state => (
                   <MenuItem key={state.code} value={state.code}>
                     {state.name}
                   </MenuItem>
@@ -353,7 +353,7 @@ const Settings = () => {
                     // Aktiviere Telegram-Benachrichtigungen automatisch, wenn verbunden
                     handleNotificationPreferenceChange({ 
                       target: { 
-                        name: "telegram", 
+                        name: 'telegram', 
                         checked: true 
                       } 
                     });

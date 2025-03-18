@@ -32,7 +32,7 @@ export const SidebarProvider = ({
   children,
   open: openProp,
   setOpen: setOpenProp,
-  animate = true,
+  animate = true
 }) => {
   const [openState, setOpenState] = useState(false);
 
@@ -53,7 +53,7 @@ export const Sidebar = ({
   children,
   open,
   setOpen,
-  animate,
+  animate
 }) => {
   return (
     <SidebarProvider open={open} setOpen={setOpen} animate={animate}>
@@ -65,7 +65,7 @@ export const Sidebar = ({
 /**
  * SidebarBody - Container für Desktop- und Mobile-Sidebar
  */
-export const SidebarBody = (props) => {
+export const SidebarBody = props => {
   return (
     <>
       <DesktopSidebar {...props} />
@@ -90,7 +90,7 @@ export const DesktopSidebar = ({
         className
       )}
       animate={{
-        width: animate ? (open ? '320px' : '70px') : '320px',
+        width: animate ? (open ? '320px' : '70px') : '320px'
       }}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
@@ -132,7 +132,7 @@ export const MobileSidebar = ({
               exit={{ x: '-100%', opacity: 0 }}
               transition={{
                 duration: 0.3,
-                ease: 'easeInOut',
+                ease: 'easeInOut'
               }}
               className={cn(
                 'fixed h-full w-full inset-0 bg-white/90 dark-bg-neutral-900/90 backdrop-blur-md p-10 z-[100] flex flex-col justify-between',
@@ -168,7 +168,7 @@ export const SidebarLink = ({
   const iconElement = React.cloneElement(link.icon, {
     className: cn(
       link.icon.props.className,
-      "transition-all duration-200"
+      'transition-all duration-200'
     )
   });
   
@@ -185,7 +185,7 @@ export const SidebarLink = ({
       <motion.span
         animate={{
           display: animate ? (open ? 'inline-block' : 'none') : 'inline-block',
-          opacity: animate ? (open ? 1 : 0) : 1,
+          opacity: animate ? (open ? 1 : 0) : 1
         }}
         className="text-neutral-700 dark-text-neutral-200 text-base group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
       >

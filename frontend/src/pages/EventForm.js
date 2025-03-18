@@ -120,7 +120,7 @@ const EventForm = () => {
   }, [id, isEditMode, eventId]);
   
   // Behandle erfolgreiche Terminerstellung
-  const handleSuccessfulCreate = async (createdEvent) => {
+  const handleSuccessfulCreate = async createdEvent => {
     setSuccess('Termin erfolgreich erstellt!');
     
     // Zeige das Erinnerungsformular an, nachdem der Termin erstellt wurde
@@ -138,7 +138,7 @@ const EventForm = () => {
   };
   
   // Aktualisiere die Startzeit für die Erinnerungen
-  const handleStartTimeChange = (newValue) => {
+  const handleStartTimeChange = newValue => {
     setStartTime(newValue);
     
     // Wenn es Erinnerungen gibt und wir im Bearbeitungsmodus sind,
@@ -149,7 +149,7 @@ const EventForm = () => {
   };
   
   // Formular absenden
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     
     // Validierung mit validateForm-Funktion
@@ -207,7 +207,7 @@ const EventForm = () => {
   };
   
   // Aktualisiere die Erinnerungen für die neue Terminzeit
-  const updateRemindersForNewEventTime = async (newEventStartTime) => {
+  const updateRemindersForNewEventTime = async newEventStartTime => {
     try {
       // Lade die aktuellen Erinnerungen neu
       const remindersResponse = await api.get(`/api/reminders/event/${eventId}`);
@@ -227,7 +227,7 @@ const EventForm = () => {
       
       // Aktualisiere jede Erinnerung
       const updatedReminders = await Promise.all(
-        currentReminders.map(async (reminder) => {
+        currentReminders.map(async reminder => {
           // Konvertiere die Erinnerungszeit zu einem DateTime-Objekt
           const oldReminderTime = DateTime.fromISO(reminder.reminder_time);
           
@@ -330,7 +330,7 @@ const EventForm = () => {
               fullWidth
               label="Titel"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={e => setTitle(e.target.value)}
               required
               disabled={loading || isViewMode}
               InputProps={{
@@ -349,7 +349,7 @@ const EventForm = () => {
                 ampm={false}
                 readOnly={isViewMode}
                 disableMaskedInput
-                renderInput={(params) => (
+                renderInput={params => (
                   <TextField 
                     {...params} 
                     fullWidth 
@@ -369,12 +369,12 @@ const EventForm = () => {
               <DateTimePicker
                 label="Endzeit"
                 value={endTime}
-                onChange={(newValue) => setEndTime(newValue)}
+                onChange={newValue => setEndTime(newValue)}
                 disabled={loading || isViewMode}
                 ampm={false}
                 readOnly={isViewMode}
                 disableMaskedInput
-                renderInput={(params) => (
+                renderInput={params => (
                   <TextField 
                     {...params} 
                     fullWidth 
@@ -395,7 +395,7 @@ const EventForm = () => {
               <InputLabel>Termintyp</InputLabel>
               <Select
                 value={eventType}
-                onChange={(e) => setEventType(e.target.value)}
+                onChange={e => setEventType(e.target.value)}
                 label="Termintyp"
                 disabled={loading || isViewMode}
                 inputProps={{
@@ -415,7 +415,7 @@ const EventForm = () => {
               fullWidth
               label="Ort"
               value={location_}
-              onChange={(e) => setLocation(e.target.value)}
+              onChange={e => setLocation(e.target.value)}
               disabled={loading || isViewMode}
               InputProps={{
                 readOnly: isViewMode
@@ -428,7 +428,7 @@ const EventForm = () => {
               fullWidth
               label="Beschreibung"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={e => setDescription(e.target.value)}
               multiline
               rows={4}
               disabled={loading || isViewMode}
