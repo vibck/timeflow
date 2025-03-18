@@ -21,12 +21,12 @@ jobs:
     - name: Install backend dependencies
       run: |
         cd backend
-        npm ci
+        npm install
       
     - name: Install frontend dependencies
       run: |
         cd frontend
-        npm ci
+        npm install
     
     - name: Lint backend code
       run: |
@@ -63,7 +63,7 @@ jobs:
     - name: Build frontend
       run: |
         cd frontend
-        npm ci
+        npm install
         npm run build
         
     - name: Upload frontend build artifacts
@@ -75,7 +75,7 @@ jobs:
     - name: Check backend setup
       run: |
         cd backend
-        npm ci
+        npm install
         echo "Backend setup erfolgreich abgeschlossen"
         
   deploy-to-staging:
@@ -98,4 +98,6 @@ jobs:
     - name: Deploy to staging
       run: |
         echo "Deployment zur Staging-Umgebung..."
+        # Hier würde der tatsächliche Deployment-Code stehen
+        # z.B. scp, rsync, oder ein Cloud-Provider-Deployment
         echo "Staging-Deployment abgeschlossen" 
