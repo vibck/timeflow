@@ -138,7 +138,6 @@ const healthIntervalJob = new cron.CronJob('0 8 * * *', checkHealthIntervals); /
 const start = () => {
   reminderJob.start();
   healthIntervalJob.start();
-  console.log('Reminder-Service gestartet');
 };
 
 module.exports = { start };

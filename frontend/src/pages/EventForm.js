@@ -220,12 +220,8 @@ const EventForm = () => {
       // Berechne die Zeitdifferenz zwischen alter und neuer Startzeit
       const timeDiff = newEventStart.diff(oldEventStart).milliseconds;
       
-      // Nur für Entwicklungszwecke - kann später entfernt werden
-      console.log(`Terminzeit geändert: ${oldEventStart.toFormat('dd.MM.yyyy HH:mm')} → ${newEventStart.toFormat('dd.MM.yyyy HH:mm')} (${timeDiff > 0 ? '+' : ''}${Math.round(timeDiff / 60000)} Min.)`);
-      
       // Nur fortfahren, wenn es eine tatsächliche Zeitdifferenz gibt
       if (timeDiff === 0) {
-        console.log('Keine Zeitänderung erkannt, Erinnerungen bleiben unverändert.');
         return;
       }
       
@@ -244,7 +240,6 @@ const EventForm = () => {
               const updatedReminder = await api.put(`/api/reminders/${reminder.id}`, {
                 reminder_time: newReminderTime.toISO()
               });
-              console.log(`Erinnerung angepasst: ${oldReminderTime.toFormat('dd.MM.yyyy HH:mm')} → ${newReminderTime.toFormat('dd.MM.yyyy HH:mm')}`);
               return updatedReminder.data;
             } catch (err) {
               console.error(`Fehler beim Aktualisieren der Erinnerung ${reminder.id}:`, err);

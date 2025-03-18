@@ -22,12 +22,6 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        console.log('Google-Profil erhalten:', {
-          id: profile.id,
-          displayName: profile.displayName,
-          email: profile.emails?.[0]?.value
-        });
-
         // Prüfe, ob Benutzer bereits existiert
         const existingUserResult = await db.query(
           'SELECT * FROM users WHERE google_id = $1',
@@ -35,7 +29,6 @@ passport.use(
         );
 
         if (existingUserResult.rows.length) {
-          console.log('Bestehender Benutzer gefunden:', existingUserResult.rows[0].email);
           return done(null, existingUserResult.rows[0]);
         }
 
@@ -55,7 +48,6 @@ passport.use(
               profile.emails[0].value
             ]
           );
-          console.log('Bestehender Benutzer mit Google verknüpft:', updatedUserResult.rows[0].email);
           return done(null, updatedUserResult.rows[0]);
         }
 
@@ -70,7 +62,6 @@ passport.use(
           ]
         );
 
-        console.log('Neuer Benutzer erstellt:', newUserResult.rows[0].email);
         done(null, newUserResult.rows[0]);
       } catch (error) {
         console.error('Fehler bei der Google-Authentifizierung:', error);

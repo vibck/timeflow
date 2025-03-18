@@ -10,12 +10,10 @@ const pool = new Pool({
 });
 
 pool.connect()
-  .then(() => console.log('Connected to timeflow database'))
   .catch(err => console.error('Connection failed:', err.stack));
 
 // Test a simple query
 pool.query('SELECT NOW()')
-  .then(res => console.log('Test query result:', res.rows[0]))
   .catch(err => console.error('Test query failed:', err.stack));
 
 module.exports = {

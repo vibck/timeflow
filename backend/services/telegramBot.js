@@ -202,8 +202,6 @@ const start = () => {
       );
     }
   });
-
-  console.log('Telegram Bot gestartet');
 };
 
 module.exports = { start, sendEventReminder, sendHealthIntervalReminder };
