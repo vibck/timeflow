@@ -1,11 +1,18 @@
 import axios from 'axios';
 
-// Erstelle eine Axios-Instanz mit der Basis-URL aus der Umgebungsvariable
+// Basis-URL für alle API-Anfragen
+const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
+// Erstelle eine Axios-Instanz mit Standardkonfiguration
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000'
+  baseURL,
+  timeout: 10000, // 10 Sekunden Timeout
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
-// Füge einen Request-Interceptor hinzu, um den JWT-Token zu allen Anfragen hinzuzufügen
+// Request-Interceptor für Authentifizierung
 api.interceptors.request.use(
   config => {
     const token = localStorage.getItem('token');
@@ -14,24 +21,17 @@ api.interceptors.request.use(
     }
     return config;
   },
-  error => {
-    return Promise.reject(error);
-  }
+  error => Promise.reject(error)
 );
 
-// Füge einen Response-Interceptor hinzu
+// Response-Interceptor für Fehlerbehandlung
 api.interceptors.response.use(
   response => response,
   error => {
-    // Nur wichtige Fehler loggen oder für Produktionsumgebung deaktivieren
-    if (process.env.NODE_ENV !== 'production') {
-      if (error.response) {
-        console.error(`API-Fehler: ${error.response.status} - ${error.response.statusText}`);
-      } else if (error.request) {
-        console.error('Keine Antwort vom Server erhalten');
-      } else {
-        console.error('Fehler beim Erstellen der Anfrage:', error.message);
-      }
+    // Automatische Abmeldung bei 401 (Unauthorized)
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }

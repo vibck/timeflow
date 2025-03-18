@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import { 
   Typography, 
   Box, 
@@ -27,14 +27,16 @@ import {
   Delete as DeleteIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { registerLocale, setDefaultLocale } from 'react-datepicker';
+import de from 'date-fns/locale/de';
 import { DateTime } from 'luxon';
 import api from '../utils/api';
 
-// Setze die Sprache auf Deutsch
-const locale = 'de';
+// Deutsche Sprache für Datepicker registrieren
+registerLocale('de', de);
+setDefaultLocale('de');
 
 const HealthIntervals = () => {
   const theme = useTheme();
@@ -46,7 +48,7 @@ const HealthIntervals = () => {
   const [formData, setFormData] = useState({
     interval_type: '',
     interval_months: 6,
-    last_appointment: DateTime.now()
+    last_appointment: new Date()
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -82,7 +84,7 @@ const HealthIntervals = () => {
       setFormData({
         interval_type: interval.interval_type,
         interval_months: interval.interval_months,
-        last_appointment: DateTime.fromISO(interval.last_appointment)
+        last_appointment: new Date(interval.last_appointment)
       });
     } else {
       // Neues Intervall erstellen
@@ -90,7 +92,7 @@ const HealthIntervals = () => {
       setFormData({
         interval_type: '',
         interval_months: 6,
-        last_appointment: DateTime.now()
+        last_appointment: new Date()
       });
     }
     setOpenDialog(true);
@@ -110,20 +112,28 @@ const HealthIntervals = () => {
     });
   };
 
-  // Datumsänderungen verarbeiten
-  const handleDateChange = date => {
-    setFormData({
-      ...formData,
-      last_appointment: date
-    });
-  };
+  // Benutzerdefinierte Eingabe für den DatePicker
+  const CustomDatePickerInput = forwardRef(({ value, onClick, placeholder }, ref) => (
+    <TextField
+      fullWidth
+      label="Letzter Termin"
+      onClick={onClick}
+      value={value}
+      placeholder={placeholder}
+      InputProps={{
+        readOnly: true
+      }}
+      ref={ref}
+      required
+    />
+  ));
 
   // Formular absenden
   const handleSubmit = async () => {
     try {
       const data = {
         ...formData,
-        last_appointment: formData.last_appointment.toISO()
+        last_appointment: DateTime.fromJSDate(formData.last_appointment).toISO()
       };
 
       let response;
@@ -390,15 +400,21 @@ const HealthIntervals = () => {
               required
             />
             
-            <LocalizationProvider dateAdapter={AdapterLuxon} adapterLocale={locale}>
-              <DatePicker
-                label="Letzter Termin"
-                value={formData.last_appointment}
-                onChange={handleDateChange}
-                renderInput={params => <TextField {...params} fullWidth required />}
-                disableFuture
-              />
-            </LocalizationProvider>
+            <DatePicker
+              selected={formData.last_appointment instanceof Date ? formData.last_appointment : new Date(formData.last_appointment)}
+              onChange={date => {
+                handleFormChange({
+                  target: {
+                    name: 'last_appointment',
+                    value: date
+                  }
+                });
+              }}
+              maxDate={new Date()}
+              dateFormat="dd.MM.yyyy"
+              locale="de"
+              customInput={<CustomDatePickerInput />}
+            />
             
             {formData.last_appointment && formData.interval_months && (
               <Box sx={{ 
@@ -407,7 +423,7 @@ const HealthIntervals = () => {
                 borderRadius: 1
               }}>
                 <Typography variant="body2">
-                  Nächster empfohlener Termin: <strong>{formatDate(DateTime.fromISO(formData.last_appointment.toISO()).plus({ months: formData.interval_months }))}</strong>
+                  Nächster empfohlener Termin: <strong>{formatDate(DateTime.fromJSDate(formData.last_appointment instanceof Date ? formData.last_appointment : new Date(formData.last_appointment)).plus({ months: formData.interval_months }))}</strong>
                 </Typography>
               </Box>
             )}

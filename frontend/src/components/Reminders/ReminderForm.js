@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, forwardRef } from 'react';
 import { 
   Box, 
   Button, 
@@ -20,19 +20,40 @@ import {
   TextField,
   useTheme
 } from '@mui/material';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { registerLocale, setDefaultLocale } from 'react-datepicker';
+import de from 'date-fns/locale/de';
+import { format, addMinutes, isAfter, isBefore } from 'date-fns';
 import { Add as AddIcon, Delete as DeleteIcon, Notifications as NotificationsIcon } from '@mui/icons-material';
-import { DateTime } from 'luxon';
 import api from '../../utils/api';
 
-// Setze die Sprache auf Deutsch
-const locale = 'de';
+// Deutsche Sprache für Datepicker registrieren
+registerLocale('de', de);
+setDefaultLocale('de');
+
+// Benutzerdefinierte Eingabe für den DateTimePicker
+const CustomDateTimePickerInput = forwardRef(({ value, onClick, placeholder, label, error, helperText, isReadOnly, size, sx }, ref) => (
+  <TextField
+    fullWidth
+    label={label}
+    onClick={isReadOnly ? undefined : onClick}
+    value={value}
+    placeholder={placeholder}
+    error={!!error}
+    helperText={helperText}
+    InputProps={{
+      readOnly: true
+    }}
+    size={size}
+    sx={sx}
+    ref={ref}
+  />
+));
 
 const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderChange, readOnly = false }) => {
   const theme = useTheme();
-  const [reminderTime, setReminderTime] = useState(DateTime.fromISO(eventStartTime).minus({ minutes: 30 }));
+  const [reminderTime, setReminderTime] = useState(addMinutes(new Date(eventStartTime), -30));
   const [presetOption, setPresetOption] = useState('30min');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -63,27 +84,27 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
     
     if (selectedOption !== 'custom') {
       const option = presetOptions.find(opt => opt.value === selectedOption);
-      setReminderTime(DateTime.fromISO(eventStartTime).minus({ minutes: option.minutes }));
+      setReminderTime(addMinutes(new Date(eventStartTime), -option.minutes));
     }
   };
 
   // Validiere die Erinnerungszeit
   const validateReminderTime = () => {
     // Prüfe, ob die Erinnerungszeit vor der Startzeit des Termins liegt
-    if (reminderTime > DateTime.fromISO(eventStartTime)) {
+    if (isAfter(reminderTime, new Date(eventStartTime))) {
       setError('Die Erinnerungszeit muss vor der Startzeit des Termins liegen.');
       return false;
     }
     
     // Prüfe, ob die Erinnerungszeit in der Zukunft liegt
-    if (reminderTime < DateTime.local()) {
+    if (isBefore(reminderTime, new Date())) {
       setError('Die Erinnerungszeit muss in der Zukunft liegen.');
       return false;
     }
     
     // Prüfe, ob bereits eine Erinnerung mit der gleichen Zeit existiert
     const duplicateReminder = existingReminders.find(
-      reminder => reminder.reminder_time === reminderTime.toISO()
+      reminder => reminder.reminder_time === reminderTime.toISOString()
     );
     
     if (duplicateReminder) {
@@ -109,7 +130,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
       
       const response = await api.post('/api/reminders', {
         event_id: eventId,
-        reminder_time: reminderTime.toISO()
+        reminder_time: reminderTime.toISOString()
       });
       
       // Aktualisiere die Liste der Erinnerungen
@@ -127,7 +148,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
       // Setze die Erinnerungszeit zurück
       const defaultOption = presetOptions.find(opt => opt.value === '30min');
       setPresetOption('30min');
-      setReminderTime(DateTime.fromISO(eventStartTime).minus({ minutes: defaultOption.minutes }));
+      setReminderTime(addMinutes(new Date(eventStartTime), -defaultOption.minutes));
       
     } catch (err) {
       console.error('Fehler beim Erstellen der Erinnerung:', err);
@@ -207,36 +228,37 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
     if (presetOption !== 'custom') {
       const option = presetOptions.find(opt => opt.value === presetOption);
       if (option) {
-        setReminderTime(DateTime.fromISO(eventStartTime).minus({ minutes: option.minutes }));
+        setReminderTime(addMinutes(new Date(eventStartTime), -option.minutes));
       }
     }
   }, [eventStartTime, presetOption, presetOptions]);
 
   // Formatiere das Datum für die Anzeige
   const formatReminderTime = time => {
-    // Stelle sicher, dass das Datum ein Luxon DateTime-Objekt ist
-    const dateTime = typeof time === 'string' ? DateTime.fromISO(time) : time;
-    return dateTime.toFormat('dd.MM.yyyy HH:mm');
+    // Stelle sicher, dass das Datum ein Date-Objekt ist
+    const dateObj = typeof time === 'string' ? new Date(time) : time;
+    return format(dateObj, 'dd.MM.yyyy HH:mm');
   };
 
   // Berechne den relativen Zeitpunkt für die Anzeige
   const getRelativeTime = (reminderTime, eventTime) => {
-    // Konvertiere zu DateTime-Objekten, falls sie es noch nicht sind
-    const reminderDateTime = typeof reminderTime === 'string' ? DateTime.fromISO(reminderTime) : reminderTime;
-    const eventDateTime = typeof eventTime === 'string' ? DateTime.fromISO(eventTime) : eventTime;
+    // Konvertiere zu Date-Objekten, falls sie es noch nicht sind
+    const reminderDate = typeof reminderTime === 'string' ? new Date(reminderTime) : reminderTime;
+    const eventDate = typeof eventTime === 'string' ? new Date(eventTime) : eventTime;
     
     // Berechne die Differenz in Minuten
-    const diff = eventDateTime.diff(reminderDateTime, 'minutes').minutes;
+    const diffMs = eventDate.getTime() - reminderDate.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
     
-    if (diff < 0) {
+    if (diffMinutes < 0) {
       return 'Nach dem Termin';
-    } else if (diff < 60) {
-      return `${Math.round(diff)} Minuten vor dem Termin`;
-    } else if (diff < 24 * 60) {
-      const hours = Math.floor(diff / 60);
+    } else if (diffMinutes < 60) {
+      return `${Math.round(diffMinutes)} Minuten vor dem Termin`;
+    } else if (diffMinutes < 24 * 60) {
+      const hours = Math.floor(diffMinutes / 60);
       return `${hours} Stunde${hours !== 1 ? 'n' : ''} vor dem Termin`;
     } else {
-      const days = Math.floor(diff / (24 * 60));
+      const days = Math.floor(diffMinutes / (24 * 60));
       return `${days} Tag${days !== 1 ? 'e' : ''} vor dem Termin`;
     }
   };
@@ -275,22 +297,23 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
           </FormControl>
           
           {presetOption === 'custom' && (
-            <LocalizationProvider dateAdapter={AdapterLuxon} adapterLocale={locale}>
-              <DateTimePicker
-                label="Erinnerungszeit"
-                value={reminderTime}
-                onChange={newValue => setReminderTime(newValue)}
-                disabled={loading}
-                disableMaskedInput
-                renderInput={params => (
-                  <TextField 
-                    {...params} 
-                    size="small"
-                    sx={{ minWidth: 250 }}
-                  />
-                )}
-              />
-            </LocalizationProvider>
+            <DatePicker
+              selected={reminderTime}
+              onChange={newValue => setReminderTime(newValue)}
+              showTimeSelect
+              timeFormat="HH:mm"
+              timeIntervals={15}
+              dateFormat="dd.MM.yyyy HH:mm"
+              locale="de"
+              disabled={loading}
+              customInput={
+                <CustomDateTimePickerInput 
+                  label="Erinnerungszeit"
+                  size="small"
+                  sx={{ minWidth: 250 }}
+                />
+              }
+            />
           )}
           
           <Button
@@ -318,10 +341,10 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
               <ListItem key={reminder.id} divider>
                 <Box sx={{ flexGrow: 1 }}>
                   <Typography variant="subtitle1">
-                    {formatReminderTime(DateTime.fromISO(reminder.reminder_time))}
+                    {formatReminderTime(new Date(reminder.reminder_time))}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {getRelativeTime(DateTime.fromISO(reminder.reminder_time), DateTime.fromISO(eventStartTime))}
+                    {getRelativeTime(new Date(reminder.reminder_time), new Date(eventStartTime))}
                   </Typography>
                   {reminder.is_sent && (
                     <Typography variant="body2" color="success.main" sx={{ mt: 0.5 }}>
@@ -329,31 +352,28 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
                     </Typography>
                   )}
                 </Box>
-                {!readOnly && (
-                  <Tooltip title={reminder.is_sent ? 'Bereits gesendete Erinnerungen können nicht gelöscht werden' : 'Erinnerung löschen'}>
-                    <span>
-                      <IconButton 
-                        edge="end" 
-                        aria-label="delete"
-                        onClick={() => openDeleteDialog(reminder)}
-                        disabled={loading || reminder.is_sent}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </span>
+                
+                {!readOnly && !reminder.is_sent && (
+                  <Tooltip title="Erinnerung löschen">
+                    <IconButton
+                      edge="end"
+                      aria-label="delete"
+                      onClick={() => openDeleteDialog(reminder)}
+                      disabled={loading}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
                   </Tooltip>
                 )}
               </ListItem>
             ))}
         </List>
       ) : (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Keine Erinnerungen für diesen Termin. {!readOnly && 'Füge eine Erinnerung hinzu, um per E-Mail oder Telegram benachrichtigt zu werden.'}
-        </Alert>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Noch keine Erinnerungen vorhanden. Füge eine Erinnerung hinzu, um eine Benachrichtigung zu erhalten.
+        </Typography>
       )}
       
-      {/* Bestätigungsdialog zum Löschen einer Erinnerung */}
       <Dialog
         open={deleteDialogOpen}
         onClose={closeDeleteDialog}
@@ -371,10 +391,10 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
               borderRadius: 1 
             }}>
               <Typography variant="subtitle2">
-                Erinnerungszeit: {formatReminderTime(DateTime.fromISO(reminderToDelete.reminder_time))}
+                Erinnerungszeit: {formatReminderTime(new Date(reminderToDelete.reminder_time))}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {getRelativeTime(DateTime.fromISO(reminderToDelete.reminder_time), DateTime.fromISO(eventStartTime))}
+                {getRelativeTime(new Date(reminderToDelete.reminder_time), new Date(eventStartTime))}
               </Typography>
             </Box>
           )}

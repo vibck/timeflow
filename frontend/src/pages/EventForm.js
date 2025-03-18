@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -18,15 +18,36 @@ import {
   DialogContentText,
   DialogTitle
 } from '@mui/material';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterLuxon } from '@mui/x-date-pickers/AdapterLuxon';
-import { DateTime } from 'luxon';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { registerLocale, setDefaultLocale } from 'react-datepicker';
+import de from 'date-fns/locale/de';
+import { addMinutes /* , addDays, isBefore, isAfter */ } from 'date-fns';
 import api from '../utils/api';
 import ReminderForm from '../components/Reminders/ReminderForm';
 
-// Setze die Sprache auf Deutsch
-const locale = 'de';
+// Deutsche Sprache für Datepicker registrieren
+registerLocale('de', de);
+setDefaultLocale('de');
+
+// Benutzerdefinierte Eingabe für den DateTimePicker
+const CustomDateTimePickerInput = forwardRef(({ value, onClick, placeholder, label, error, helperText, isReadOnly, size, sx }, ref) => (
+  <TextField
+    fullWidth
+    label={label}
+    onClick={isReadOnly ? undefined : onClick}
+    value={value}
+    placeholder={placeholder}
+    error={!!error}
+    helperText={helperText}
+    InputProps={{
+      readOnly: true
+    }}
+    size={size}
+    sx={sx}
+    ref={ref}
+  />
+));
 
 const EventForm = () => {
   const { id } = useParams();
@@ -53,8 +74,8 @@ const EventForm = () => {
   }, [id, location.pathname]);
   
   // Hole Standardwerte aus dem Location-State (wenn von Kalender-Slot ausgewählt)
-  const defaultStart = location.state?.defaultStart ? DateTime.fromISO(location.state.defaultStart) : DateTime.now();
-  const defaultEnd = location.state?.defaultEnd ? DateTime.fromISO(location.state.defaultEnd) : DateTime.now().plus({ hours: 1 });
+  const defaultStart = location.state?.defaultStart ? new Date(location.state.defaultStart) : new Date();
+  const defaultEnd = location.state?.defaultEnd ? new Date(location.state.defaultEnd) : addMinutes(new Date(), 60);
   
   // Formularstatus
   const [title, setTitle] = useState('');
@@ -89,10 +110,10 @@ const EventForm = () => {
         setTitle(event.title);
         setDescription(event.description || '');
         setLocation(event.location || '');
-        const eventStartTime = DateTime.fromISO(event.start_time);
+        const eventStartTime = new Date(event.start_time);
         setStartTime(eventStartTime);
         setOriginalStartTime(eventStartTime);
-        setEndTime(DateTime.fromISO(event.end_time));
+        setEndTime(new Date(event.end_time));
         setEventType(event.event_type || 'personal');
         
         // Lade Erinnerungen für diesen Termin
@@ -161,8 +182,8 @@ const EventForm = () => {
       title,
       description,
       location: location_,
-      start_time: startTime.toISO(),
-      end_time: endTime.toISO(),
+      start_time: startTime.toISOString(),
+      end_time: endTime.toISOString(),
       event_type: eventType
     };
     
@@ -181,7 +202,7 @@ const EventForm = () => {
         setSuccess('Termin erfolgreich aktualisiert!');
         
         // Aktualisiere die Startzeit für die Erinnerungen
-        const updatedStartTime = DateTime.fromISO(response.data.start_time);
+        const updatedStartTime = new Date(response.data.start_time);
         setStartTime(updatedStartTime);
         setOriginalStartTime(updatedStartTime);
         
@@ -213,12 +234,12 @@ const EventForm = () => {
       const remindersResponse = await api.get(`/api/reminders/event/${eventId}`);
       const currentReminders = remindersResponse.data;
       
-      // Speichere die alte und neue Startzeit als DateTime-Objekte
-      const oldEventStart = originalStartTime; // Verwende originalStartTime statt startTime
-      const newEventStart = DateTime.fromISO(newEventStartTime);
+      // Speichere die alte und neue Startzeit als Date-Objekte
+      const oldEventStart = originalStartTime;
+      const newEventStart = new Date(newEventStartTime);
       
-      // Berechne die Zeitdifferenz zwischen alter und neuer Startzeit
-      const timeDiff = newEventStart.diff(oldEventStart).milliseconds;
+      // Berechne die Zeitdifferenz zwischen alter und neuer Startzeit in Millisekunden
+      const timeDiff = newEventStart.getTime() - oldEventStart.getTime();
       
       // Nur fortfahren, wenn es eine tatsächliche Zeitdifferenz gibt
       if (timeDiff === 0) {
@@ -228,17 +249,17 @@ const EventForm = () => {
       // Aktualisiere jede Erinnerung
       const updatedReminders = await Promise.all(
         currentReminders.map(async reminder => {
-          // Konvertiere die Erinnerungszeit zu einem DateTime-Objekt
-          const oldReminderTime = DateTime.fromISO(reminder.reminder_time);
+          // Konvertiere die Erinnerungszeit zu einem Date-Objekt
+          const oldReminderTime = new Date(reminder.reminder_time);
           
           // Berechne die neue Erinnerungszeit, indem die gleiche Zeitdifferenz hinzugefügt wird
-          const newReminderTime = oldReminderTime.plus({ milliseconds: timeDiff });
+          const newReminderTime = new Date(oldReminderTime.getTime() + timeDiff);
           
           // Aktualisiere die Erinnerung in der Datenbank
           if (!reminder.is_sent) {
             try {
               const updatedReminder = await api.put(`/api/reminders/${reminder.id}`, {
-                reminder_time: newReminderTime.toISO()
+                reminder_time: newReminderTime.toISOString()
               });
               return updatedReminder.data;
             } catch (err) {
@@ -304,14 +325,14 @@ const EventForm = () => {
       errors.title = 'Titel ist erforderlich';
     }
     
-    if (startTime.toMillis() > endTime.toMillis()) {
+    if (startTime.getTime() > endTime.getTime()) {
       errors.time = 'Startzeit muss vor der Endzeit liegen';
     }
     
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
-  
+
   return (
     <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
       <Box sx={{ mb: 3 }}>
@@ -340,54 +361,46 @@ const EventForm = () => {
           </Grid>
           
           <Grid item xs={12} sm={6}>
-            <LocalizationProvider dateAdapter={AdapterLuxon} adapterLocale={locale}>
-              <DateTimePicker
-                label="Startzeit"
-                value={startTime}
-                onChange={handleStartTimeChange}
-                disabled={loading || isViewMode}
-                ampm={false}
-                readOnly={isViewMode}
-                disableMaskedInput
-                renderInput={params => (
-                  <TextField 
-                    {...params} 
-                    fullWidth 
-                    error={!!validationErrors.time}
-                    InputProps={{
-                      ...params.InputProps,
-                      readOnly: isViewMode
-                    }}
-                  />
-                )}
-              />
-            </LocalizationProvider>
+            <DatePicker
+              selected={startTime}
+              onChange={handleStartTimeChange}
+              showTimeSelect
+              timeFormat="HH:mm"
+              timeIntervals={15}
+              dateFormat="dd.MM.yyyy HH:mm"
+              locale="de"
+              minDate={new Date()}
+              disabled={loading || isViewMode}
+              customInput={
+                <CustomDateTimePickerInput 
+                  label="Startzeit" 
+                  error={validationErrors.time}
+                  isReadOnly={isViewMode}
+                />
+              }
+            />
           </Grid>
           
           <Grid item xs={12} sm={6}>
-            <LocalizationProvider dateAdapter={AdapterLuxon} adapterLocale={locale}>
-              <DateTimePicker
-                label="Endzeit"
-                value={endTime}
-                onChange={newValue => setEndTime(newValue)}
-                disabled={loading || isViewMode}
-                ampm={false}
-                readOnly={isViewMode}
-                disableMaskedInput
-                renderInput={params => (
-                  <TextField 
-                    {...params} 
-                    fullWidth 
-                    error={!!validationErrors.time}
-                    helperText={validationErrors.time || ''}
-                    InputProps={{
-                      ...params.InputProps,
-                      readOnly: isViewMode
-                    }}
-                  />
-                )}
-              />
-            </LocalizationProvider>
+            <DatePicker
+              selected={endTime}
+              onChange={newValue => setEndTime(newValue)}
+              showTimeSelect
+              timeFormat="HH:mm"
+              timeIntervals={15}
+              dateFormat="dd.MM.yyyy HH:mm"
+              locale="de"
+              minDate={startTime}
+              disabled={loading || isViewMode}
+              customInput={
+                <CustomDateTimePickerInput 
+                  label="Endzeit" 
+                  error={validationErrors.time}
+                  helperText={validationErrors.time || ''}
+                  isReadOnly={isViewMode}
+                />
+              }
+            />
           </Grid>
           
           <Grid item xs={12} sm={6}>
