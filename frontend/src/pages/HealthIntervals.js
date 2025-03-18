@@ -31,7 +31,6 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { registerLocale, setDefaultLocale } from 'react-datepicker';
 import de from 'date-fns/locale/de';
-import { format } from 'date-fns';
 import { DateTime } from 'luxon';
 import api from '../utils/api';
 
@@ -122,7 +121,7 @@ const HealthIntervals = () => {
       value={value}
       placeholder={placeholder}
       InputProps={{
-        readOnly: true,
+        readOnly: true
       }}
       ref={ref}
       required
@@ -403,10 +402,10 @@ const HealthIntervals = () => {
             
             <DatePicker
               selected={formData.last_appointment instanceof Date ? formData.last_appointment : new Date(formData.last_appointment)}
-              onChange={(date) => {
+              onChange={date => {
                 handleFormChange({
                   target: {
-                    name: "last_appointment",
+                    name: 'last_appointment',
                     value: date
                   }
                 });
