@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Outlet } from 'react-router-dom';
 import { 
   AppBar, 
   Toolbar, 
@@ -11,22 +11,21 @@ import {
   ListItemButton, 
   ListItemIcon, 
   ListItemText,
-  Container,
   Box
 } from '@mui/material';
 import { 
   Dashboard as DashboardIcon,
-  Event as EventIcon,
   Healing as HealingIcon,
-  Settings as SettingsIcon
-  // Nicht verwendeter Import auskommentiert
-  // CalendarViewMonthIcon
+  Settings as SettingsIcon,
+  CalendarMonth as CalendarMonthIcon,
+  Person as PersonIcon,
+  SmartToy as SmartToyIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 
 const drawerWidth = 240;
 
-const Layout = ({ children }) => {
+const Layout = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -35,6 +34,15 @@ const Layout = ({ children }) => {
     navigate('/login');
   };
 
+  const menuItems = [
+    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+    { text: 'Kalender', icon: <CalendarMonthIcon />, path: '/calendar' },
+    { text: 'KI-Buchung', icon: <SmartToyIcon />, path: '/ai-booking' },
+    { text: 'Gesundheitsintervalle', icon: <HealingIcon />, path: '/health-intervals' },
+    { text: 'Profil', icon: <PersonIcon />, path: '/profile' },
+    { text: 'Einstellungen', icon: <SettingsIcon />, path: '/settings' }
+  ];
+
   return (
     <Box sx={{ display: 'flex' }}>
       <AppBar position="fixed" sx={{ zIndex: theme => theme.zIndex.drawer + 1 }}>
@@ -42,9 +50,7 @@ const Layout = ({ children }) => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             TimeFlow
           </Typography>
-          <Button color="inherit" onClick={handleLogout}>
-            Abmelden
-          </Button>
+          <Button color="inherit" onClick={handleLogout}>Abmelden</Button>
         </Toolbar>
       </AppBar>
       <Drawer
@@ -58,46 +64,25 @@ const Layout = ({ children }) => {
         <Toolbar />
         <Box sx={{ overflow: 'auto' }}>
           <List>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} to="/">
-                <ListItemIcon>
-                  <DashboardIcon />
-                </ListItemIcon>
-                <ListItemText primary="Dashboard" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} to="/calendar">
-                <ListItemIcon>
-                  <EventIcon />
-                </ListItemIcon>
-                <ListItemText primary="Kalender" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} to="/health-intervals">
-                <ListItemIcon>
-                  <HealingIcon />
-                </ListItemIcon>
-                <ListItemText primary="Gesundheitsintervalle" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} to="/settings">
-                <ListItemIcon>
-                  <SettingsIcon />
-                </ListItemIcon>
-                <ListItemText primary="Einstellungen" />
-              </ListItemButton>
-            </ListItem>
+            {menuItems.map(item => (
+              <ListItem key={item.text} disablePadding>
+                <ListItemButton
+                  component={Link}
+                  to={item.path}
+                >
+                  <ListItemIcon>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </ListItemButton>
+              </ListItem>
+            ))}
           </List>
         </Box>
       </Drawer>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
-        <Container maxWidth="lg">
-          {children}
-        </Container>
+        <Outlet />
       </Box>
     </Box>
   );

@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { ThemeProvider as CustomThemeProvider, useTheme } from './contexts/ThemeContext';
 
 // App-Seiten
 import Login from './pages/Login';
@@ -17,7 +17,10 @@ import NotFound from './pages/NotFound';
 import AuthCallback from './pages/AuthCallback';
 
 // Layout-Komponente
-import AnimatedLayout from './components/Layout/AnimatedLayout';
+// import AnimatedLayout from './components/Layout/AnimatedLayout';
+import Layout from './components/Layout';
+import AIBooking from './components/AIBooking';
+import Profile from './components/Profile';
 
 /**
  * React Router Future Flags
@@ -91,8 +94,8 @@ const AppWithTheme = () => {
     }
   });
 
-  // Animierte Layout-Komponente für die gesamte Anwendung
-  const AppLayout = AnimatedLayout;
+  // Wir benötigen AppLayout nicht mehr, da wir alle Routen über das Layout-Element rendern
+  // const AppLayout = AnimatedLayout;
 
   return (
     <MuiThemeProvider theme={theme}>
@@ -107,54 +110,21 @@ const AppWithTheme = () => {
           {/* Geschützte Routen */}
           <Route path="/" element={
             <PrivateRoute>
-              <AppLayout>
-                <Dashboard />
-              </AppLayout>
+              <Layout />
             </PrivateRoute>
-          } />
-          <Route path="/calendar" element={
-            <PrivateRoute>
-              <AppLayout>
-                <Calendar />
-              </AppLayout>
-            </PrivateRoute>
-          } />
-          <Route path="/events/new" element={
-            <PrivateRoute>
-              <AppLayout>
-                <EventForm />
-              </AppLayout>
-            </PrivateRoute>
-          } />
-          <Route path="/events/:id" element={
-            <PrivateRoute>
-              <AppLayout>
-                <EventForm />
-              </AppLayout>
-            </PrivateRoute>
-          } />
-          <Route path="/events/:id/edit" element={
-            <PrivateRoute>
-              <AppLayout>
-                <EventForm />
-              </AppLayout>
-            </PrivateRoute>
-          } />
-          <Route path="/health-intervals" element={
-            <PrivateRoute>
-              <AppLayout>
-                <HealthIntervals />
-              </AppLayout>
-            </PrivateRoute>
-          } />
-          <Route path="/settings" element={
-            <PrivateRoute>
-              <AppLayout>
-                <Settings />
-              </AppLayout>
-            </PrivateRoute>
-          } />
+          }>
+            <Route index element={<Dashboard />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="ai-booking" element={<AIBooking />} />
+            <Route path="calendar" element={<Calendar />} />
+            <Route path="events/new" element={<EventForm />} />
+            <Route path="events/:id" element={<EventForm />} />
+            <Route path="events/:id/edit" element={<EventForm />} />
+            <Route path="health-intervals" element={<HealthIntervals />} />
+          </Route>
           
+          {/* Die folgenden Routen entfernen, da sie jetzt im Layout oben sind */}
           {/* 404-Seite */}
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -170,9 +140,9 @@ const AppWithTheme = () => {
 const App = () => {
   return (
     <AuthProvider>
-      <ThemeProvider>
+      <CustomThemeProvider>
         <AppWithTheme />
-      </ThemeProvider>
+      </CustomThemeProvider>
     </AuthProvider>
   );
 };

@@ -26,10 +26,6 @@ import { useNavigate } from 'react-router-dom';
 import { DateTime } from 'luxon';
 import api from '../utils/api';
 
-// Setze die Sprache auf Deutsch
-// eslint-disable-next-line no-unused-vars
-const locale = 'de';
-
 const Dashboard = () => {
   const theme = useTheme();
   const navigate = useNavigate();
