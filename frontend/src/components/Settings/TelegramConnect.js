@@ -12,6 +12,8 @@ const TelegramConnect = () => {
   });
   const [qrCode, setQrCode] = useState(null);
   const [telegramLink, setTelegramLink] = useState('');
+  // theme wird zur Zeit nicht verwendet
+  // eslint-disable-next-line no-unused-vars
   const theme = useTheme();
 
   // Lade den Telegram-Status beim Laden der Komponente

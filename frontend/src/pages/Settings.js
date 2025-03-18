@@ -20,6 +20,7 @@ import TelegramConnect from '../components/Settings/TelegramConnect';
 import { useTheme as useAppTheme } from '../contexts/ThemeContext';
 
 const Settings = () => {
+  // eslint-disable-next-line no-unused-vars
   const theme = useTheme();
   const { mode, toggleTheme } = useAppTheme();
   const [settings, setSettings] = useState({
