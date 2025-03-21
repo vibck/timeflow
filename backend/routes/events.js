@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
 });
 
 // Ein Event erstellen
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
   const {
     title,
     description,
@@ -28,6 +28,11 @@ router.post('/', async (req, res) => {
   } = req.body;
 
   try {
+    const eventData = {
+      ...req.body,
+      user_id: req.user.id
+    };
+
     const { rows } = await db.query(
       `INSERT INTO events 
        (user_id, title, description, start_time, end_time, location, event_type, recurrence_rule) 
