@@ -22,7 +22,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { registerLocale, setDefaultLocale } from 'react-datepicker';
 import de from 'date-fns/locale/de';
-import { addMinutes /* , addDays, isBefore, isAfter */ } from 'date-fns';
+import { addMinutes, _addDays, _isBefore, _isAfter } from 'date-fns';
 import api from '../utils/api';
 import ReminderForm from '../components/Reminders/ReminderForm';
 

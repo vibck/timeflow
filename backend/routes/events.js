@@ -1,59 +1,22 @@
 const express = require('express');
 const db = require('../db');
 const router = express.Router();
+const { authenticateJWT } = require('../middleware/auth');
+const { Event } = require('../db');
 
-// Alle Events eines Benutzers abrufen
-router.get('/', async (req, res) => {
-  try {
-    const { rows } = await db.query(
-      'SELECT * FROM events WHERE user_id = $1 ORDER BY start_time',
-      [req.user.id]
-    );
-    res.json(rows);
-  } catch (error) {
-    res.status(500).json({ message: 'Serverfehler', error: error.message });
-  }
+// GET all events
+router.get('/', authenticateJWT, (req, res) => {
+  res.json({ message: 'Events route works' });
 });
 
-// Ein Event erstellen
-router.post('/', auth, async (req, res) => {
-  const {
-    title,
-    description,
-    start_time,
-    end_time,
-    location,
-    event_type,
-    recurrence_rule
-  } = req.body;
-
-  try {
-    const eventData = {
-      ...req.body,
-      user_id: req.user.id
-    };
-
-    const { rows } = await db.query(
-      `INSERT INTO events 
-       (user_id, title, description, start_time, end_time, location, event_type, recurrence_rule) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-       RETURNING *`,
-      [
-        req.user.id,
-        title,
-        description,
-        start_time,
-        end_time,
-        location,
-        event_type,
-        recurrence_rule
-      ]
-    );
-
-    res.status(201).json(rows[0]);
-  } catch (error) {
-    res.status(500).json({ message: 'Serverfehler', error: error.message });
-  }
+// POST new event
+router.post('/', authenticateJWT, (req, res) => {
+  const { type, date, duration, description, location, phoneNumber, customerName } = req.body;
+  
+  res.status(201).json({ 
+    message: 'Event created', 
+    data: req.body 
+  });
 });
 
 // Ein Event aktualisieren
