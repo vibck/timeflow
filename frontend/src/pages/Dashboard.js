@@ -25,6 +25,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { DateTime } from 'luxon';
 import api from '../utils/api';
+import axios from 'axios';
 
 const Dashboard = () => {
   const theme = useTheme();
@@ -74,14 +75,12 @@ const Dashboard = () => {
         const nextWeek = now.plus({ days: 7 });
         
         const eventsResponse = await api.get('/api/events');
-        const futureEvents = eventsResponse.data
-          .filter(event => {
-            const eventStart = DateTime.fromISO(event.start_time);
-            return eventStart.toMillis() > now.toMillis() && eventStart.toMillis() < nextWeek.toMillis();
-          })
-          .sort((a, b) => DateTime.fromISO(a.start_time).toMillis() - DateTime.fromISO(b.start_time).toMillis());
+        const upcomingEvents = eventsResponse.data.data ? eventsResponse.data.data.filter(event => {
+          const eventDate = new Date(event.date);
+          return eventDate >= new Date();
+        }) : [];
         
-        setUpcomingEvents(futureEvents.slice(0, 5)); // Zeige maximal 5 an
+        setUpcomingEvents(upcomingEvents.slice(0, 5)); // Zeige maximal 5 an
 
         // Lade Gesundheitsintervalle
         const healthIntervalsResponse = await api.get('/api/health-intervals');
