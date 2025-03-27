@@ -14,6 +14,10 @@ const healthIntervalRoutes = require('./routes/healthIntervals');
 const telegramRoutes = require('./routes/telegram');
 const userRoutes = require('./routes/users');
 const settingsRoutes = require('./routes/settings');
+const twilioRoutes = require('./routes/twilioRoutes');
+const ultravoxRoutes = require('./routes/ultravoxRoutes');
+const aiCallsRoutes = require('./routes/aiCalls');
+const voiceRoutes = require('./routes/voiceRoutes');
 // const aiBookingsRoutes = require('./routes/aiBookings');
 
 // Import middleware
@@ -26,13 +30,18 @@ const reminderService = require('./services/reminderService');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Basis-Middleware
 app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
+
+// Ungeschützte Routes ZUERST
+app.use('/api/voice', voiceRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/twilio', twilioRoutes);
 
 // API-Token-Middleware für n8n-Integration
 const n8nAuthMiddleware = (req, res, next) => {
@@ -48,13 +57,12 @@ const n8nAuthMiddleware = (req, res, next) => {
   next();
 };
 
-// Produktionsreife n8n-Route
+// n8n Route mit eigener Authentifizierung
 app.post('/api/n8n/events', n8nAuthMiddleware, async (req, res) => {
   try {
     console.log('N8N-Termin erhalten:', req.body);
     
     // Setze einen Standardbenutzer für n8n-erstellte Termine
-    // In der Produktionsversion könnte dies ein spezieller "System"-Benutzer sein
     const userId = 1; // Standardbenutzer-ID
     
     // Validiere die Termindaten
@@ -64,8 +72,6 @@ app.post('/api/n8n/events', n8nAuthMiddleware, async (req, res) => {
       });
     }
     
-    // Erstelle den Termin in der Datenbank
-    // Hier musst du deinen tatsächlichen Datenbankzugriff einsetzen
     const event = {
       title: req.body.title,
       description: req.body.description || '',
@@ -76,10 +82,6 @@ app.post('/api/n8n/events', n8nAuthMiddleware, async (req, res) => {
       user_id: userId
     };
     
-    // Mit deinem tatsächlichen Datenbankzugriff:
-    // const createdEvent = await db.events.create(event);
-    
-    // Für den Test geben wir ein simuliertes Ergebnis zurück
     const createdEvent = {
       id: Math.floor(Math.random() * 10000),
       ...event,
@@ -87,7 +89,6 @@ app.post('/api/n8n/events', n8nAuthMiddleware, async (req, res) => {
       updated_at: new Date().toISOString()
     };
     
-    // Erfolgreich erstellt
     return res.status(201).json(createdEvent);
     
   } catch (error) {
@@ -99,17 +100,17 @@ app.post('/api/n8n/events', n8nAuthMiddleware, async (req, res) => {
   }
 });
 
-// Routes
-app.use('/api/auth', authRoutes);
+// Geschützte Routes mit JWT Auth
+app.use('/api/users', authenticateJWT, userRoutes);
 app.use('/api/events', authenticateJWT, eventRoutes);
 app.use('/api/reminders', authenticateJWT, reminderRoutes);
 app.use('/api/health-intervals', authenticateJWT, healthIntervalRoutes);
 app.use('/api/telegram', authenticateJWT, telegramRoutes);
-app.use('/api/users', userRoutes);
 app.use('/api/settings', authenticateJWT, settingsRoutes);
+app.use('/api/ultravox', authenticateJWT, ultravoxRoutes);
+app.use('/api/ai-calls', authenticateJWT, aiCallsRoutes);
 // app.use('/api/ai-bookings', aiBookingsRoutes);
 
-// Stattdessen, wenn wir den Token ausgeben wollen, nur die Umgebungsvariable verwenden
 if (process.env.NODE_ENV === 'development') {
   console.log('n8n Service-Token ist in der .env-Datei konfiguriert');
 }
