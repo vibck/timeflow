@@ -6,6 +6,7 @@
 
 const twilio = require('twilio');
 const { VoiceResponse } = require('twilio').twiml;
+const config = require('../config/config');
 require('dotenv').config();
 
 class TwilioService {
