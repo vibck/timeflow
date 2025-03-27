@@ -25,7 +25,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { DateTime } from 'luxon';
 import api from '../utils/api';
-import axios from 'axios';
 
 const Dashboard = () => {
   const theme = useTheme();
@@ -72,7 +71,7 @@ const Dashboard = () => {
         
         // Lade anstehende Termine (für die nächsten 7 Tage)
         const now = DateTime.now();
-        const nextWeek = now.plus({ days: 7 });
+        const _nextWeek = now.plus({ days: 7 });
         
         const eventsResponse = await api.get('/api/events');
         const upcomingEvents = eventsResponse.data.data ? eventsResponse.data.data.filter(event => {
