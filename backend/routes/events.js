@@ -5,8 +5,17 @@ const { authenticateJWT } = require('../middleware/auth');
 const { Event } = require('../db');
 
 // GET all events
-router.get('/', authenticateJWT, (req, res) => {
-  res.json({ message: 'Events route works' });
+router.get('/', authenticateJWT, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT * FROM events WHERE user_id = $1 ORDER BY start_time',
+      [req.user.id]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Fehler beim Abrufen der Events:', error);
+    res.status(500).json({ message: 'Serverfehler beim Laden der Events' });
+  }
 });
 
 // POST new event
