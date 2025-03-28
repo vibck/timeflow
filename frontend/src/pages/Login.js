@@ -1,27 +1,66 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
-import { Box, Button, TextField, Typography, Container, Paper, Alert } from '@mui/material';
-import { Google as GoogleIcon } from '@mui/icons-material';
+import { 
+  Box, 
+  Button, 
+  TextField, 
+  Typography, 
+  Container, 
+  Alert,
+  Divider,
+  IconButton,
+  InputAdornment
+} from '@mui/material';
+import { 
+  Google as GoogleIcon,
+  Visibility,
+  VisibilityOff
+} from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
+import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
 
-// E-Mail-Validierungsfunktion außerhalb der Komponente definieren
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.5
+    }
+  }
+};
+
 const validateEmail = email => {
   const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return re.test(email);
 };
 
 const Login = () => {
+  const theme = useTheme();
   const { isAuthenticated, login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
-    // Zeige Erfolgsmeldung an, wenn von der Registrierungsseite weitergeleitet
     if (location.state && location.state.message) {
       setSuccess(location.state.message);
     }
@@ -40,10 +79,11 @@ const Login = () => {
     setError('');
     setEmailError('');
     setSuccess('');
+    setIsLoading(true);
     
-    // E-Mail-Validierung
     if (!validateEmail(email)) {
       setEmailError('Bitte gib eine gültige E-Mail-Adresse ein');
+      setIsLoading(false);
       return;
     }
     
@@ -60,103 +100,187 @@ const Login = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      if (error.response && error.response.data && error.response.data.message) {
-        setError(error.response.data.message);
-      } else {
-        setError('Anmeldung fehlgeschlagen. Bitte überprüfe deine Anmeldedaten.');
-      }
+      setError(error.response?.data?.message || 'Anmeldung fehlgeschlagen. Bitte überprüfe deine Anmeldedaten.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
-        }}
+    <Container component="main" maxWidth="sm">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        style={{ width: '100%' }}
       >
-        <Paper
-          elevation={3}
+        <Box
           sx={{
-            padding: 4,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            width: '100%'
+            justifyContent: 'center',
+            minHeight: '100vh',
+            py: 4
           }}
         >
-          <Typography component="h1" variant="h4" gutterBottom>
-            TimeFlow
-          </Typography>
-          <Typography component="h2" variant="h5" gutterBottom>
-            Anmelden
-          </Typography>
-          
-          {success && <Alert severity="success" sx={{ mb: 2, width: '100%' }}>{success}</Alert>}
-          {error && <Alert severity="error" sx={{ mb: 2, width: '100%' }}>{error}</Alert>}
-          
-          <Box sx={{ mt: 3, width: '100%' }}>
-            <Button
-              fullWidth
-              variant="contained"
-              color="primary"
-              startIcon={<GoogleIcon />}
-              onClick={handleGoogleLogin}
-              sx={{ mt: 2 }}
+          <motion.div variants={itemVariants} style={{ width: '100%', maxWidth: 500 }}>
+            <Box
+              sx={{
+                p: 4,
+                borderRadius: 4,
+                boxShadow: theme.shadows[10],
+                backgroundColor: theme.palette.background.paper
+              }}
             >
-              Mit Google anmelden
-            </Button>
-            
-            <Typography variant="h6" sx={{ mt: 3, mb: 2, textAlign: 'center' }}>
-              Oder mit E-Mail anmelden:
-            </Typography>
-            
-            <form onSubmit={handleLogin}>
-              <TextField
-                fullWidth
-                label="E-Mail-Adresse"
-                variant="outlined"
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                margin="normal"
-                required
-                error={!!emailError}
-                helperText={emailError}
-              />
-              <TextField
-                fullWidth
-                label="Passwort"
-                variant="outlined"
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                margin="normal"
-                required
-              />
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                color="secondary"
-                sx={{ mt: 2 }}
-              >
-                Anmelden
-              </Button>
-              <Box sx={{ mt: 2, textAlign: 'center' }}>
-                <Link to="/register" style={{ textDecoration: 'none' }}>
-                  <Typography variant="body2" color="primary">
-                    Noch kein Konto? Registrieren
-                  </Typography>
-                </Link>
+              <Box textAlign="center" mb={4}>
+                <Typography
+                  variant="h3"
+                  component="h1"
+                  color="primary"
+                  fontWeight="bold"
+                  gutterBottom
+                >
+                  Willkommen zurück
+                </Typography>
+                <Typography variant="body1" color="textSecondary">
+                  Melde dich an, um auf deine Termine zuzugreifen
+                </Typography>
               </Box>
-            </form>
-          </Box>
-        </Paper>
-      </Box>
+
+              {success && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>
+                </motion.div>
+              )}
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>
+                </motion.div>
+              )}
+
+              <Button
+                fullWidth
+                variant="outlined"
+                color="inherit"
+                startIcon={<GoogleIcon />}
+                onClick={handleGoogleLogin}
+                sx={{
+                  py: 1.5,
+                  mb: 3,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontSize: 16
+                }}
+              >
+                Mit Google fortfahren
+              </Button>
+
+              <Divider sx={{ my: 3 }}>
+                <Typography variant="body2" color="textSecondary">
+                  Oder mit E-Mail
+                </Typography>
+              </Divider>
+
+              <Box component="form" onSubmit={handleLogin} noValidate>
+                <TextField
+                  fullWidth
+                  label="E-Mail-Adresse"
+                  variant="outlined"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  margin="normal"
+                  required
+                  error={!!emailError}
+                  helperText={emailError}
+                  sx={{ mb: 2 }}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  label="Passwort"
+                  variant="outlined"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  margin="normal"
+                  required
+                  sx={{ mb: 2 }}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                />
+
+                <Box textAlign="right" mb={3}>
+                  <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
+                    <Typography variant="body2" color="primary">
+                      Passwort vergessen?
+                    </Typography>
+                  </Link>
+                </Box>
+
+                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    disabled={isLoading}
+                    sx={{
+                      py: 1.5,
+                      borderRadius: 2,
+                      fontSize: 16,
+                      fontWeight: 'medium'
+                    }}
+                  >
+                    {isLoading ? 'Anmeldung läuft...' : 'Anmelden'}
+                  </Button>
+                </motion.div>
+              </Box>
+
+              <Box textAlign="center" mt={3}>
+                <Typography variant="body2" color="textSecondary">
+                  Noch kein Konto?{' '}
+                  <Link to="/register" style={{ textDecoration: 'none' }}>
+                    <Typography 
+                      component="span" 
+                      variant="body2" 
+                      color="primary"
+                      fontWeight="medium"
+                    >
+                      Registrieren
+                    </Typography>
+                  </Link>
+                </Typography>
+              </Box>
+            </Box>
+          </motion.div>
+        </Box>
+      </motion.div>
     </Container>
   );
 };

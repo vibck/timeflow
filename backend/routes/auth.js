@@ -145,4 +145,89 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Passwort-zurücksetzen Token generieren
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  
+  if (!email || !validateEmail(email)) {
+    return res.status(400).json({ message: 'Ungültige E-Mail-Adresse' });
+  }
+  
+  try {
+    // Überprüfe ob Benutzer existiert
+    const userResult = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Kein Konto mit dieser E-Mail gefunden' });
+    }
+    
+    const user = userResult.rows[0];
+    
+    // Erstelle Reset-Token (gültig für 1 Stunde)
+    const resetToken = jwt.sign(
+      { id: user.id },
+      process.env.JWT_SECRET + user.password,
+      { expiresIn: '1h' }
+    );
+    
+    // E-Mail mit Reset-Link versenden
+    const transporter = require('../services/emailService');
+    const mailOptions = {
+      from: `"TimeFlow" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Passwort zurücksetzen',
+      html: `
+        <h2>Passwort zurücksetzen</h2>
+        <p>Du hast die Zurücksetzung deines Passworts angefordert. Klicke auf den folgenden Link, um ein neues Passwort festzulegen:</p>
+        <p><a href="${process.env.CLIENT_URL}/reset-password?token=${resetToken}">Passwort zurücksetzen</a></p>
+        <p>Der Link ist 1 Stunde gültig.</p>
+        <p>Wenn du diese Anfrage nicht gestellt hast, ignoriere diese E-Mail einfach.</p>
+      `
+    };
+    
+    await transporter.sendMail(mailOptions);
+    
+    res.json({ message: 'Wenn ein Konto mit dieser E-Mail existiert, wurde ein Reset-Link versendet' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Fehler beim Anfordern des Passwort-Resets' });
+  }
+});
+
+// Passwort zurücksetzen mit Token
+router.post('/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body;
+  
+  if (!token || !newPassword || newPassword.length < 6) {
+    return res.status(400).json({ message: 'Ungültige Anfrage' });
+  }
+  
+  try {
+    // Finde Benutzer ohne Token zu verifizieren (ID extrahieren)
+    const decoded = jwt.decode(token);
+    if (!decoded?.id) {
+      return res.status(400).json({ message: 'Ungültiger Token' });
+    }
+    
+    const userResult = await db.query('SELECT * FROM users WHERE id = $1', [decoded.id]);
+    if (userResult.rows.length === 0) {
+      return res.status(400).json({ message: 'Ungültiger Token' });
+    }
+    
+    const user = userResult.rows[0];
+    
+    // Verifiziere Token mit dem aktuellen Passwort als Secret
+    jwt.verify(token, process.env.JWT_SECRET + user.password);
+    
+    // Aktualisiere Passwort
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, user.id]);
+    
+    res.json({ message: 'Passwort erfolgreich aktualisiert' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(400).json({ message: 'Ungültiger oder abgelaufener Token' });
+  }
+});
+
 module.exports = router;
