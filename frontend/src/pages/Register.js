@@ -1,175 +1,333 @@
 import React, { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { Box, Button, TextField, Typography, Container, Paper, Alert } from '@mui/material';
+import { 
+  Box, 
+  Button, 
+  TextField, 
+  Typography, 
+  Container,
+  Alert,
+  Divider,
+  IconButton,
+  InputAdornment,
+  LinearProgress
+} from '@mui/material';
+import { 
+  Visibility,
+  VisibilityOff
+} from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
+import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.5
+    }
+  }
+};
+
+const validateEmail = email => {
+  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return re.test(email);
+};
+
+const passwordStrength = password => {
+  if (!password) return 0;
+  let strength = 0;
+  
+  // Length check
+  if (password.length >= 8) strength += 1;
+  if (password.length >= 12) strength += 1;
+  
+  // Complexity checks
+  if (/[A-Z]/.test(password)) strength += 1;
+  if (/[0-9]/.test(password)) strength += 1;
+  if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+  
+  return Math.min(strength, 5);
+};
+
 const Register = () => {
+  const theme = useTheme();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   if (isAuthenticated) {
     return <Navigate to="/" />;
   }
-
-  const validateEmail = email => {
-    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return re.test(email);
-  };
 
   const handleRegister = async e => {
     e.preventDefault();
     setError('');
     setEmailError('');
     setPasswordError('');
+    setIsLoading(true);
     
     // Validierungen
     if (!validateEmail(email)) {
       setEmailError('Bitte gib eine gültige E-Mail-Adresse ein');
+      setIsLoading(false);
       return;
     }
     
-    if (password.length < 6) {
-      setPasswordError('Das Passwort muss mindestens 6 Zeichen lang sein');
+    if (password.length < 8) {
+      setPasswordError('Das Passwort muss mindestens 8 Zeichen lang sein');
+      setIsLoading(false);
       return;
     }
     
     if (password !== confirmPassword) {
       setPasswordError('Die Passwörter stimmen nicht überein');
+      setIsLoading(false);
       return;
     }
     
     try {
-      // eslint-disable-next-line no-unused-vars
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/register`, {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/register`, {
         name,
         email,
         password
       });
       
-      // Nach erfolgreicher Registrierung zur Login-Seite weiterleiten
-      navigate('/login', { state: { message: 'Registrierung erfolgreich! Du kannst dich jetzt anmelden.' } });
+      navigate('/login', { 
+        state: { 
+          message: 'Registrierung erfolgreich! Du kannst dich jetzt anmelden.' 
+        } 
+      });
     } catch (error) {
       console.error('Registration error:', error);
-      if (error.response && error.response.data && error.response.data.message) {
-        setError(error.response.data.message);
-      } else {
-        setError('Bei der Registrierung ist ein Fehler aufgetreten. Bitte versuche es später erneut.');
-      }
+      setError(error.response?.data?.message || 
+        'Bei der Registrierung ist ein Fehler aufgetreten. Bitte versuche es später erneut.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
-        }}
+    <Container component="main" maxWidth="sm">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        style={{ width: '100%' }}
       >
-        <Paper
-          elevation={3}
+        <Box
           sx={{
-            padding: 4,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            width: '100%'
+            justifyContent: 'center',
+            minHeight: '100vh',
+            py: 4
           }}
         >
-          <Typography component="h1" variant="h4" gutterBottom>
-            TimeFlow
-          </Typography>
-          <Typography component="h2" variant="h5" gutterBottom>
-            Registrieren
-          </Typography>
-          
-          {error && <Alert severity="error" sx={{ mb: 2, width: '100%' }}>{error}</Alert>}
-          
-          <Box component="form" onSubmit={handleRegister} sx={{ mt: 1, width: '100%' }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="name"
-              label="Name"
-              name="name"
-              autoComplete="name"
-              autoFocus
-              value={name}
-              onChange={e => setName(e.target.value)}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="E-Mail-Adresse"
-              name="email"
-              autoComplete="email"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              error={!!emailError}
-              helperText={emailError}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Passwort"
-              type="password"
-              id="password"
-              autoComplete="new-password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              error={!!passwordError}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="confirmPassword"
-              label="Passwort bestätigen"
-              type="password"
-              id="confirmPassword"
-              autoComplete="new-password"
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              error={!!passwordError}
-              helperText={passwordError}
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              color="primary"
-              sx={{ mt: 3, mb: 2 }}
+          <motion.div variants={itemVariants} style={{ width: '100%', maxWidth: 500 }}>
+            <Box
+              sx={{
+                p: 4,
+                borderRadius: 4,
+                boxShadow: theme.shadows[10],
+                backgroundColor: theme.palette.background.paper
+              }}
             >
-              Registrieren
-            </Button>
-            <Box sx={{ textAlign: 'center' }}>
-              <Link to="/login" style={{ textDecoration: 'none' }}>
-                <Typography variant="body2" color="primary">
-                  Bereits ein Konto? Anmelden
+              <Box textAlign="center" mb={4}>
+                <Typography
+                  variant="h3"
+                  component="h1"
+                  color="primary"
+                  fontWeight="bold"
+                  gutterBottom
+                >
+                  Konto erstellen
                 </Typography>
-              </Link>
+                <Typography variant="body1" color="textSecondary">
+                  Erstelle ein Konto, um mit TimeFlow zu starten
+                </Typography>
+              </Box>
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>
+                </motion.div>
+              )}
+
+              <Box component="form" onSubmit={handleRegister} noValidate>
+                <TextField
+                  fullWidth
+                  label="Name"
+                  variant="outlined"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  margin="normal"
+                  required
+                  sx={{ mb: 2 }}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  label="E-Mail-Adresse"
+                  variant="outlined"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  margin="normal"
+                  required
+                  error={!!emailError}
+                  helperText={emailError}
+                  sx={{ mb: 2 }}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  label="Passwort"
+                  variant="outlined"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  margin="normal"
+                  required
+                  error={!!passwordError}
+                  sx={{ mb: 1 }}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                />
+
+                <Box mb={2}>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={passwordStrength(password) * 20} 
+                    sx={{
+                      height: 4,
+                      borderRadius: 2,
+                      backgroundColor: theme.palette.grey[200],
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: passwordStrength(password) >= 4 ? 
+                          theme.palette.success.main : 
+                          passwordStrength(password) >= 2 ? 
+                          theme.palette.warning.main : 
+                          theme.palette.error.main
+                      }
+                    }}
+                  />
+                  <Typography variant="caption" color="textSecondary">
+                    Passwortstärke: {['Sehr schwach', 'Schwach', 'Mäßig', 'Gut', 'Stark', 'Sehr stark'][passwordStrength(password)]}
+                  </Typography>
+                </Box>
+
+                <TextField
+                  fullWidth
+                  label="Passwort bestätigen"
+                  variant="outlined"
+                  type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  margin="normal"
+                  required
+                  error={!!passwordError}
+                  helperText={passwordError}
+                  sx={{ mb: 3 }}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                />
+
+                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    disabled={isLoading}
+                    sx={{
+                      py: 1.5,
+                      borderRadius: 2,
+                      fontSize: 16,
+                      fontWeight: 'medium'
+                    }}
+                  >
+                    {isLoading ? 'Registrierung läuft...' : 'Registrieren'}
+                  </Button>
+                </motion.div>
+              </Box>
+
+              <Divider sx={{ my: 3 }}>
+                <Typography variant="body2" color="textSecondary">
+                  Bereits ein Konto?
+                </Typography>
+              </Divider>
+
+              <Box textAlign="center">
+                <Link to="/login" style={{ textDecoration: 'none' }}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    color="primary"
+                    sx={{
+                      py: 1.5,
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontSize: 16
+                    }}
+                  >
+                    Zur Anmeldung
+                  </Button>
+                </Link>
+              </Box>
             </Box>
-          </Box>
-        </Paper>
-      </Box>
+          </motion.div>
+        </Box>
+      </motion.div>
     </Container>
   );
 };
 
-export default Register; 
+export default Register;

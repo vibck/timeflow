@@ -13,7 +13,9 @@ const sendEventReminder = (chatId, reminder) => {
 ${reminder.location ? `📍 ${reminder.location}` : ''}
   `;
   
-  bot.sendMessage(chatId, message);
+  bot.sendMessage(chatId, message).catch(err => {
+    console.error('Fehler beim Senden der Telegram-Nachricht:', err);
+  });
 };
 
 // Funktion zum Senden von Gesundheitsintervall-Erinnerungen
@@ -24,7 +26,9 @@ const sendHealthIntervalReminder = (chatId, interval) => {
 ⏰ Bitte plane einen neuen Termin für die nächsten Tage.
   `;
   
-  bot.sendMessage(chatId, message);
+  bot.sendMessage(chatId, message).catch(err => {
+    console.error('Fehler beim Senden der Telegram-Nachricht:', err);
+  });
 };
 
 const start = () => {
@@ -38,6 +42,9 @@ const start = () => {
       // Extrahiere die E-Mail-Adresse aus dem Parameter
       try {
         const encodedEmail = startParam.replace('connect_', '');
+        if (!/^[A-Za-z0-9+/=]+$/.test(encodedEmail)) {
+          return bot.sendMessage(chatId, 'Ungültiger Verbindungscode');
+        }
         const email = Buffer.from(encodedEmail, 'base64').toString('utf-8');
         
         // Prüfe, ob Benutzer existiert
@@ -193,7 +200,9 @@ const start = () => {
         message += '\n';
       });
 
-      bot.sendMessage(chatId, message);
+      bot.sendMessage(chatId, message).catch(err => {
+        console.error('Fehler beim Senden der Telegram-Nachricht:', err);
+      });
     } catch (error) {
       console.error('Telegram events error:', error);
       bot.sendMessage(

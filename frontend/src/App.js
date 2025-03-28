@@ -15,6 +15,8 @@ import HealthIntervals from './pages/HealthIntervals';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import AuthCallback from './pages/AuthCallback';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Layout-Komponente
 // import AnimatedLayout from './components/Layout/AnimatedLayout';
@@ -106,6 +108,8 @@ const AppWithTheme = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Geschützte Routen */}
           <Route path="/" element={
