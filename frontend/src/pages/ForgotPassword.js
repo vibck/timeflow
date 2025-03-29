@@ -92,14 +92,14 @@ const ForgotPassword = () => {
     },
     sx: {
       '& input:-webkit-autofill': {
-        WebkitBoxShadow: `0 0 0 100px rgba(20, 20, 40, 0.9) inset`,
+        WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset',
         WebkitTextFillColor: theme.palette.common.white,
         caretColor: theme.palette.common.white,
         borderRadius: 'inherit',
         transition: 'background-color 5000s ease-in-out 0s'
       },
       '& input:-webkit-autofill:hover, & input:-webkit-autofill:focus, & input:-webkit-autofill:active': {
-        WebkitBoxShadow: `0 0 0 100px rgba(20, 20, 40, 0.9) inset`,
+        WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset',
         WebkitTextFillColor: theme.palette.common.white,
         borderRadius: 'inherit'
       }

@@ -146,7 +146,8 @@ const Login = () => {
                     fontSize: '2.5rem', // Restored size
                     textAlign: { xs: 'center', md: 'left' }
                   }}
-                >
+
+              >
                   Welcome Back to TimeFlow
 
 
@@ -156,7 +157,8 @@ const Login = () => {
             </motion.div>
           </Grid>
           {/* Right Side - Login Form */}
-          <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={6}>
+
             <motion.div
               initial="hidden"
               animate="visible"
@@ -292,12 +294,12 @@ const Login = () => {
                       required
                       InputLabelProps={{
                         shrink: true, // Ensure label is always shrunk
-                        style: { color: 'rgba(255, 255, 255, 0.7)' },
+                        style: { color: 'rgba(255, 255, 255, 0.7)' }
                       }}
                       InputProps={{
                         style: {
                           color: theme.palette.common.white,
-                          borderRadius: '8px',
+                          borderRadius: '8px'
                           // backgroundColor is handled by MuiOutlinedInput-root below for consistency
                         },
                         // Add autofill styles here
@@ -308,13 +310,13 @@ const Login = () => {
                             WebkitTextFillColor: theme.palette.common.white, // Ensure text color is white
                             caretColor: theme.palette.common.white, // Ensure cursor color is white
                             borderRadius: 'inherit', // Inherit border radius from the root element
-                            transition: 'background-color 5000s ease-in-out 0s', // Delay background color change
+                            transition: 'background-color 5000s ease-in-out 0s' // Delay background color change
                           },
                           '& input:-webkit-autofill:hover, & input:-webkit-autofill:focus, & input:-webkit-autofill:active': {
                             WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset', // Keep the same shadow on interaction
                             WebkitTextFillColor: theme.palette.common.white,
-                            borderRadius: 'inherit',
-                          },
+                            borderRadius: 'inherit'
+                          }
                         },
                         // removed notched: false
                         endAdornment: (
@@ -332,17 +334,17 @@ const Login = () => {
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           '& fieldset': {
-                            borderColor: 'rgba(255, 255, 255, 0.3)',
+                            borderColor: 'rgba(255, 255, 255, 0.3)'
                           },
                           '&:hover fieldset': {
-                            borderColor: 'rgba(255, 255, 255, 0.6)',
+                            borderColor: 'rgba(255, 255, 255, 0.6)'
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: theme.palette.primary.main,
-                          },
+                            borderColor: theme.palette.primary.main
+                          }
                         },
-                         '& .MuiInputLabel-root.Mui-focused': {
-                           color: theme.palette.primary.main, // Label color on focus
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: theme.palette.primary.main // Label color on focus
                         }
                       }}
                     />
@@ -350,57 +352,58 @@ const Login = () => {
 
                   <motion.div variants={itemVariants}>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                       <FormControlLabel
-                          control={
-                            <Checkbox 
-                              checked={rememberMe} 
-                              onChange={(e) => setRememberMe(e.target.checked)} 
-                              name="rememberMe" 
-                              sx={{
-                                color: 'rgba(255, 255, 255, 0.7)',
-                                '&.Mui-checked': {
-                                  color: theme.palette.primary.main, // Use primary color when checked
-                                },
-                              }}
-                            />
-                          }
-                          label={<Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Remember me</Typography>}
-                       />
-                       <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
-                         <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: theme.palette.primary.light } }}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox 
+                            checked={rememberMe} 
+                            onChange={e => setRememberMe(e.target.checked)} 
+                            name="rememberMe" 
+                            sx={{
+                              color: 'rgba(255, 255, 255, 0.7)',
+                              '&.Mui-checked': {
+                                color: theme.palette.primary.main // Use primary color when checked
+                              }
+                            }}
+                          />
+                        }
+                        label={<Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Remember me</Typography>}
+                      />
+                      <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: theme.palette.primary.light } }}>
                            Forgot password?
-                         </Typography>
-                       </Link>
+                        </Typography>
+                      </Link>
                     </Box>
                   </motion.div>
 
                   <motion.div variants={itemVariants} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-<Button
-  type="submit"
-  fullWidth
-  variant="contained"
-  size="large"
-  disabled={isLoading}
-  sx={{
-    py: 1.5,
-    borderRadius: '8px',
-    fontSize: 16,
-    fontWeight: 'medium',
-    color: theme.palette.common.white,
-    background: `linear-gradient(45deg, ${theme.palette.secondary.main} 30%, ${theme.palette.primary.main} 90%)`,
-    '&:hover': {
-      background: `linear-gradient(45deg, ${theme.palette.secondary.dark} 30%, ${theme.palette.primary.dark} 90%)`
-    },
-    '&.Mui-disabled': {
-      background: theme.palette.action.disabledBackground,
-      color: theme.palette.action.disabled,
-      cursor: 'not-allowed',
-      pointerEvents: 'auto',
-    },
-  }}
->
-  {isLoading ? 'Logging in...' : 'Login'} 
-</Button>
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    size="large"
+                    disabled={isLoading}
+                    sx={{
+                      py: 1.5,
+                      borderRadius: '8px',
+                      fontSize: 16,
+                      fontWeight: 'medium',
+                      color: theme.palette.common.white,
+                      background: `linear-gradient(45deg, ${theme.palette.secondary.main} 30%, ${theme.palette.primary.main} 90%)`,
+                      '&:hover': {
+                        background: `linear-gradient(45deg, ${theme.palette.secondary.dark} 30%, ${theme.palette.primary.dark} 90%)`
+                      },
+                      '&.Mui-disabled': {
+                        background: theme.palette.action.disabledBackground,
+                        color: theme.palette.action.disabled,
+                        cursor: 'not-allowed',
+                        pointerEvents: 'auto'
+                      }
+                    }}
+
+                    >
+                      {isLoading ? 'Logging in...' : 'Login'} 
+                    </Button>
 
                   </motion.div>
                 </Box>
@@ -415,7 +418,7 @@ const Login = () => {
 
                 <motion.div variants={itemVariants}>
                   <Stack direction="row" spacing={2} justifyContent="center" mb={3}>
-                    <IconButton onClick={handleGoogleLogin} sx={{ color: '#DB4437', backgroundColor: 'rgba(255,255,255,0.9)', '&:hover': { backgroundColor: '#fff'} }}>
+                    <IconButton onClick={handleGoogleLogin} sx={{ color: '#DB4437', backgroundColor: 'rgba(255,255,255,0.9)', '&:hover': { backgroundColor: '#fff' } }}>
                       <GoogleIcon />
                     </IconButton>
                   </Stack>
@@ -431,23 +434,23 @@ const Login = () => {
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                   <Stack direction="row" spacing={2} justifyContent="center" mt={4}>
-                      <Link to="/terms" style={{ textDecoration: 'none' }}>
-                         <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', '&:hover': { color: theme.palette.primary.light }}}>
+                  <Stack direction="row" spacing={2} justifyContent="center" mt={4}>
+                    <Link to="/terms" style={{ textDecoration: 'none' }}>
+                      <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', '&:hover': { color: theme.palette.primary.light } }}>
                             Terms & Conditions
-                         </Typography>
-                      </Link>
-                      <Link to="/support" style={{ textDecoration: 'none' }}>
-                         <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', '&:hover': { color: theme.palette.primary.light }}}>
+                      </Typography>
+                    </Link>
+                    <Link to="/support" style={{ textDecoration: 'none' }}>
+                      <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', '&:hover': { color: theme.palette.primary.light } }}>
                             Support
-                         </Typography>
-                      </Link>
-                      <Link to="/customer-care" style={{ textDecoration: 'none' }}>
-                         <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', '&:hover': { color: theme.palette.primary.light }}}>
+                      </Typography>
+                    </Link>
+                    <Link to="/customer-care" style={{ textDecoration: 'none' }}>
+                      <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', '&:hover': { color: theme.palette.primary.light } }}>
                             Customer Care
-                         </Typography>
-                      </Link>
-                   </Stack>
+                      </Typography>
+                    </Link>
+                  </Stack>
                 </motion.div>
 
               </Paper>

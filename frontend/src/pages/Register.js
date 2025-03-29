@@ -12,8 +12,7 @@ import {
   InputAdornment,
   LinearProgress,
   Grid,
-  Paper,
-  Stack
+  Paper
 } from '@mui/material';
 import {
   Visibility,
@@ -132,7 +131,7 @@ const Register = () => {
     }
   };
 
-  const getPasswordStrengthColor = (strength) => {
+  const getPasswordStrengthColor = strength => {
     if (strength >= 4) return theme.palette.success.main;
     if (strength >= 2) return theme.palette.warning.main;
     return theme.palette.error.main;
@@ -143,59 +142,59 @@ const Register = () => {
       backgroundColor: 'rgba(255, 255, 255, 0.05)',
       borderRadius: '8px',
       '& fieldset': {
-        borderColor: 'rgba(255, 255, 255, 0.3)',
+        borderColor: 'rgba(255, 255, 255, 0.3)'
       },
       '&:hover fieldset': {
-        borderColor: 'rgba(255, 255, 255, 0.6)',
+        borderColor: 'rgba(255, 255, 255, 0.6)'
       },
       '&.Mui-focused fieldset': {
-        borderColor: theme.palette.primary.main,
+        borderColor: theme.palette.primary.main
       },
       '&.Mui-error fieldset': {
-        borderColor: theme.palette.error.light,
+        borderColor: theme.palette.error.light
       },
       '&:hover': {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)'
       },
       '&.Mui-focused': {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)'
       },
       '&.Mui-error': {
-        backgroundColor: 'rgba(255, 82, 82, 0.1)',
-      },
+        backgroundColor: 'rgba(255, 82, 82, 0.1)'
+      }
     },
     '& .MuiInputLabel-root': {
-      color: 'rgba(255, 255, 255, 0.7)',
+      color: 'rgba(255, 255, 255, 0.7)'
     },
     '& .MuiInputLabel-root.Mui-focused': {
-      color: theme.palette.primary.main,
+      color: theme.palette.primary.main
     },
     '& .MuiInputLabel-root.Mui-error': {
-      color: theme.palette.error.light,
+      color: theme.palette.error.light
     },
     '& .MuiFormHelperText-root': {
-      color: theme.palette.error.light,
+      color: theme.palette.error.light
     }
   };
 
   const commonInputPropsStyles = {
     style: {
       color: theme.palette.common.white,
-      borderRadius: '8px',
+      borderRadius: '8px'
     },
     sx: {
       '& input:-webkit-autofill': {
-        WebkitBoxShadow: `0 0 0 100px rgba(20, 20, 40, 0.9) inset`,
+        WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset',
         WebkitTextFillColor: theme.palette.common.white,
         caretColor: theme.palette.common.white,
         borderRadius: 'inherit',
-        transition: 'background-color 5000s ease-in-out 0s',
+        transition: 'background-color 5000s ease-in-out 0s'
       },
       '& input:-webkit-autofill:hover, & input:-webkit-autofill:focus, & input:-webkit-autofill:active': {
-        WebkitBoxShadow: `0 0 0 100px rgba(20, 20, 40, 0.9) inset`,
+        WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset',
         WebkitTextFillColor: theme.palette.common.white,
-        borderRadius: 'inherit',
-      },
+        borderRadius: 'inherit'
+      }
     }
   };
 
@@ -247,7 +246,7 @@ const Register = () => {
                   background: 'rgba(20, 20, 40, 0.8)',
                   backdropFilter: 'blur(10px)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
-                  color: theme.palette.common.white,
+                  color: theme.palette.common.white
                 }}
               >
                 <motion.div variants={itemVariants}>
@@ -292,7 +291,7 @@ const Register = () => {
                       margin="normal"
                       required
                       error={!!emailError}
-                      helperText={emailError ? <span style={{color: theme.palette.error.light}}>{emailError}</span> : ''}
+                      helperText={emailError ? <span style={{ color: theme.palette.error.light }}>{emailError}</span> : ''}
                       InputLabelProps={{ shrink: true, style: { color: 'rgba(255, 255, 255, 0.7)' } }}
                       InputProps={commonInputPropsStyles}
                       sx={{ ...commonTextFieldStyles, mb: 2 }}
@@ -330,24 +329,24 @@ const Register = () => {
                   </motion.div>
 
                   <motion.div variants={itemVariants}>
-                     <Box mb={2} mt={0.5}> {/* Adjusted margin top */}
-                       <LinearProgress
-                         variant="determinate"
-                         value={passwordStrength(password) * 20}
-                         sx={{
-                           height: 6, // Slightly thicker
-                           borderRadius: 3,
-                           backgroundColor: 'rgba(255, 255, 255, 0.1)', // Darker background
-                           '& .MuiLinearProgress-bar': {
-                             backgroundColor: getPasswordStrengthColor(passwordStrength(password)),
-                             borderRadius: 3,
-                           }
-                         }}
-                       />
-                       <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)', mt: 0.5, display: 'block' }}>
+                    <Box mb={2} mt={0.5}> {/* Adjusted margin top */}
+                      <LinearProgress
+                        variant="determinate"
+                        value={passwordStrength(password) * 20}
+                        sx={{
+                          height: 6, // Slightly thicker
+                          borderRadius: 3,
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)', // Darker background
+                          '& .MuiLinearProgress-bar': {
+                            backgroundColor: getPasswordStrengthColor(passwordStrength(password)),
+                            borderRadius: 3
+                          }
+                        }}
+                      />
+                      <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)', mt: 0.5, display: 'block' }}>
                          Passwortstärke: {['Sehr schwach', 'Schwach', 'Mäßig', 'Gut', 'Stark', 'Sehr stark'][passwordStrength(password)]}
-                       </Typography>
-                     </Box>
+                      </Typography>
+                    </Box>
                   </motion.div>
 
                   <motion.div variants={itemVariants}>
@@ -361,7 +360,7 @@ const Register = () => {
                       margin="normal"
                       required
                       error={!!passwordError}
-                      helperText={passwordError ? <span style={{color: theme.palette.error.light}}>{passwordError}</span> : ''}
+                      helperText={passwordError ? <span style={{ color: theme.palette.error.light }}>{passwordError}</span> : ''}
                       InputLabelProps={{ shrink: true, style: { color: 'rgba(255, 255, 255, 0.7)' } }}
                       InputProps={commonInputPropsStyles}
                       sx={{ ...commonTextFieldStyles, mb: 3 }}
@@ -383,13 +382,13 @@ const Register = () => {
                         color: theme.palette.common.white,
                         background: `linear-gradient(45deg, ${theme.palette.secondary.main} 30%, ${theme.palette.primary.main} 90%)`,
                         '&:hover': {
-                          background: `linear-gradient(45deg, ${theme.palette.secondary.dark} 30%, ${theme.palette.primary.dark} 90%)`,
+                          background: `linear-gradient(45deg, ${theme.palette.secondary.dark} 30%, ${theme.palette.primary.dark} 90%)`
                         },
                         '&.Mui-disabled': {
-                           background: theme.palette.action.disabledBackground,
-                           color: theme.palette.action.disabled,
-                           cursor: 'not-allowed',
-                           pointerEvents: 'auto'
+                          background: theme.palette.action.disabledBackground,
+                          color: theme.palette.action.disabled,
+                          cursor: 'not-allowed',
+                          pointerEvents: 'auto'
                         }
                       }}
                     >
@@ -422,7 +421,7 @@ const Register = () => {
                           '&:hover': {
                             borderColor: theme.palette.primary.light,
                             backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                            color: theme.palette.primary.light,
+                            color: theme.palette.primary.light
                           }
                         }}
                       >
