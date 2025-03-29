@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // Changed to single quotes
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -95,7 +95,7 @@ const Login = () => {
     setIsLoading(true);
 
     if (!validateEmail(email)) {
-      setEmailError('Bitte gib eine gültige E-Mail-Adresse ein');
+      setEmailError('Please enter a valid email address'); 
       setIsLoading(false);
       return;
     }
@@ -110,7 +110,7 @@ const Login = () => {
         // TODO: Handle "Remember Me" functionality (e.g., store token differently)
         await login(response.data.token);
       } else {
-        setError('Anmeldung fehlgeschlagen. Bitte überprüfe deine Anmeldedaten.');
+        setError('Login failed. Please check your credentials.'); 
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -136,17 +136,22 @@ const Login = () => {
           {/* Left Side */}
           <Grid item xs={12} md={6}>
             <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }}>
-              <Typography 
-                variant="h2" 
-                component="h1" 
-                gutterBottom 
-                sx={{ 
-                  color: theme.palette.common.white, 
-                  fontWeight: 'bold',
-                  textAlign: { xs: 'center', md: 'left' }
-                }}
-              >
-                Welcome Back to TimeFlow
+                <Typography 
+                  variant="h2" 
+                  component="h1" 
+                  gutterBottom 
+                  sx={{ 
+                    color: theme.palette.common.white, 
+                    fontWeight: 'bold',
+                    fontSize: '2.5rem', // Restored size
+                    textAlign: { xs: 'center', md: 'left' }
+                  }}
+                >
+                  Welcome Back to TimeFlow
+
+
+
+
               </Typography>
             </motion.div>
           </Grid>
@@ -174,7 +179,7 @@ const Login = () => {
                     Login
                   </Typography>
                   <Typography variant="body1" color="rgba(255, 255, 255, 0.7)" mb={4}>
-                    Glad you're back.!
+                    Glad you're back!
                   </Typography>
                 </motion.div>
 
@@ -217,14 +222,14 @@ const Login = () => {
                         sx: {
                           // Target the input element itself for autofill styles
                           '& input:-webkit-autofill': {
-                            WebkitBoxShadow: `0 0 0 100px rgba(20, 20, 40, 0.9) inset`, // Use a background similar to the form paper
+                            WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset', // Use a background similar to the form paper
                             WebkitTextFillColor: theme.palette.common.white, // Ensure text color is white
                             caretColor: theme.palette.common.white, // Ensure cursor color is white
                             borderRadius: 'inherit', // Inherit border radius from the root element
                             transition: 'background-color 5000s ease-in-out 0s' // Delay background color change
                           },
                           '& input:-webkit-autofill:hover, & input:-webkit-autofill:focus, & input:-webkit-autofill:active': {
-                            WebkitBoxShadow: `0 0 0 100px rgba(20, 20, 40, 0.9) inset`, // Keep the same shadow on interaction
+                            WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset', // Keep the same shadow on interaction
                             WebkitTextFillColor: theme.palette.common.white,
                             borderRadius: 'inherit'
                           }
@@ -299,14 +304,14 @@ const Login = () => {
                         sx: {
                           // Target the input element itself for autofill styles
                           '& input:-webkit-autofill': {
-                            WebkitBoxShadow: `0 0 0 100px rgba(20, 20, 40, 0.9) inset`, // Use a background similar to the form paper
+                            WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset', // Use a background similar to the form paper
                             WebkitTextFillColor: theme.palette.common.white, // Ensure text color is white
                             caretColor: theme.palette.common.white, // Ensure cursor color is white
                             borderRadius: 'inherit', // Inherit border radius from the root element
                             transition: 'background-color 5000s ease-in-out 0s', // Delay background color change
                           },
                           '& input:-webkit-autofill:hover, & input:-webkit-autofill:focus, & input:-webkit-autofill:active': {
-                            WebkitBoxShadow: `0 0 0 100px rgba(20, 20, 40, 0.9) inset`, // Keep the same shadow on interaction
+                            WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset', // Keep the same shadow on interaction
                             WebkitTextFillColor: theme.palette.common.white,
                             borderRadius: 'inherit',
                           },
@@ -359,10 +364,10 @@ const Login = () => {
                               }}
                             />
                           }
-                          label={<Typography variant="body2" sx={{color: 'rgba(255, 255, 255, 0.7)'}}>Remember me</Typography>}
+                          label={<Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Remember me</Typography>}
                        />
                        <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
-                         <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: theme.palette.primary.light }}}>
+                         <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: theme.palette.primary.light } }}>
                            Forgot password?
                          </Typography>
                        </Link>
@@ -370,33 +375,33 @@ const Login = () => {
                   </motion.div>
 
                   <motion.div variants={itemVariants} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      type="submit"
-                      fullWidth
-                      variant="contained"
-                      size="large"
-                      disabled={isLoading}
-                      sx={{
-                        py: 1.5,
-                        borderRadius: '8px', // Rounded corners for button
-                        fontSize: 16,
-                        fontWeight: 'medium',
-                        color: theme.palette.common.white, // White text
-                        // Gradient background like the image
-                        background: `linear-gradient(45deg, ${theme.palette.secondary.main} 30%, ${theme.palette.primary.main} 90%)`,
-                        '&:hover': {
-                          background: `linear-gradient(45deg, ${theme.palette.secondary.dark} 30%, ${theme.palette.primary.dark} 90%)`,
-                        },
-                        '&.Mui-disabled': { // Style for disabled state
-                           background: theme.palette.action.disabledBackground,
-                           color: theme.palette.action.disabled,
-                           cursor: 'not-allowed',
-                           pointerEvents: 'auto' // Ensure pointer events are enabled for tooltip if needed
-                        }
-                      }}
-                    >
-                      {isLoading ? 'Logging in...' : 'Login'}
-                    </Button>
+<Button
+  type="submit"
+  fullWidth
+  variant="contained"
+  size="large"
+  disabled={isLoading}
+  sx={{
+    py: 1.5,
+    borderRadius: '8px',
+    fontSize: 16,
+    fontWeight: 'medium',
+    color: theme.palette.common.white,
+    background: `linear-gradient(45deg, ${theme.palette.secondary.main} 30%, ${theme.palette.primary.main} 90%)`,
+    '&:hover': {
+      background: `linear-gradient(45deg, ${theme.palette.secondary.dark} 30%, ${theme.palette.primary.dark} 90%)`
+    },
+    '&.Mui-disabled': {
+      background: theme.palette.action.disabledBackground,
+      color: theme.palette.action.disabled,
+      cursor: 'not-allowed',
+      pointerEvents: 'auto',
+    },
+  }}
+>
+  {isLoading ? 'Logging in...' : 'Login'} 
+</Button>
+
                   </motion.div>
                 </Box>
 

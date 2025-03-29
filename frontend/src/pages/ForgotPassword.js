@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom'; // useNavigate entfernt, da nicht verwendet
+import { Link } from 'react-router-dom'; // useNavigate removed, as it is not used
 import {
   Box,
   Button,
@@ -115,14 +115,14 @@ const ForgotPassword = () => {
 
     // Einfache E-Mail-Validierung hinzugefügt
     if (!email || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-      setError('Bitte gib eine gültige E-Mail-Adresse ein.');
+      setError('Please enter a valid email address.');
       setIsLoading(false);
       return;
     }
 
     try {
       await api.post('/api/auth/forgot-password', { email });
-      setSuccess('Wenn ein Konto mit dieser E-Mail existiert, wurde ein Reset-Link versendet. Bitte überprüfe dein Postfach (auch den Spam-Ordner).');
+      setSuccess('If an account with this email exists, a reset link has been sent. Please check your inbox (including the spam folder).');
       setEmail(''); // Feld leeren nach Erfolg
     } catch (err) {
       // Zeige eine generische Fehlermeldung, um E-Mail-Enumeration zu vermeiden

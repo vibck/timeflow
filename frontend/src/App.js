@@ -4,7 +4,7 @@ import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles'; // cre
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider as CustomThemeProvider, useTheme } from './contexts/ThemeContext';
-import createAppTheme from './theme'; // Importiere unsere Theme-Funktion
+import theme from './theme'; // Importiere unser Theme-Objekt
 
 // App-Seiten
 import Login from './pages/Login';
@@ -58,7 +58,7 @@ const AppWithTheme = () => {
   const { mode } = useTheme();
   
   // Erstelle das Theme mit unserer benutzerdefinierten Funktion
-  const theme = createAppTheme(mode);
+  // Removed the reference to createAppTheme
 
   // Wir benötigen AppLayout nicht mehr, da wir alle Routen über das Layout-Element rendern
   // const AppLayout = AnimatedLayout;
