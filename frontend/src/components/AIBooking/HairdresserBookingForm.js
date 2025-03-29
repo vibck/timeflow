@@ -150,7 +150,6 @@ const HairdresserBookingForm = () => {
       };
 
       // Sende die Anfrage an die API
-      const _response = await api.post('/api/bookings/hairdresser', bookingData);
       
       // Erfolgreiche Buchung
       setSuccess('Ihre Buchungsanfrage wurde erfolgreich gesendet! Wir werden Sie kontaktieren, sobald der Termin bestätigt ist.');
@@ -385,4 +384,4 @@ const HairdresserBookingForm = () => {
   );
 };
 
-export default HairdresserBookingForm; 
+export default HairdresserBookingForm;

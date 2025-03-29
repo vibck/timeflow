@@ -55,7 +55,6 @@ const PrivateRoute = ({ children }) => {
  * Verwaltet das Theme und die Routen der Anwendung
  */
 const AppWithTheme = () => {
-  const { mode } = useTheme();
   
   // Erstelle das Theme mit unserer benutzerdefinierten Funktion
   // Removed the reference to createAppTheme
