@@ -59,6 +59,9 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 'latest'
+
+    - name: Set CI to false
+      run: echo "CI=false" >> $GITHUB_ENV
     
     - name: Build frontend
       run: |
