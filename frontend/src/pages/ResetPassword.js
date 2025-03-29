@@ -14,7 +14,7 @@ import { useTheme } from '@mui/material/styles';
 import { motion } from 'framer-motion';
 import api from '../utils/api';
 
-const passwordStrength = (password) => {
+const passwordStrength = password => {
   if (!password) return 0;
   let strength = 0;
   
@@ -39,7 +39,7 @@ const ResetPassword = () => {
 
   const token = searchParams.get('token');
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -135,7 +135,7 @@ const ResetPassword = () => {
                 variant="outlined"
                 type="password"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={e => setNewPassword(e.target.value)}
                 margin="normal"
                 required
                 sx={{ mb: 1 }}
@@ -153,8 +153,8 @@ const ResetPassword = () => {
                       backgroundColor: passwordStrength(newPassword) >= 4 ? 
                         theme.palette.success.main : 
                         passwordStrength(newPassword) >= 2 ? 
-                        theme.palette.warning.main : 
-                        theme.palette.error.main
+                          theme.palette.warning.main : 
+                          theme.palette.error.main
                     }
                   }}
                 />
@@ -169,7 +169,7 @@ const ResetPassword = () => {
                 variant="outlined"
                 type="password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={e => setConfirmPassword(e.target.value)}
                 margin="normal"
                 required
                 sx={{ mb: 3 }}
