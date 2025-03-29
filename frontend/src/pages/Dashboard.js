@@ -71,7 +71,6 @@ const Dashboard = () => {
         
         // Lade anstehende Termine (für die nächsten 7 Tage)
         const now = DateTime.now();
-        const _nextWeek = now.plus({ days: 7 });
         
         const eventsResponse = await api.get('/api/events');
         const upcomingEvents = eventsResponse.data.data ? eventsResponse.data.data.filter(event => {

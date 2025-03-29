@@ -135,7 +135,6 @@ const RestaurantBookingForm = () => {
     
     try {
       // Sende die Anfrage an die API
-      const _response = await api.post('/api/bookings/restaurant', bookingData);
       
       setSuccess('Restaurantreservierung erfolgreich angefragt! Die KI wird einen Tisch für Sie reservieren.');
       
@@ -386,4 +385,4 @@ const RestaurantBookingForm = () => {
   );
 };
 
-export default RestaurantBookingForm; 
+export default RestaurantBookingForm;

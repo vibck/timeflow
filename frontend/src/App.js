@@ -1,9 +1,10 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles'; // createTheme entfernt
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider as CustomThemeProvider, useTheme } from './contexts/ThemeContext';
+import theme from './theme'; // Importiere unser Theme-Objekt
 
 // App-Seiten
 import Login from './pages/Login';
@@ -54,47 +55,9 @@ const PrivateRoute = ({ children }) => {
  * Verwaltet das Theme und die Routen der Anwendung
  */
 const AppWithTheme = () => {
-  const { mode } = useTheme();
   
-  // MUI-Theme basierend auf dem ausgewählten Modus (hell/dunkel)
-  const theme = createTheme({
-    palette: {
-      mode: mode,
-      primary: {
-        main: '#2196f3'
-      },
-      secondary: {
-        main: '#f50057'
-      }
-    },
-    typography: {
-      fontFamily: [
-        '-apple-system',
-        'BlinkMacSystemFont',
-        '"Segoe UI"',
-        'Roboto',
-        '"Helvetica Neue"',
-        'Arial',
-        'sans-serif',
-        '"Apple Color Emoji"',
-        '"Segoe UI Emoji"',
-        '"Segoe UI Symbol"'
-      ].join(',')
-    },
-    components: {
-      MuiButton: {
-        styleOverrides: {
-          containedPrimary: {
-            backgroundColor: '#2196f3',
-            color: '#ffffff',
-            '&:hover': {
-              backgroundColor: '#1976d2'
-            }
-          }
-        }
-      }
-    }
-  });
+  // Erstelle das Theme mit unserer benutzerdefinierten Funktion
+  // Removed the reference to createAppTheme
 
   // Wir benötigen AppLayout nicht mehr, da wir alle Routen über das Layout-Element rendern
   // const AppLayout = AnimatedLayout;

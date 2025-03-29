@@ -97,7 +97,6 @@ const MedicalBookingForm = () => {
       };
 
       // Sende die Anfrage an die API
-      const _response = await api.post('/api/bookings/medical', bookingData);
       
       // Erfolgreiche Buchung
       setSuccess('Ihre Terminanfrage wurde erfolgreich gesendet! Wir werden Sie kontaktieren, sobald der Termin bestätigt ist.');
@@ -327,4 +326,4 @@ const MedicalBookingForm = () => {
   );
 };
 
-export default MedicalBookingForm; 
+export default MedicalBookingForm;
