@@ -5,6 +5,9 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider as CustomThemeProvider, useTheme } from './contexts/ThemeContext';
 import theme from './theme'; // Importiere unser Theme-Objekt
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { de } from 'date-fns/locale';
 
 // App-Seiten
 import Login from './pages/Login';
@@ -64,38 +67,40 @@ const AppWithTheme = () => {
 
   return (
     <MuiThemeProvider theme={theme}>
-      <CssBaseline />
-      <BrowserRouter future={router.future}>
-        <Routes>
-          {/* Öffentliche Routen */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          
-          {/* Geschützte Routen */}
-          <Route path="/" element={
-            <PrivateRoute>
-              <Layout />
-            </PrivateRoute>
-          }>
-            <Route index element={<Dashboard />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="ai-booking" element={<AIBooking />} />
-            <Route path="calendar" element={<Calendar />} />
-            <Route path="events/new" element={<EventForm />} />
-            <Route path="events/:id" element={<EventForm />} />
-            <Route path="events/:id/edit" element={<EventForm />} />
-            <Route path="health-intervals" element={<HealthIntervals />} />
-          </Route>
-          
-          {/* Die folgenden Routen entfernen, da sie jetzt im Layout oben sind */}
-          {/* 404-Seite */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={de}>
+        <CssBaseline />
+        <BrowserRouter future={router.future}>
+          <Routes>
+            {/* Öffentliche Routen */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            
+            {/* Geschützte Routen */}
+            <Route path="/" element={
+              <PrivateRoute>
+                <Layout />
+              </PrivateRoute>
+            }>
+              <Route index element={<Dashboard />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="ai-booking" element={<AIBooking />} />
+              <Route path="calendar" element={<Calendar />} />
+              <Route path="events/new" element={<EventForm />} />
+              <Route path="events/:id" element={<EventForm />} />
+              <Route path="events/:id/edit" element={<EventForm />} />
+              <Route path="health-intervals" element={<HealthIntervals />} />
+            </Route>
+            
+            {/* Die folgenden Routen entfernen, da sie jetzt im Layout oben sind */}
+            {/* 404-Seite */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </LocalizationProvider>
     </MuiThemeProvider>
   );
 };

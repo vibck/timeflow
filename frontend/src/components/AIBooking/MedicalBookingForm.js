@@ -1,327 +1,257 @@
-import React, { useState, forwardRef } from 'react';
+import React, { useState } from 'react';
 import { 
-  Box, 
   TextField, 
   Button, 
-  Typography, 
   FormControl, 
   InputLabel, 
   Select, 
   MenuItem, 
+  Typography, 
   Paper,
   Grid,
+  CircularProgress,
   Alert,
-  CircularProgress
+  Fade,
+  Stack
 } from '@mui/material';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { registerLocale, setDefaultLocale } from 'react-datepicker';
-import de from 'date-fns/locale/de';
-import api from '../../utils/api';
-
-// Deutsche Sprache für Datepicker registrieren
-registerLocale('de', de);
-setDefaultLocale('de');
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { de } from 'date-fns/locale';
 
 const MedicalBookingForm = () => {
-  // Formularfelder
   const [doctorName, setDoctorName] = useState('');
-  const [doctorPhone, setDoctorPhone] = useState('');
-  const [doctorAddress, setDoctorAddress] = useState('');
-  const [appointmentReason, setAppointmentReason] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTime, setSelectedTime] = useState('');
-  const [patientName, setPatientName] = useState('');
-  const [patientPhone, setPatientPhone] = useState('');
-  const [insuranceType, setInsuranceType] = useState('gesetzlich');
-  const [insuranceNumber, setInsuranceNumber] = useState('');
-  const [customTimePreference, setCustomTimePreference] = useState('');
+  const [specialty, setSpecialty] = useState('');
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedTime, setSelectedTime] = useState('vormittag');
+  const [insurance, setInsurance] = useState('gesetzlich');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
-  
-  // UI-Status
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  
-  // Validierungsfehler
-  const [dateError, setDateError] = useState('');
-  
-  // Formularvalidierung
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  // Form validation
+  const [errors, setErrors] = useState({});
+
   const validateForm = () => {
-    let isValid = true;
+    const newErrors = {};
     
-    if (!doctorName.trim()) {
-      setError('Bitte geben Sie den Namen des Arztes an');
-      isValid = false;
-    } else if (!doctorPhone.trim()) {
-      setError('Bitte geben Sie die Telefonnummer des Arztes an');
-      isValid = false;
-    } else if (!appointmentReason.trim()) {
-      setError('Bitte geben Sie den Grund des Termins an');
-      isValid = false;
-    } else if (!selectedDate) {
-      setDateError('Bitte wählen Sie ein Datum aus');
-      isValid = false;
-    } else if (!selectedTime && !customTimePreference) {
-      setError('Bitte wählen Sie eine Uhrzeit aus');
-      isValid = false;
-    }
+    if (!doctorName) newErrors.doctorName = 'Bitte geben Sie einen Arzt an';
+    if (!specialty) newErrors.specialty = 'Bitte geben Sie eine Fachrichtung an';
+    if (!selectedDate) newErrors.selectedDate = 'Bitte wählen Sie ein Datum';
+    if (!selectedTime) newErrors.selectedTime = 'Bitte wählen Sie eine Uhrzeit';
+    if (!phoneNumber) newErrors.phoneNumber = 'Bitte geben Sie eine Telefonnummer an';
+    if (!email) newErrors.email = 'Bitte geben Sie eine E-Mail-Adresse an';
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Ungültige E-Mail-Adresse';
     
-    return isValid;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
-  
-  // Formular absenden
-  const handleSubmit = async event => {
-    event.preventDefault();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
     if (!validateForm()) return;
-
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
+    
+    setIsSubmitting(true);
+    setSubmitError('');
+    
     try {
-      // Bereite die Daten für die API vor
-      const bookingData = {
-        type: 'medical',
-        businessName: doctorName,
-        phoneNumber: doctorPhone,
-        address: doctorAddress,
-        service: appointmentReason,
-        preferredDate: selectedDate.toISOString(),
-        preferredTime: selectedTime,
-        customTimePreference,
-        customerName: patientName,
-        customerPhone: patientPhone,
-        notes,
-        userId: null // Optional: Wenn Benutzer eingeloggt ist
-      };
-
-      // Sende die Anfrage an die API
+      // Simulieren einer API-Anfrage
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Erfolgreiche Buchung
-      setSuccess('Ihre Terminanfrage wurde erfolgreich gesendet! Wir werden Sie kontaktieren, sobald der Termin bestätigt ist.');
-      
-      // Setze das Formular zurück
-      setDoctorName('');
-      setDoctorPhone('');
-      setDoctorAddress('');
-      setAppointmentReason('');
-      setSelectedDate(new Date());
-      setSelectedTime('');
-      setPatientName('');
-      setPatientPhone('');
-      setInsuranceType('');
-      setInsuranceNumber('');
-      setCustomTimePreference('');
-      setNotes('');
-    } catch (err) {
-      console.error('Fehler beim Erstellen der Terminanfrage:', err);
-      setError(err.response?.data?.message || 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+      setSubmitSuccess(true);
+      resetForm();
+    } catch (error) {
+      setSubmitError('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
-  
-  // Benutzerdefinierte Eingabe für den DatePicker
-  const CustomDatePickerInput = forwardRef(({ value, onClick, placeholder /* , error, helperText */ }, ref) => (
-    <TextField
-      fullWidth
-      label="Datum auswählen"
-      onClick={onClick}
-      value={value}
-      placeholder={placeholder}
-      error={!!dateError}
-      helperText={dateError}
-      InputProps={{
-        readOnly: true
-      }}
-      ref={ref}
-    />
-  ));
-  
+
+  const resetForm = () => {
+    setDoctorName('');
+    setSpecialty('');
+    setSelectedDate(null);
+    setSelectedTime('vormittag');
+    setInsurance('gesetzlich');
+    setPhoneNumber('');
+    setEmail('');
+    setNotes('');
+    setErrors({});
+  };
+
   return (
-    <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-      <Typography variant="h5" component="h2" gutterBottom>
+    <Paper elevation={2} sx={{ p: 3, maxWidth: 600, mx: 'auto' }}>
+      <Typography variant="h5" gutterBottom>
         Arzttermin buchen
       </Typography>
-      <Typography variant="body1" color="textSecondary" gutterBottom>
-        Geben Sie die Daten für Ihren gewünschten Arzttermin ein. Unsere KI wird automatisch anrufen und einen Termin für Sie vereinbaren.
+      <Typography variant="body2" color="text.secondary" paragraph>
+        Füllen Sie das Formular aus, um einen Arzttermin zu buchen
       </Typography>
       
-      {error && <Alert severity="error" sx={{ mt: 2, mb: 2 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mt: 2, mb: 2 }}>{success}</Alert>}
-      
-      <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+      <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
-          {/* Arztdaten */}
           <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom>Arztdaten</Typography>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="Name des Arztes/der Praxis"
+              label="Name des Arztes"
               value={doctorName}
-              onChange={e => setDoctorName(e.target.value)}
-              required
+              onChange={(e) => setDoctorName(e.target.value)}
+              error={!!errors.doctorName}
+              helperText={errors.doctorName}
+              margin="normal"
             />
           </Grid>
           
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              label="Fachrichtung"
+              value={specialty}
+              onChange={(e) => setSpecialty(e.target.value)}
+              error={!!errors.specialty}
+              helperText={errors.specialty}
+              margin="normal"
+            />
+          </Grid>
+          
+          <Grid item xs={12} sm={6}>
+            <DatePicker 
+              label="Datum"
+              value={selectedDate}
+              onChange={(newDate) => setSelectedDate(newDate)}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  margin: "normal",
+                  error: !!errors.selectedDate,
+                  helperText: errors.selectedDate
+                }
+              }}
+            />
+          </Grid>
+          
+          <Grid item xs={12} sm={6}>
+            <FormControl 
+              fullWidth 
+              margin="normal"
+              error={!!errors.selectedTime}
+            >
+              <InputLabel>Uhrzeit auswählen</InputLabel>
+              <Select
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                label="Uhrzeit auswählen"
+                sx={{ height: 56 }}
+              >
+                <MenuItem value="vormittag">
+                  <Stack>
+                    <Typography variant="body2">Vormittag</Typography>
+                    <Typography variant="caption" color="text.secondary">8:00 - 12:00 Uhr</Typography>
+                  </Stack>
+                </MenuItem>
+                <MenuItem value="nachmittag">
+                  <Stack>
+                    <Typography variant="body2">Nachmittag</Typography>
+                    <Typography variant="caption" color="text.secondary">13:00 - 17:00 Uhr</Typography>
+                  </Stack>
+                </MenuItem>
+              </Select>
+              {errors.selectedTime && (
+                <Typography color="error" variant="caption" sx={{ mt: 0.5, ml: 1.5 }}>
+                  {errors.selectedTime}
+                </Typography>
+              )}
+            </FormControl>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Versicherungsart</InputLabel>
+              <Select
+                value={insurance}
+                onChange={(e) => setInsurance(e.target.value)}
+                label="Versicherungsart"
+              >
+                <MenuItem value="gesetzlich">Gesetzlich</MenuItem>
+                <MenuItem value="privat">Privat</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
               label="Telefonnummer"
-              value={doctorPhone}
-              onChange={e => setDoctorPhone(e.target.value)}
-              placeholder="+49 123 4567890"
-              required
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              error={!!errors.phoneNumber}
+              helperText={errors.phoneNumber}
+              margin="normal"
+            />
+          </Grid>
+          
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="E-Mail"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={!!errors.email}
+              helperText={errors.email}
+              margin="normal"
             />
           </Grid>
           
           <Grid item xs={12}>
             <TextField
               fullWidth
-              label="Adresse der Praxis (optional)"
-              value={doctorAddress}
-              onChange={e => setDoctorAddress(e.target.value)}
-              placeholder="Straße, Hausnummer, PLZ, Ort"
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Grund des Termins"
-              value={appointmentReason}
-              onChange={e => setAppointmentReason(e.target.value)}
-              required
-            />
-          </Grid>
-          
-          {/* Patientendaten */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
-            <Typography variant="h6" gutterBottom>Patientendaten</Typography>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Name des Patienten"
-              value={patientName}
-              onChange={e => setPatientName(e.target.value)}
-              placeholder="Vor- und Nachname"
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Telefonnummer des Patienten"
-              value={patientPhone}
-              onChange={e => setPatientPhone(e.target.value)}
-              placeholder="+49 123 4567890"
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel>Versicherungsart</InputLabel>
-              <Select
-                value={insuranceType}
-                onChange={e => setInsuranceType(e.target.value)}
-                label="Versicherungsart"
-              >
-                <MenuItem value="gesetzlich">Gesetzlich versichert</MenuItem>
-                <MenuItem value="privat">Privat versichert</MenuItem>
-                <MenuItem value="selbstzahler">Selbstzahler</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Versicherungsnummer (optional)"
-              value={insuranceNumber}
-              onChange={e => setInsuranceNumber(e.target.value)}
-            />
-          </Grid>
-          
-          {/* Terminwünsche */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
-            <Typography variant="h6" gutterBottom>Terminwünsche</Typography>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Box sx={{ mb: 2 }}>
-              <DatePicker
-                selected={selectedDate}
-                onChange={date => setSelectedDate(date)}
-                minDate={new Date()}
-                locale="de"
-                dateFormat="dd.MM.yyyy"
-                customInput={<CustomDatePickerInput />}
-              />
-            </Box>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel>Uhrzeit</InputLabel>
-              <Select
-                value={selectedTime}
-                onChange={e => setSelectedTime(e.target.value)}
-                label="Uhrzeit"
-              >
-                <MenuItem value="früh">Früh (8-10 Uhr)</MenuItem>
-                <MenuItem value="vormittag">Vormittag (10-12 Uhr)</MenuItem>
-                <MenuItem value="mittag">Mittag (12-14 Uhr)</MenuItem>
-                <MenuItem value="nachmittag">Nachmittag (14-17 Uhr)</MenuItem>
-                <MenuItem value="spät">Spät (17-20 Uhr)</MenuItem>
-                <MenuItem value="egal">Egal / Keine Präferenz</MenuItem>
-                <MenuItem value="custom">Spezifische Zeit</MenuItem>
-              </Select>
-            </FormControl>
-            
-            {selectedTime === 'custom' && (
-              <TextField
-                fullWidth
-                label="Gewünschte Uhrzeit"
-                value={customTimePreference}
-                onChange={e => setCustomTimePreference(e.target.value)}
-                placeholder="z.B. 14:30 Uhr"
-                sx={{ mt: 2 }}
-              />
-            )}
-          </Grid>
-          
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Zusätzliche Anmerkungen (optional)"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
+              label="Anmerkungen (optional)"
               multiline
-              rows={3}
+              rows={4}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              margin="normal"
             />
           </Grid>
           
-          {/* Submit Button */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={loading}
+          <Grid item xs={12}>
+            <Button 
+              type="submit" 
+              variant="contained" 
+              color="primary" 
               fullWidth
-              sx={{ py: 1.5 }}
+              disabled={isSubmitting}
+              sx={{ mt: 2, py: 1.5 }}
             >
-              {loading ? <CircularProgress size={24} /> : 'Termin anfragen'}
+              {isSubmitting ? <CircularProgress size={24} /> : 'Termin buchen'}
             </Button>
           </Grid>
         </Grid>
-      </Box>
+      </form>
+      
+      {submitSuccess && (
+        <Fade in={submitSuccess} timeout={500}>
+          <Alert 
+            severity="success" 
+            sx={{ mt: 2 }}
+            onClose={() => setSubmitSuccess(false)}
+          >
+            Ihr Termin wurde erfolgreich gebucht!
+          </Alert>
+        </Fade>
+      )}
+      
+      {submitError && (
+        <Alert 
+          severity="error" 
+          sx={{ mt: 2 }}
+          onClose={() => setSubmitError('')}
+        >
+          {submitError}
+        </Alert>
+      )}
     </Paper>
   );
 };

@@ -144,17 +144,19 @@ const EventForm = () => {
   const handleSuccessfulCreate = async createdEvent => {
     setSuccess('Termin erfolgreich erstellt!');
     
-    // Zeige das Erinnerungsformular an, nachdem der Termin erstellt wurde
+    // Setze die Event-ID und aktualisiere den Modus
     setEventId(createdEvent.id);
     setShowReminderForm(true);
     setIsEditMode(true);
     
-    // Lade Erinnerungen für den neuen Termin (sollten keine sein, aber für die Konsistenz)
+    // Lade Erinnerungen für den neuen Termin
     try {
       const remindersResponse = await api.get(`/api/reminders/event/${createdEvent.id}`);
       setReminders(remindersResponse.data);
     } catch (err) {
       console.error('Fehler beim Laden der Erinnerungen:', err);
+      // Setze einen leeren Array für Erinnerungen, wenn keine gefunden wurden
+      setReminders([]);
     }
   };
   
@@ -213,7 +215,11 @@ const EventForm = () => {
       } else {
         // Neuen Termin erstellen
         const response = await api.post('/api/events', eventData);
-        handleSuccessfulCreate(response.data);
+        if (response.data && response.data.id) {
+          handleSuccessfulCreate(response.data);
+        } else {
+          throw new Error('Keine gültige Event-ID erhalten');
+        }
       }
     } catch (err) {
       console.error('Fehler beim Speichern des Termins:', err);

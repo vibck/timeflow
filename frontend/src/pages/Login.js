@@ -143,7 +143,7 @@ const Login = () => {
                   sx={{ 
                     color: theme.palette.common.white, 
                     fontWeight: 'bold',
-                    fontSize: '2.5rem', // Restored size
+                    fontSize: '3rem', // Restored size
                     textAlign: { xs: 'center', md: 'left' }
                   }}
 

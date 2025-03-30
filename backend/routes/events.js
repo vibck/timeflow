@@ -19,13 +19,44 @@ router.get('/', authenticateJWT, async (req, res) => {
 });
 
 // POST new event
-router.post('/', authenticateJWT, (req, res) => {
-  const { type, date, duration, description, location, phoneNumber, customerName } = req.body;
-  
-  res.status(201).json({ 
-    message: 'Event created', 
-    data: req.body 
-  });
+router.post('/', authenticateJWT, async (req, res) => {
+  const { 
+    title,
+    description,
+    start_time,
+    end_time,
+    location,
+    event_type,
+    recurrence_rule
+  } = req.body;
+
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO events (
+        user_id, title, description, start_time, end_time, 
+        location, event_type, recurrence_rule
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      RETURNING *`,
+      [
+        req.user.id,
+        title,
+        description,
+        start_time,
+        end_time,
+        location,
+        event_type || 'personal',
+        recurrence_rule
+      ]
+    );
+
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Fehler beim Erstellen des Events:', error);
+    res.status(500).json({ 
+      message: 'Serverfehler beim Erstellen des Events',
+      error: error.message 
+    });
+  }
 });
 
 // Ein Event aktualisieren

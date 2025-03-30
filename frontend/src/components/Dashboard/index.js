@@ -97,9 +97,13 @@ const Dashboard = () => {
                         }
                       </ListItemIcon>
                       <ListItemText
-                        primary={appointment.title}
+                        primary={
+                          <Typography variant="subtitle1" component="div">
+                            {appointment.title}
+                          </Typography>
+                        }
                         secondary={
-                          <React.Fragment>
+                          <Typography variant="body2" component="div">
                             <Typography
                               sx={{ display: 'inline' }}
                               component="span"
@@ -109,7 +113,7 @@ const Dashboard = () => {
                               {appointment.date}
                             </Typography>
                             {` — ${appointment.time} Uhr`}
-                          </React.Fragment>
+                          </Typography>
                         }
                       />
                     </ListItem>

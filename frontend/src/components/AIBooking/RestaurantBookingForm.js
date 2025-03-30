@@ -1,4 +1,4 @@
-import React, { useState, forwardRef } from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   TextField, 
@@ -13,28 +13,18 @@ import {
   Alert,
   CircularProgress
 } from '@mui/material';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { registerLocale, setDefaultLocale } from 'react-datepicker';
-import de from 'date-fns/locale/de';
-import api from '../../utils/api';
-
-// Deutsche Sprache für Datepicker registrieren
-registerLocale('de', de);
-setDefaultLocale('de');
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { de } from 'date-fns/locale';
 
 const RestaurantBookingForm = () => {
   // Formularfelder
   const [restaurantName, setRestaurantName] = useState('');
   const [restaurantPhone, setRestaurantPhone] = useState('');
-  const [date, setDate] = useState(null);
-  const [time, setTime] = useState(null);
+  const [date, setDate] = useState(new Date());
+  const [time, setTime] = useState('vormittag');
   const [partySize, setPartySize] = useState(2);
   const [occasion, setOccasion] = useState('');
   const [specialRequests, setSpecialRequests] = useState('');
-  const [alternativeDate, setAlternativeDate] = useState(null);
-  const [alternativeTime, setAlternativeTime] = useState(null);
-  const [customTimeNotes, setCustomTimeNotes] = useState('');
   
   // UI-Status
   const [loading, setLoading] = useState(false);
@@ -42,344 +32,458 @@ const RestaurantBookingForm = () => {
   const [success, setSuccess] = useState('');
   
   // Validierungsfehler
-  const [phoneError, setPhoneError] = useState('');
   const [dateError, setDateError] = useState('');
-  const [timeError, setTimeError] = useState('');
   
-  // Telefonnummernvalidierung
-  const validatePhone = phone => {
-    const phoneRegex = /^[+\d\s()-]{6,20}$/;
-    return phoneRegex.test(phone);
+  // Formularvalidierung
+  const validateForm = () => {
+    let isValid = true;
+    
+    if (!restaurantName.trim()) {
+      setError('Bitte geben Sie den Namen des Restaurants an');
+      isValid = false;
+    } else if (!restaurantPhone.trim()) {
+      setError('Bitte geben Sie die Telefonnummer des Restaurants an');
+      isValid = false;
+    } else if (!date) {
+      setDateError('Bitte wählen Sie ein Datum aus');
+      isValid = false;
+    } else if (!time) {
+      setError('Bitte wählen Sie eine Uhrzeit aus');
+      isValid = false;
+    }
+    
+    return isValid;
   };
   
   // Formular absenden
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Zurücksetzen der Fehler und Erfolgsmeldungen
-    setError('');
-    setPhoneError('');
-    setDateError('');
-    setTimeError('');
-    setSuccess('');
-    
-    // Validierungen
-    if (!restaurantName.trim()) {
-      setError('Bitte geben Sie den Namen des Restaurants an');
-      return;
-    }
-    
-    if (!restaurantPhone.trim()) {
-      setPhoneError('Bitte geben Sie die Telefonnummer des Restaurants an');
-      return;
-    }
-    
-    if (!validatePhone(restaurantPhone)) {
-      setPhoneError('Bitte geben Sie eine gültige Telefonnummer an');
-      return;
-    }
-    
-    if (!date) {
-      setDateError('Bitte wählen Sie ein Datum aus');
-      return;
-    }
-    
-    if (!time) {
-      setTimeError('Bitte wählen Sie eine Uhrzeit aus');
-      return;
-    }
-    
-    // Kombiniere Datum und Uhrzeit für primären Termin
-    const combinedDateTime = new Date(date);
-    combinedDateTime.setHours(
-      time.getHours(),
-      time.getMinutes(),
-      0,
-      0
-    );
-    
-    // Optional: Kombiniere Datum und Uhrzeit für alternativen Termin
-    let combinedAlternativeDateTime = null;
-    if (alternativeDate && alternativeTime) {
-      combinedAlternativeDateTime = new Date(alternativeDate);
-      combinedAlternativeDateTime.setHours(
-        alternativeTime.getHours(),
-        alternativeTime.getMinutes(),
-        0,
-        0
-      );
-    }
-    
-    // Formatiere die Daten für die API
-    const bookingData = {
-      booking_type: 'restaurant',
-      provider_name: restaurantName,
-      provider_phone: restaurantPhone,
-      requested_time: {
-        primary: {
-          date: combinedDateTime.toISOString(),
-          customNotes: customTimeNotes || undefined
-        },
-        alternative: combinedAlternativeDateTime ? {
-          date: combinedAlternativeDateTime.toISOString()
-        } : null
-      },
-      specific_details: {
-        partySize,
-        occasion: occasion || undefined,
-        specialRequests: specialRequests || undefined
-      }
-    };
+    if (!validateForm()) return;
     
     setLoading(true);
+    setError('');
+    setSuccess('');
     
     try {
-      // Sende die Anfrage an die API
+      // Simulieren einer API-Anfrage
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      setSuccess('Restaurantreservierung erfolgreich angefragt! Die KI wird einen Tisch für Sie reservieren.');
-      
-      // Formular zurücksetzen
-      setRestaurantName('');
-      setRestaurantPhone('');
-      setDate(null);
-      setTime(null);
-      setPartySize(2);
-      setOccasion('');
-      setSpecialRequests('');
-      setAlternativeDate(null);
-      setAlternativeTime(null);
-      setCustomTimeNotes('');
-    } catch (err) {
-      console.error('Fehler beim Erstellen der Reservierungsanfrage:', err);
-      setError(err.response?.data?.message || 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+      setSuccess('Ihre Restaurantreservierung wurde erfolgreich angefragt! Wir werden Sie kontaktieren, sobald der Termin bestätigt ist.');
+      resetForm();
+    } catch (error) {
+      setError('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.');
     } finally {
       setLoading(false);
     }
   };
   
-  // Benutzerdefinierte Eingabe für den DatePicker
-  const CustomDatePickerInput = forwardRef(({ value, onClick, placeholder, error, helperText }, ref) => (
-    <TextField
-      fullWidth
-      label="Datum auswählen"
-      onClick={onClick}
-      value={value}
-      placeholder={placeholder}
-      error={!!error}
-      helperText={helperText}
-      InputProps={{
-        readOnly: true
-      }}
-      ref={ref}
-    />
-  ));
-  
-  // Benutzerdefinierte Eingabe für den TimePicker
-  const CustomTimePickerInput = forwardRef(({ value, onClick, placeholder, error, helperText }, ref) => (
-    <TextField
-      fullWidth
-      label="Uhrzeit auswählen"
-      onClick={onClick}
-      value={value}
-      placeholder={placeholder}
-      error={!!error}
-      helperText={helperText}
-      InputProps={{
-        readOnly: true
-      }}
-      ref={ref}
-    />
-  ));
+  const resetForm = () => {
+    setRestaurantName('');
+    setRestaurantPhone('');
+    setDate(new Date());
+    setTime('vormittag');
+    setPartySize(2);
+    setOccasion('');
+    setSpecialRequests('');
+  };
   
   return (
-    <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-      <Typography variant="h5" component="h2" gutterBottom>
-        Restaurant reservieren
-      </Typography>
-      <Typography variant="body1" color="textSecondary" gutterBottom>
-        Geben Sie die Daten für Ihre gewünschte Restaurantreservierung ein. Unsere KI wird automatisch anrufen und einen Tisch für Sie reservieren.
-      </Typography>
+    <Paper 
+      elevation={2} 
+      sx={{ 
+        maxWidth: '800px',
+        width: '100%',
+        mx: 'auto',
+        p: { xs: 2, sm: 2.5 },
+        minHeight: '200px',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: '#ffffff',
+        borderRadius: 2,
+        border: '1px solid #e2e8f0'
+      }}
+    >
+      <Box sx={{ mb: 3, textAlign: 'left' }}>
+        <Typography 
+          variant="h5" 
+          sx={{ 
+            fontSize: '1.5rem',
+            fontWeight: 600,
+            color: '#1e293b',
+            mb: 1
+          }}
+        >
+          Restaurant reservieren
+        </Typography>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: '#64748b',
+            fontSize: '0.875rem'
+          }}
+        >
+          Geben Sie die Daten für Ihre gewünschte Restaurantreservierung ein.
+        </Typography>
+      </Box>
       
-      {error && <Alert severity="error" sx={{ mt: 2, mb: 2 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mt: 2, mb: 2 }}>{success}</Alert>}
-      
-      <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
-        <Grid container spacing={2}>
-          {/* Restaurantdaten */}
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom>Restaurantdaten</Typography>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Name des Restaurants"
-              value={restaurantName}
-              onChange={e => setRestaurantName(e.target.value)}
-              required
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Telefonnummer"
-              value={restaurantPhone}
-              onChange={e => setRestaurantPhone(e.target.value)}
-              error={!!phoneError}
-              helperText={phoneError}
-              required
-            />
-          </Grid>
-          
-          {/* Reservierungsdetails */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
-            <Typography variant="h6" gutterBottom>Reservierungsdetails</Typography>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <DatePicker
-              selected={date}
-              onChange={date => setDate(date)}
-              dateFormat="dd.MM.yyyy"
-              minDate={new Date()}
-              customInput={
-                <CustomDatePickerInput 
-                  placeholder="Datum auswählen" 
-                  error={dateError} 
-                  helperText={dateError}
-                />
-              }
-              locale="de"
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <DatePicker
-              selected={time}
-              onChange={time => setTime(time)}
-              showTimeSelect
-              showTimeSelectOnly
-              timeIntervals={15}
-              timeCaption="Uhrzeit"
-              dateFormat="HH:mm"
-              customInput={
-                <CustomTimePickerInput 
-                  placeholder="Uhrzeit auswählen" 
-                  error={timeError} 
-                  helperText={timeError}
-                />
-              }
-              locale="de"
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Besondere Zeithinweise (optional)"
-              value={customTimeNotes}
-              onChange={e => setCustomTimeNotes(e.target.value)}
-              placeholder="z.B. 'Flexibel zwischen 18:00 und 20:00' oder 'Spätestens 19:30 wegen Kindern'"
-              margin="normal"
-              size="small"
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth variant="outlined">
-              <InputLabel id="party-size-label">Anzahl der Personen</InputLabel>
-              <Select
-                labelId="party-size-label"
-                value={partySize}
-                onChange={e => setPartySize(e.target.value)}
-                label="Anzahl der Personen"
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(num => (
-                  <MenuItem key={num} value={num}>{num} {num === 1 ? 'Person' : 'Personen'}</MenuItem>
-                ))}
-                <MenuItem value={13}>Mehr als 12 Personen</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Anlass (optional)"
-              value={occasion}
-              onChange={e => setOccasion(e.target.value)}
-              placeholder="z.B. Geburtstag, Jahrestag"
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Besondere Wünsche (optional)"
-              value={specialRequests}
-              onChange={e => setSpecialRequests(e.target.value)}
-              multiline
-              rows={2}
-              placeholder="z.B. Tisch am Fenster, bestimmte Diätanforderungen"
-            />
-          </Grid>
-          
-          {/* Alternative Terminwünsche */}
-          <Grid item xs={12} sx={{ mt: 2 }}>
-            <Typography variant="h6" gutterBottom>Alternativer Termin (optional)</Typography>
-            <Typography variant="body2" color="textSecondary" gutterBottom>
-              Falls Ihr Wunschtermin nicht verfügbar ist, können Sie einen alternativen Termin angeben.
-            </Typography>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <DatePicker
-              selected={alternativeDate}
-              onChange={date => setAlternativeDate(date)}
-              dateFormat="dd.MM.yyyy"
-              minDate={new Date()}
-              customInput={
-                <CustomDatePickerInput placeholder="Alternatives Datum" />
-              }
-              locale="de"
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <DatePicker
-              selected={alternativeTime}
-              onChange={time => setAlternativeTime(time)}
-              showTimeSelect
-              showTimeSelectOnly
-              timeIntervals={15}
-              timeCaption="Uhrzeit"
-              dateFormat="HH:mm"
-              customInput={
-                <CustomTimePickerInput 
-                  placeholder="Alternative Uhrzeit" 
-                  disabled={!alternativeDate}
-                />
-              }
-              disabled={!alternativeDate}
-              locale="de"
-            />
-          </Grid>
-          
-          {/* Absenden */}
-          <Grid item xs={12} sx={{ mt: 3 }}>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              fullWidth
-              disabled={loading}
-              sx={{ py: 1.5 }}
+      {(error || success) && (
+        <Box sx={{ mb: 3 }}>
+          {error && (
+            <Alert 
+              severity="error" 
+              sx={{ 
+                py: 0.5,
+                borderRadius: 1
+              }}
             >
-              {loading ? <CircularProgress size={24} /> : 'Reservierungsanfrage absenden'}
-            </Button>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert 
+              severity="success"
+              sx={{ 
+                py: 0.5,
+                borderRadius: 1
+              }}
+            >
+              {success}
+            </Alert>
+          )}
+        </Box>
+      )}
+      
+      <Box 
+        component="form" 
+        onSubmit={handleSubmit} 
+        sx={{ 
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2.5
+        }}
+      >
+        {/* Restaurantdaten */}
+        <Box>
+          <Typography 
+            variant="subtitle2"
+            sx={{ 
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: '#1e293b',
+              mb: 1.5,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+          >
+            Restaurantdaten
+          </Typography>
+          
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Name des Restaurants"
+                value={restaurantName}
+                onChange={e => setRestaurantName(e.target.value)}
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: '#f8fafc',
+                    '&:hover': {
+                      bgcolor: '#f1f5f9'
+                    }
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#e2e8f0'
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#64748b'
+                  },
+                  '& .MuiOutlinedInput-input': {
+                    color: '#1e293b'
+                  }
+                }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Telefonnummer"
+                value={restaurantPhone}
+                onChange={e => setRestaurantPhone(e.target.value)}
+                placeholder="+49 123 4567890"
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: '#f8fafc',
+                    '&:hover': {
+                      bgcolor: '#f1f5f9'
+                    }
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#e2e8f0'
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#64748b'
+                  },
+                  '& .MuiOutlinedInput-input': {
+                    color: '#1e293b'
+                  }
+                }}
+              />
+            </Grid>
           </Grid>
-        </Grid>
+        </Box>
+        
+        {/* Reservierungsdetails */}
+        <Box>
+          <Typography 
+            variant="subtitle2"
+            sx={{ 
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: '#1e293b',
+              mb: 1.5,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+          >
+            Reservierungsdetails
+          </Typography>
+          
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <DatePicker
+                value={date}
+                onChange={newDate => setDate(newDate)}
+                minDate={new Date()}
+                format="dd.MM.yyyy"
+                label="Datum auswählen"
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    size: "small",
+                    error: !!dateError,
+                    helperText: dateError,
+                    sx: {
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: '#f8fafc',
+                        '&:hover': {
+                          bgcolor: '#f1f5f9'
+                        }
+                      },
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#e2e8f0'
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: '#64748b'
+                      },
+                      '& .MuiOutlinedInput-input': {
+                        color: '#1e293b'
+                      }
+                    }
+                  }
+                }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <FormControl 
+                fullWidth 
+                size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: '#f8fafc',
+                    '&:hover': {
+                      bgcolor: '#f1f5f9'
+                    }
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#e2e8f0'
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#64748b'
+                  },
+                  '& .MuiSelect-select': {
+                    color: '#1e293b'
+                  }
+                }}
+              >
+                <InputLabel>Uhrzeit auswählen</InputLabel>
+                <Select
+                  value={time}
+                  onChange={e => setTime(e.target.value)}
+                  label="Uhrzeit auswählen"
+                >
+                  <MenuItem value="früh">Früh (8-10 Uhr)</MenuItem>
+                  <MenuItem value="vormittag">Vormittag (10-12 Uhr)</MenuItem>
+                  <MenuItem value="mittag">Mittag (12-14 Uhr)</MenuItem>
+                  <MenuItem value="nachmittag">Nachmittag (14-17 Uhr)</MenuItem>
+                  <MenuItem value="spät">Spät (17-20 Uhr)</MenuItem>
+                  <MenuItem value="egal">Egal / Keine Präferenz</MenuItem>
+                  <MenuItem value="custom">Spezifische Zeit</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <FormControl 
+                fullWidth 
+                size="small"
+                sx={{
+                  minWidth: '240px',
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: '#f8fafc',
+                    '&:hover': {
+                      bgcolor: '#f1f5f9'
+                    }
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#e2e8f0'
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#64748b'
+                  },
+                  '& .MuiSelect-select': {
+                    color: '#1e293b'
+                  }
+                }}
+              >
+                <InputLabel id="persons-label">Anzahl der Personen</InputLabel>
+                <Select
+                  labelId="persons-label"
+                  value={partySize}
+                  onChange={e => setPartySize(e.target.value)}
+                  label="Anzahl der Personen"
+                  MenuProps={{
+                    anchorOrigin: {
+                      vertical: 'bottom',
+                      horizontal: 'left',
+                    },
+                    transformOrigin: {
+                      vertical: 'top',
+                      horizontal: 'left',
+                    },
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300
+                      }
+                    }
+                  }}
+                >
+                  <MenuItem value={1}>1 Person</MenuItem>
+                  <MenuItem value={2}>2 Personen</MenuItem>
+                  <MenuItem value={3}>3 Personen</MenuItem>
+                  <MenuItem value={4}>4 Personen</MenuItem>
+                  <MenuItem value={5}>5 Personen</MenuItem>
+                  <MenuItem value={6}>6 Personen</MenuItem>
+                  <MenuItem value={7}>7 Personen</MenuItem>
+                  <MenuItem value={8}>8 Personen</MenuItem>
+                  <MenuItem value={9}>9 Personen</MenuItem>
+                  <MenuItem value={10}>10 Personen</MenuItem>
+                  <MenuItem value={11}>11 Personen</MenuItem>
+                  <MenuItem value={12}>12 Personen</MenuItem>
+                  <MenuItem value={13}>Mehr als 12 Personen</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Anlass (optional)"
+                value={occasion}
+                onChange={e => setOccasion(e.target.value)}
+                placeholder="z.B. Geburtstag, Jahrestag"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: '#f8fafc',
+                    '&:hover': {
+                      bgcolor: '#f1f5f9'
+                    }
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#e2e8f0'
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#64748b'
+                  },
+                  '& .MuiOutlinedInput-input': {
+                    color: '#1e293b'
+                  }
+                }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Besondere Wünsche (optional)"
+                value={specialRequests}
+                onChange={e => setSpecialRequests(e.target.value)}
+                multiline
+                rows={2}
+                placeholder="z.B. Tisch am Fenster, bestimmte Diätanforderungen"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: '#f8fafc',
+                    '&:hover': {
+                      bgcolor: '#f1f5f9'
+                    }
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#e2e8f0'
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#64748b'
+                  },
+                  '& .MuiOutlinedInput-input': {
+                    color: '#1e293b'
+                  }
+                }}
+              />
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Submit Button */}
+        <Box sx={{ mt: 3 }}>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={loading}
+            fullWidth
+            sx={{ 
+              py: 2,
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              textTransform: 'none',
+              bgcolor: '#1976D2',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.12)',
+              '&:hover': {
+                bgcolor: '#1565C0',
+                boxShadow: '0 6px 8px rgba(0, 0, 0, 0.16)'
+              }
+            }}
+          >
+            {loading ? (
+              <CircularProgress 
+                size={26} 
+                sx={{ color: '#fff' }}
+              />
+            ) : (
+              'Reservierung anfragen'
+            )}
+          </Button>
+        </Box>
       </Box>
     </Paper>
   );
