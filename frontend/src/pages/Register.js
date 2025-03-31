@@ -1,49 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Container,
-  Alert,
-  Divider,
-  IconButton,
-  InputAdornment,
-  LinearProgress,
-  Grid,
-  Paper
-} from '@mui/material';
-import {
-  Visibility,
-  VisibilityOff
-} from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
-import { motion } from 'framer-motion';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Checkbox } from '../components/ui/checkbox';
+import { Alert } from '@mui/material';
+import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
-
-// Animation variants (optional, can be kept or removed based on preference)
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.5
-    }
-  }
-};
 
 const validateEmail = email => {
   const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -62,7 +25,6 @@ const passwordStrength = password => {
 };
 
 const Register = () => {
-  const theme = useTheme();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
@@ -70,10 +32,17 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   if (isAuthenticated) {
     return <Navigate to="/" />;
@@ -110,6 +79,12 @@ const Register = () => {
       return;
     }
 
+    if (!agreeToTerms) {
+      setError('Bitte stimme den Nutzungsbedingungen zu, um fortzufahren');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/register`, {
         name,
@@ -132,311 +107,292 @@ const Register = () => {
   };
 
   const getPasswordStrengthColor = strength => {
-    if (strength >= 4) return theme.palette.success.main;
-    if (strength >= 2) return theme.palette.warning.main;
-    return theme.palette.error.main;
-  };
-
-  const commonTextFieldStyles = {
-    '& .MuiOutlinedInput-root': {
-      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-      borderRadius: '8px',
-      '& fieldset': {
-        borderColor: 'rgba(255, 255, 255, 0.3)'
-      },
-      '&:hover fieldset': {
-        borderColor: 'rgba(255, 255, 255, 0.6)'
-      },
-      '&.Mui-focused fieldset': {
-        borderColor: theme.palette.primary.main
-      },
-      '&.Mui-error fieldset': {
-        borderColor: theme.palette.error.light
-      },
-      '&:hover': {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)'
-      },
-      '&.Mui-focused': {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)'
-      },
-      '&.Mui-error': {
-        backgroundColor: 'rgba(255, 82, 82, 0.1)'
-      }
-    },
-    '& .MuiInputLabel-root': {
-      color: 'rgba(255, 255, 255, 0.7)'
-    },
-    '& .MuiInputLabel-root.Mui-focused': {
-      color: theme.palette.primary.main
-    },
-    '& .MuiInputLabel-root.Mui-error': {
-      color: theme.palette.error.light
-    },
-    '& .MuiFormHelperText-root': {
-      color: theme.palette.error.light
-    }
-  };
-
-  const commonInputPropsStyles = {
-    style: {
-      color: theme.palette.common.white,
-      borderRadius: '8px'
-    },
-    sx: {
-      '& input:-webkit-autofill': {
-        WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset',
-        WebkitTextFillColor: theme.palette.common.white,
-        caretColor: theme.palette.common.white,
-        borderRadius: 'inherit',
-        transition: 'background-color 5000s ease-in-out 0s'
-      },
-      '& input:-webkit-autofill:hover, & input:-webkit-autofill:focus, & input:-webkit-autofill:active': {
-        WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset',
-        WebkitTextFillColor: theme.palette.common.white,
-        borderRadius: 'inherit'
-      }
-    }
+    if (strength >= 4) return 'bg-green-500';
+    if (strength >= 2) return 'bg-yellow-500';
+    return 'bg-red-500';
   };
 
   return (
-    <Box sx={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(to bottom right, #1a1a2e, #16213e)',
-      p: 2
-    }}>
-      <Container maxWidth="lg">
-        <Grid container spacing={5} alignItems="center" justifyContent="center">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0a0f1e]">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0a0f1e] via-[#1a1f3e] to-[#0a0f1e] opacity-80"></div>
 
-          {/* Left Side - Optional Title/Info */}
-          <Grid item xs={12} md={6} sx={{ display: { xs: 'none', md: 'block' } }}>
-            <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }}>
-              <Typography
-                variant="h2"
-                component="h1"
-                gutterBottom
-                sx={{
-                  color: theme.palette.common.white,
-                  fontWeight: 'bold',
-                  textAlign: 'left'
+      {/* Decorative elements */}
+      {mounted && (
+        <>
+          <div className="absolute top-0 left-0 w-full h-full">
+            <div
+              className="absolute top-[10%] left-[20%] w-32 h-32 rounded-full bg-[#ff0066] blur-[80px] opacity-20"
+              style={{
+                animation: "pulse 8s infinite alternate",
+              }}
+            />
+            <div
+              className="absolute top-[40%] right-[10%] w-40 h-40 rounded-full bg-[#3399ff] blur-[100px] opacity-20"
+              style={{
+                animation: "pulse 10s infinite alternate",
+              }}
+            />
+            <div
+              className="absolute bottom-[15%] left-[30%] w-36 h-36 rounded-full bg-[#9f7aea] blur-[90px] opacity-20"
+              style={{
+                animation: "pulse 9s infinite alternate",
+              }}
+            />
+          </div>
+
+          {/* Floating elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute rounded-lg opacity-10 bg-white"
+                style={{
+                  width: `${Math.random() * 100 + 50}px`,
+                  height: `${Math.random() * 100 + 50}px`,
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  transform: `rotate(${Math.random() * 30 - 15}deg)`,
+                  animation: `float ${Math.random() * 20 + 20}s infinite alternate ease-in-out`,
                 }}
-              >
-                Join TimeFlow Today
-              </Typography>
-              <Typography variant="h5" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                Start organizing your time efficiently.
-              </Typography>
-            </motion.div>
-          </Grid>
+              />
+            ))}
+          </div>
+        </>
+      )}
 
-          {/* Right Side - Register Form */}
-          <Grid item xs={12} md={6}>
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={containerVariants}
-            >
-              <Paper
-                elevation={12}
-                sx={{
-                  p: { xs: 3, sm: 5 },
-                  borderRadius: 4,
-                  background: 'rgba(20, 20, 40, 0.8)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  color: theme.palette.common.white
-                }}
-              >
-                <motion.div variants={itemVariants}>
-                  <Typography variant="h4" component="h2" fontWeight="bold" gutterBottom>
-                    Konto erstellen
-                  </Typography>
-                  <Typography variant="body1" color="rgba(255, 255, 255, 0.7)" mb={4}>
-                    Erstelle ein Konto, um mit TimeFlow zu starten.
-                  </Typography>
-                </motion.div>
+      {/* Content */}
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-5xl mx-auto flex flex-col lg:flex-row rounded-2xl overflow-hidden shadow-2xl">
+          {/* Left panel - Branding */}
+          <div className="lg:w-1/2 bg-gradient-to-br from-[#1a1f3e]/80 to-[#0d1025]/80 backdrop-blur-xl p-8 lg:p-12 flex flex-col justify-center relative border-r border-white/10">
+            <div className="relative z-10 text-center lg:text-left">
+              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+                Willkommen bei{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#ff0066] to-[#3399ff]">
+                  TimeFlow
+                </span>
+              </h2>
 
-                {error && (
-                  <motion.div variants={itemVariants}>
-                    <Alert severity="error" sx={{ mb: 3, bgcolor: 'error.dark', color: '#fff' }}>{error}</Alert>
-                  </motion.div>
-                )}
+              <p className="text-gray-300 text-lg max-w-md mx-auto lg:mx-0">
+                Erstelle ein Konto und starte noch heute. Organisiere deinen Zeitplan und steigere deine Produktivität.
+              </p>
+            </div>
+          </div>
 
-                <Box component="form" onSubmit={handleRegister} noValidate>
-                  <motion.div variants={itemVariants}>
-                    <TextField
-                      fullWidth
-                      label="Name"
-                      variant="outlined"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      margin="normal"
-                      required
-                      InputLabelProps={{ shrink: true, style: { color: 'rgba(255, 255, 255, 0.7)' } }}
-                      InputProps={commonInputPropsStyles}
-                      sx={{ ...commonTextFieldStyles, mb: 2 }}
-                    />
-                  </motion.div>
+          {/* Right panel - Register form */}
+          <div className="lg:w-1/2 bg-[#1a1f3e]/40 backdrop-blur-xl p-8 lg:p-12 flex items-center justify-center">
+            {mounted ? (
+              <div className="w-full max-w-md">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-white">Registrierung</h2>
+                  <p className="text-gray-400 mt-2">Erstelle ein Konto, um loszulegen</p>
+                </div>
 
-                  <motion.div variants={itemVariants}>
-                    <TextField
-                      fullWidth
-                      label="E-Mail-Adresse"
-                      variant="outlined"
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      margin="normal"
-                      required
-                      error={!!emailError}
-                      helperText={emailError ? <span style={{ color: theme.palette.error.light }}>{emailError}</span> : ''}
-                      InputLabelProps={{ shrink: true, style: { color: 'rgba(255, 255, 255, 0.7)' } }}
-                      InputProps={commonInputPropsStyles}
-                      sx={{ ...commonTextFieldStyles, mb: 2 }}
-                    />
-                  </motion.div>
+                <form onSubmit={handleRegister} className="space-y-5">
+                  {error && (
+                    <Alert severity="error" className="mb-4">
+                      {error}
+                    </Alert>
+                  )}
 
-                  <motion.div variants={itemVariants}>
-                    <TextField
-                      fullWidth
-                      label="Passwort"
-                      variant="outlined"
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      margin="normal"
-                      required
-                      error={!!passwordError && passwordError !== 'Die Passwörter stimmen nicht überein'} // Only show length error here
-                      InputLabelProps={{ shrink: true, style: { color: 'rgba(255, 255, 255, 0.7)' } }}
-                      InputProps={{
-                        ...commonInputPropsStyles,
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              onClick={() => setShowPassword(!showPassword)}
-                              edge="end"
-                              sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
-                            >
-                              {showPassword ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          </InputAdornment>
-                        )
-                      }}
-                      sx={{ ...commonTextFieldStyles, mb: 1 }} // Reduced margin bottom
-                    />
-                  </motion.div>
-
-                  <motion.div variants={itemVariants}>
-                    <Box mb={2} mt={0.5}> {/* Adjusted margin top */}
-                      <LinearProgress
-                        variant="determinate"
-                        value={passwordStrength(password) * 20}
-                        sx={{
-                          height: 6, // Slightly thicker
-                          borderRadius: 3,
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)', // Darker background
-                          '& .MuiLinearProgress-bar': {
-                            backgroundColor: getPasswordStrengthColor(passwordStrength(password)),
-                            borderRadius: 3
-                          }
-                        }}
+                  <div className="space-y-2">
+                    <label htmlFor="name" className="text-sm font-medium text-gray-300 flex items-center">
+                      Name *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User className="h-5 w-5 text-gray-500" />
+                      </div>
+                      <Input
+                        id="name"
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Max Mustermann"
+                        required
+                        className="pl-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors"
                       />
-                      <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)', mt: 0.5, display: 'block' }}>
-                         Passwortstärke: {['Sehr schwach', 'Schwach', 'Mäßig', 'Gut', 'Stark', 'Sehr stark'][passwordStrength(password)]}
-                      </Typography>
-                    </Box>
-                  </motion.div>
+                    </div>
+                  </div>
 
-                  <motion.div variants={itemVariants}>
-                    <TextField
-                      fullWidth
-                      label="Passwort bestätigen"
-                      variant="outlined"
-                      type={showPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                      margin="normal"
-                      required
-                      error={!!passwordError}
-                      helperText={passwordError ? <span style={{ color: theme.palette.error.light }}>{passwordError}</span> : ''}
-                      InputLabelProps={{ shrink: true, style: { color: 'rgba(255, 255, 255, 0.7)' } }}
-                      InputProps={commonInputPropsStyles}
-                      sx={{ ...commonTextFieldStyles, mb: 3 }}
-                    />
-                  </motion.div>
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium text-gray-300 flex items-center">
+                      E-Mail-Adresse *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-gray-500" />
+                      </div>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@company.com"
+                        required
+                        className={`pl-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors ${emailError ? 'border-red-500' : ''}`}
+                      />
+                      {emailError && (
+                        <p className="text-sm text-red-500 mt-1">{emailError}</p>
+                      )}
+                    </div>
+                  </div>
 
-                  <motion.div variants={itemVariants} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      type="submit"
-                      fullWidth
-                      variant="contained"
-                      size="large"
-                      disabled={isLoading}
-                      sx={{
-                        py: 1.5,
-                        borderRadius: '8px',
-                        fontSize: 16,
-                        fontWeight: 'medium',
-                        color: theme.palette.common.white,
-                        background: `linear-gradient(45deg, ${theme.palette.secondary.main} 30%, ${theme.palette.primary.main} 90%)`,
-                        '&:hover': {
-                          background: `linear-gradient(45deg, ${theme.palette.secondary.dark} 30%, ${theme.palette.primary.dark} 90%)`
-                        },
-                        '&.Mui-disabled': {
-                          background: theme.palette.action.disabledBackground,
-                          color: theme.palette.action.disabled,
-                          cursor: 'not-allowed',
-                          pointerEvents: 'auto'
-                        }
-                      }}
-                    >
-                      {isLoading ? 'Registrierung läuft...' : 'Registrieren'}
-                    </Button>
-                  </motion.div>
-                </Box>
-
-                <motion.div variants={itemVariants}>
-                  <Divider sx={{ my: 3, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
-                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                      Bereits ein Konto?
-                    </Typography>
-                  </Divider>
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                  <Box textAlign="center">
-                    <Link to="/login" style={{ textDecoration: 'none' }}>
-                      <Button
-                        fullWidth
-                        variant="outlined"
-                        size="large" // Match size
-                        sx={{
-                          py: 1.5, // Match padding
-                          borderRadius: '8px', // Match border radius
-                          fontSize: 16, // Match font size
-                          borderColor: 'rgba(255, 255, 255, 0.5)',
-                          color: 'rgba(255, 255, 255, 0.8)',
-                          '&:hover': {
-                            borderColor: theme.palette.primary.light,
-                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                            color: theme.palette.primary.light
-                          }
-                        }}
+                  <div className="space-y-2">
+                    <label htmlFor="password" className="text-sm font-medium text-gray-300 flex items-center">
+                      Passwort *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-gray-500" />
+                      </div>
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="pl-10 pr-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
                       >
-                        Zur Anmeldung
-                      </Button>
-                    </Link>
-                  </Box>
-                </motion.div>
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    {password && (
+                      <div className="mt-1">
+                        <div className="flex h-1 mt-1 overflow-hidden rounded-full bg-gray-800">
+                          <div 
+                            className={`${getPasswordStrengthColor(passwordStrength(password))}`} 
+                            style={{ width: `${passwordStrength(password) * 20}%` }}
+                          />
+                        </div>
+                        <p className="mt-1 text-xs text-gray-400">
+                          {passwordStrength(password) <= 2 && "Schwach"}
+                          {passwordStrength(password) > 2 && passwordStrength(password) < 4 && "Mittel"}
+                          {passwordStrength(password) >= 4 && "Stark"}
+                        </p>
+                      </div>
+                    )}
+                    {passwordError && (
+                      <p className="text-sm text-red-500 mt-1">{passwordError}</p>
+                    )}
+                  </div>
 
-              </Paper>
-            </motion.div>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
+                  <div className="space-y-2">
+                    <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-300 flex items-center">
+                      Passwort bestätigen *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-gray-500" />
+                      </div>
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="pl-10 pr-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="terms"
+                      checked={agreeToTerms}
+                      onCheckedChange={(checked) => setAgreeToTerms(checked === true)}
+                      className="border-[#ffffff30] data-[state=checked]:bg-[#3399ff] data-[state=checked]:border-[#3399ff]"
+                    />
+                    <label htmlFor="terms" className="ml-2 block text-sm text-gray-300">
+                      Ich stimme den{" "}
+                      <Link to="/terms" className="text-[#3399ff] hover:text-white transition-colors">
+                        Nutzungsbedingungen
+                      </Link>{" "}
+                      und{" "}
+                      <Link to="/privacy" className="text-[#3399ff] hover:text-white transition-colors">
+                        Datenschutzrichtlinien
+                      </Link>{" "}
+                      zu
+                    </label>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full h-11 bg-gradient-to-r from-[#ff0066] to-[#3399ff] hover:opacity-90 transition-all duration-300 shadow-lg shadow-[#3399ff]/20"
+                  >
+                    {isLoading ? 'Wird registriert...' : 'Registrieren'}
+                  </Button>
+
+                  <div className="text-center text-sm text-gray-400">
+                    Bereits registriert?{" "}
+                    <Link to="/login" className="text-[#3399ff] hover:text-white transition-colors">
+                      Anmelden
+                    </Link>
+                  </div>
+                </form>
+
+                <div className="flex justify-center space-x-4 mt-8 text-xs text-gray-500">
+                  <Link to="/terms" className="hover:text-gray-300 transition-colors">
+                    AGB
+                  </Link>
+                  <Link to="/support" className="hover:text-gray-300 transition-colors">
+                    Support
+                  </Link>
+                  <Link to="/care" className="hover:text-gray-300 transition-colors">
+                    Kundenservice
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="w-full max-w-md">
+                <div className="animate-pulse">
+                  <div className="h-6 bg-gray-700 rounded w-3/4 mx-auto mb-4"></div>
+                  <div className="h-4 bg-gray-700 rounded w-1/2 mx-auto mb-8"></div>
+                  <div className="space-y-6">
+                    <div className="h-10 bg-gray-700 rounded"></div>
+                    <div className="h-10 bg-gray-700 rounded"></div>
+                    <div className="h-10 bg-gray-700 rounded"></div>
+                    <div className="h-10 bg-gray-700 rounded"></div>
+                    <div className="h-5 bg-gray-700 rounded w-1/3"></div>
+                    <div className="h-12 bg-gray-700 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes pulse {
+          0% { opacity: 0.2; transform: translateY(0); }
+          50% { opacity: 0.3; transform: translateY(15px); }
+          100% { opacity: 0.2; transform: translateY(0); }
+        }
+        
+        @keyframes float {
+          0% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(20px) rotate(5deg); }
+          100% { transform: translateY(-20px) rotate(-5deg); }
+        }
+      `}</style>
+    </div>
   );
 };
 

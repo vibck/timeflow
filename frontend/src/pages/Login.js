@@ -1,54 +1,11 @@
-import React, { useState, useEffect } from 'react'; // Changed to single quotes
+import React, { useState, useEffect } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Container,
-  Alert,
-  Divider,
-  IconButton,
-  InputAdornment,
-  Checkbox,
-  FormControlLabel,
-  Grid,
-  Stack,
-  Paper
-} from '@mui/material';
-import {
-  Google as GoogleIcon,
-  // Facebook as FacebookIcon, // Removed as unused
-  // GitHub as GitHubIcon, // Removed as unused
-  Visibility,
-  VisibilityOff
-} from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
-import { motion } from 'framer-motion';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Checkbox } from '../components/ui/checkbox';
+import { Alert } from '@mui/material';
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useAuth } from '../contexts/AuthContext';
-import api from '../utils/api';
-
-// Animation variants (optional, can be kept or removed based on preference)
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.5
-    }
-  }
-};
 
 const validateEmail = email => {
   const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -56,7 +13,6 @@ const validateEmail = email => {
 };
 
 const Login = () => {
-  const theme = useTheme();
   const { isAuthenticated, login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -66,9 +22,11 @@ const Login = () => {
   const [emailError, setEmailError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
+    setMounted(true);
     if (location.state && location.state.message) {
       setSuccess(location.state.message);
     }
@@ -81,11 +39,6 @@ const Login = () => {
   const handleGoogleLogin = () => {
     window.location.href = `${process.env.REACT_APP_API_URL}/api/auth/google`;
   };
-  
-  // Placeholder for other social logins (commented out as unused)
-  // const handleFacebookLogin = () => { console.warn('Facebook login not implemented'); };
-  // const handleGitHubLogin = () => { console.warn('GitHub login not implemented'); };
-
 
   const handleLogin = async e => {
     e.preventDefault();
@@ -95,370 +48,273 @@ const Login = () => {
     setIsLoading(true);
 
     if (!validateEmail(email)) {
-      setEmailError('Please enter a valid email address'); 
+      setEmailError('Bitte geben Sie eine gültige E-Mail-Adresse ein');
       setIsLoading(false);
       return;
     }
 
     try {
-      const response = await api.post('/api/auth/login', {
-        email,
-        password
-      });
-
-      if (response.data.token) {
-        // TODO: Handle "Remember Me" functionality (e.g., store token differently)
-        await login(response.data.token);
-      } else {
-        setError('Login failed. Please check your credentials.'); 
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(error.response?.data?.message || 'Anmeldung fehlgeschlagen. Bitte überprüfe deine Anmeldedaten.');
+      await login(email, password);
+      setSuccess('Erfolgreich angemeldet!');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Ein Fehler ist aufgetreten');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Box sx={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      // Using a dark background similar to the image
-      background: 'linear-gradient(to bottom right, #1a1a2e, #16213e)', // Example gradient
-      p: 2
-    }}>
-      <Container maxWidth="lg">
-        <Grid container spacing={5} alignItems="center" justifyContent="center">
-          
-          {/* Left Side */}
-          <Grid item xs={12} md={6}>
-            <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }}>
-                <Typography 
-                  variant="h2" 
-                  component="h1" 
-                  gutterBottom 
-                  sx={{ 
-                    color: theme.palette.common.white, 
-                    fontWeight: 'bold',
-                    fontSize: '3rem', // Restored size
-                    textAlign: { xs: 'center', md: 'left' }
-                  }}
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0a0f1e]">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0a0f1e] via-[#1a1f3e] to-[#0a0f1e] opacity-80"></div>
 
-              >
-                  Welcome Back to TimeFlow
+      {/* Decorative elements */}
+      {mounted && (
+        <>
+          <div className="absolute top-0 left-0 w-full h-full">
+            <div
+              className="absolute top-[10%] left-[20%] w-32 h-32 rounded-full bg-[#ff0066] blur-[80px] opacity-20"
+              style={{
+                animation: "pulse 8s infinite alternate",
+              }}
+            />
+            <div
+              className="absolute top-[40%] right-[10%] w-40 h-40 rounded-full bg-[#3399ff] blur-[100px] opacity-20"
+              style={{
+                animation: "pulse 10s infinite alternate",
+              }}
+            />
+            <div
+              className="absolute bottom-[15%] left-[30%] w-36 h-36 rounded-full bg-[#9f7aea] blur-[90px] opacity-20"
+              style={{
+                animation: "pulse 9s infinite alternate",
+              }}
+            />
+          </div>
 
-
-
-
-              </Typography>
-            </motion.div>
-          </Grid>
-          {/* Right Side - Login Form */}
-                <Grid item xs={12} md={6}>
-
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={containerVariants}
-            >
-              <Paper 
-                elevation={12} // More pronounced shadow
-                sx={{
-                  p: { xs: 3, sm: 5 }, // Responsive padding
-                  borderRadius: 4, // Rounded corners like the image
-                  // Background with subtle gradient/effect matching the image's form
-                  background: 'rgba(20, 20, 40, 0.8)', // Dark semi-transparent background
-                  backdropFilter: 'blur(10px)', // Blur effect for the background
-                  border: '1px solid rgba(255, 255, 255, 0.1)', // Subtle border
-                  color: theme.palette.common.white // Ensure text inside is white
+          {/* Floating elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute rounded-lg opacity-10 bg-white"
+                style={{
+                  width: `${Math.random() * 100 + 50}px`,
+                  height: `${Math.random() * 100 + 50}px`,
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  transform: `rotate(${Math.random() * 30 - 15}deg)`,
+                  animation: `float ${Math.random() * 20 + 20}s infinite alternate ease-in-out`,
                 }}
-              >
-                <motion.div variants={itemVariants}>
-                  <Typography variant="h4" component="h2" fontWeight="bold" gutterBottom>
-                    Login
-                  </Typography>
-                  <Typography variant="body1" color="rgba(255, 255, 255, 0.7)" mb={4}>
-                    Glad you're back!
-                  </Typography>
-                </motion.div>
+              />
+            ))}
+          </div>
+        </>
+      )}
 
-                {success && (
-                  <motion.div variants={itemVariants}>
-                    <Alert severity="success" sx={{ mb: 3, bgcolor: 'success.dark', color: '#fff' }}>{success}</Alert>
-                  </motion.div>
-                )}
+      {/* Content */}
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-5xl mx-auto flex flex-col lg:flex-row rounded-2xl overflow-hidden shadow-2xl">
+          {/* Left panel - Branding */}
+          <div className="lg:w-1/2 bg-gradient-to-br from-[#1a1f3e]/80 to-[#0d1025]/80 backdrop-blur-xl p-8 lg:p-12 flex flex-col justify-center relative border-r border-white/10">
+            <div className="relative z-10 text-center lg:text-left">
+              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+                Willkommen zurück bei{" "}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#ff0066] to-[#3399ff]">
+                  TimeFlow
+                </span>
+              </h2>
 
-                {error && (
-                  <motion.div variants={itemVariants}>
-                    <Alert severity="error" sx={{ mb: 3, bgcolor: 'error.dark', color: '#fff' }}>{error}</Alert>
-                  </motion.div>
-                )}
+              <p className="text-gray-300 text-lg max-w-md mx-auto lg:mx-0">
+                Ihre persönliche Zeitmanagement-Lösung. Organisieren Sie Ihren Zeitplan und steigern Sie Ihre Produktivität.
+              </p>
+            </div>
+          </div>
 
-                <Box component="form" onSubmit={handleLogin} noValidate>
-                  <motion.div variants={itemVariants}>
-                    <TextField
-                      fullWidth
-                      label="E-Mail-Adresse" // Keeping Email as backend expects it
-                      variant="outlined" // Changed variant to outlined
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      margin="normal"
-                      required
-                      error={!!emailError}
-                      helperText={emailError ? <span style={{ color: theme.palette.error.light }}>{emailError}</span> : ''}
-                      InputLabelProps={{
-                        shrink: true, // Ensure label is always shrunk
-                        style: { color: 'rgba(255, 255, 255, 0.7)' }
-                      }}
-                      InputProps={{
-                        style: {
-                          color: theme.palette.common.white,
-                          borderRadius: '8px'
-                          // backgroundColor is handled by MuiOutlinedInput-root below for consistency
-                        },
-                        // Add autofill styles here
-                        sx: {
-                          // Target the input element itself for autofill styles
-                          '& input:-webkit-autofill': {
-                            WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset', // Use a background similar to the form paper
-                            WebkitTextFillColor: theme.palette.common.white, // Ensure text color is white
-                            caretColor: theme.palette.common.white, // Ensure cursor color is white
-                            borderRadius: 'inherit', // Inherit border radius from the root element
-                            transition: 'background-color 5000s ease-in-out 0s' // Delay background color change
-                          },
-                          '& input:-webkit-autofill:hover, & input:-webkit-autofill:focus, & input:-webkit-autofill:active': {
-                            WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset', // Keep the same shadow on interaction
-                            WebkitTextFillColor: theme.palette.common.white,
-                            borderRadius: 'inherit'
-                          }
-                        }
-                      }}
-                      sx={{
-                        mb: 2,
-                        '& .MuiOutlinedInput-root': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)', // Set background color here
-                          borderRadius: '8px', // Keep border radius
-                          '& fieldset': {
-                            borderColor: 'rgba(255, 255, 255, 0.3)'
-                          },
-                          '&:hover fieldset': {
-                            borderColor: 'rgba(255, 255, 255, 0.6)'
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: theme.palette.primary.main
-                          },
-                          '&.Mui-error fieldset': { // Style for error state border
-                            borderColor: theme.palette.error.light
-                          },
-                          // Ensure background doesn't change on hover/focus if not desired
-                          '&:hover': {
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                          },
-                          '&.Mui-focused': {
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                          },
-                          '&.Mui-error': { // Style for error state background
-                            // Keep background consistent or slightly indicate error
-                            backgroundColor: 'rgba(255, 82, 82, 0.1)'
-                          }
-                        },
-                        '& .MuiInputLabel-root': { // Ensure label color is correct
-                          color: 'rgba(255, 255, 255, 0.7)'
-                        },
-                        '& .MuiInputLabel-root.Mui-focused': {
-                          color: theme.palette.primary.main // Focused label color
-                        },
-                        '& .MuiInputLabel-root.Mui-error': { // Error label color
-                          color: theme.palette.error.light
-                        },
-                        '& .MuiFormHelperText-root': {
-                          color: theme.palette.error.light // Helper text color
-                        }
-                      }}
-                    />
-                  </motion.div>
+          {/* Right panel - Login form */}
+          <div className="lg:w-1/2 bg-[#1a1f3e]/40 backdrop-blur-xl p-8 lg:p-12 flex items-center justify-center">
+            {mounted ? (
+              <div className="w-full max-w-md">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-white">Login</h2>
+                  <p className="text-gray-400 mt-2">Schön, dass Sie wieder da sind!</p>
+                </div>
 
-                  <motion.div variants={itemVariants}>
-                    <TextField
-                      fullWidth
-                      label="Password"
-                      variant="outlined"
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      margin="normal"
-                      required
-                      InputLabelProps={{
-                        shrink: true, // Ensure label is always shrunk
-                        style: { color: 'rgba(255, 255, 255, 0.7)' }
-                      }}
-                      InputProps={{
-                        style: {
-                          color: theme.palette.common.white,
-                          borderRadius: '8px'
-                          // backgroundColor is handled by MuiOutlinedInput-root below for consistency
-                        },
-                        // Add autofill styles here
-                        sx: {
-                          // Target the input element itself for autofill styles
-                          '& input:-webkit-autofill': {
-                            WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset', // Use a background similar to the form paper
-                            WebkitTextFillColor: theme.palette.common.white, // Ensure text color is white
-                            caretColor: theme.palette.common.white, // Ensure cursor color is white
-                            borderRadius: 'inherit', // Inherit border radius from the root element
-                            transition: 'background-color 5000s ease-in-out 0s' // Delay background color change
-                          },
-                          '& input:-webkit-autofill:hover, & input:-webkit-autofill:focus, & input:-webkit-autofill:active': {
-                            WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset', // Keep the same shadow on interaction
-                            WebkitTextFillColor: theme.palette.common.white,
-                            borderRadius: 'inherit'
-                          }
-                        },
-                        // removed notched: false
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              onClick={() => setShowPassword(!showPassword)}
-                              edge="end"
-                              sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
-                            >
-                              {showPassword ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          </InputAdornment>
-                        )
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '& fieldset': {
-                            borderColor: 'rgba(255, 255, 255, 0.3)'
-                          },
-                          '&:hover fieldset': {
-                            borderColor: 'rgba(255, 255, 255, 0.6)'
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: theme.palette.primary.main
-                          }
-                        },
-                        '& .MuiInputLabel-root.Mui-focused': {
-                          color: theme.palette.primary.main // Label color on focus
-                        }
-                      }}
-                    />
-                  </motion.div>
+                <form onSubmit={handleLogin} className="space-y-6">
+                  {error && (
+                    <Alert severity="error" className="mb-4">
+                      {error}
+                    </Alert>
+                  )}
+                  {success && (
+                    <Alert severity="success" className="mb-4">
+                      {success}
+                    </Alert>
+                  )}
 
-                  <motion.div variants={itemVariants}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                      <FormControlLabel
-                        control={
-                          <Checkbox 
-                            checked={rememberMe} 
-                            onChange={e => setRememberMe(e.target.checked)} 
-                            name="rememberMe" 
-                            sx={{
-                              color: 'rgba(255, 255, 255, 0.7)',
-                              '&.Mui-checked': {
-                                color: theme.palette.primary.main // Use primary color when checked
-                              }
-                            }}
-                          />
-                        }
-                        label={<Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Remember me</Typography>}
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium text-gray-300 flex items-center">
+                      E-Mail-Adresse *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-gray-500" />
+                      </div>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@company.com"
+                        required
+                        className={`pl-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors ${emailError ? 'border-red-500' : ''}`}
                       />
-                      <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
-                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: theme.palette.primary.light } }}>
-                           Forgot password?
-                        </Typography>
-                      </Link>
-                    </Box>
-                  </motion.div>
+                      {emailError && (
+                        <p className="text-sm text-red-500 mt-1">{emailError}</p>
+                      )}
+                    </div>
+                  </div>
 
-                  <motion.div variants={itemVariants} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="password" className="text-sm font-medium text-gray-300">
+                        Passwort *
+                      </label>
+                      <Link
+                        to="/forgot-password"
+                        className="text-sm text-gray-300 hover:text-white transition-colors"
+                      >
+                        Passwort vergessen?
+                      </Link>
+                    </div>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-gray-500" />
+                      </div>
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="pl-10 pr-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="remember"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                      className="border-[#ffffff30] data-[state=checked]:bg-[#3399ff] data-[state=checked]:border-[#3399ff]"
+                    />
+                    <label htmlFor="remember" className="ml-2 block text-sm text-gray-300">
+                      Angemeldet bleiben
+                    </label>
+                  </div>
+
                   <Button
                     type="submit"
-                    fullWidth
-                    variant="contained"
-                    size="large"
                     disabled={isLoading}
-                    sx={{
-                      py: 1.5,
-                      borderRadius: '8px',
-                      fontSize: 16,
-                      fontWeight: 'medium',
-                      color: theme.palette.common.white,
-                      background: `linear-gradient(45deg, ${theme.palette.secondary.main} 30%, ${theme.palette.primary.main} 90%)`,
-                      '&:hover': {
-                        background: `linear-gradient(45deg, ${theme.palette.secondary.dark} 30%, ${theme.palette.primary.dark} 90%)`
-                      },
-                      '&.Mui-disabled': {
-                        background: theme.palette.action.disabledBackground,
-                        color: theme.palette.action.disabled,
-                        cursor: 'not-allowed',
-                        pointerEvents: 'auto'
-                      }
-                    }}
+                    className="w-full h-11 bg-gradient-to-r from-[#ff0066] to-[#3399ff] hover:opacity-90 transition-all duration-300 shadow-lg shadow-[#3399ff]/20"
+                  >
+                    {isLoading ? 'Wird angemeldet...' : 'Anmelden'}
+                  </Button>
 
+                  <div className="relative flex items-center justify-center">
+                    <div className="border-t border-[#ffffff20] w-full"></div>
+                    <span className="bg-[#1a1f3e]/40 backdrop-blur-xl px-2 text-sm text-gray-400 absolute">Oder</span>
+                  </div>
+
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={handleGoogleLogin}
+                      className="w-12 h-12 rounded-full bg-white flex items-center justify-center hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+                      aria-label="Mit Google anmelden"
                     >
-                      {isLoading ? 'Logging in...' : 'Login'} 
-                    </Button>
+                      <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path
+                          fill="#4285F4"
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        />
+                        <path
+                          fill="#34A853"
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        />
+                        <path
+                          fill="#FBBC05"
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                        />
+                        <path
+                          fill="#EA4335"
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
 
-                  </motion.div>
-                </Box>
-
-                <motion.div variants={itemVariants}>
-                  <Divider sx={{ my: 3, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
-                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                      Or
-                    </Typography>
-                  </Divider>
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                  <Stack direction="row" spacing={2} justifyContent="center" mb={3}>
-                    <IconButton onClick={handleGoogleLogin} sx={{ color: '#DB4437', backgroundColor: 'rgba(255,255,255,0.9)', '&:hover': { backgroundColor: '#fff' } }}>
-                      <GoogleIcon />
-                    </IconButton>
-                  </Stack>
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                  <Typography variant="body2" textAlign="center" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                    Don't have an account?{' '}
-                    <Link to="/register" style={{ textDecoration: 'none', color: theme.palette.primary.light, fontWeight: 'medium' }}>
-                      Signup
+                  <div className="text-center text-sm text-gray-400">
+                    Noch kein Konto?{" "}
+                    <Link to="/register" className="text-[#3399ff] hover:text-white transition-colors">
+                      Registrieren
                     </Link>
-                  </Typography>
-                </motion.div>
+                  </div>
+                </form>
 
-                <motion.div variants={itemVariants}>
-                  <Stack direction="row" spacing={2} justifyContent="center" mt={4}>
-                    <Link to="/terms" style={{ textDecoration: 'none' }}>
-                      <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', '&:hover': { color: theme.palette.primary.light } }}>
-                            Terms & Conditions
-                      </Typography>
-                    </Link>
-                    <Link to="/support" style={{ textDecoration: 'none' }}>
-                      <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', '&:hover': { color: theme.palette.primary.light } }}>
-                            Support
-                      </Typography>
-                    </Link>
-                    <Link to="/customer-care" style={{ textDecoration: 'none' }}>
-                      <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', '&:hover': { color: theme.palette.primary.light } }}>
-                            Customer Care
-                      </Typography>
-                    </Link>
-                  </Stack>
-                </motion.div>
+                <div className="flex justify-center space-x-4 mt-8 text-xs text-gray-500">
+                  <Link to="/terms" className="hover:text-gray-300 transition-colors">
+                    AGB
+                  </Link>
+                  <Link to="/support" className="hover:text-gray-300 transition-colors">
+                    Support
+                  </Link>
+                  <Link to="/care" className="hover:text-gray-300 transition-colors">
+                    Kundenservice
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="w-full max-w-md">
+                <div className="animate-pulse">
+                  <div className="h-6 bg-gray-700 rounded w-3/4 mx-auto mb-4"></div>
+                  <div className="h-4 bg-gray-700 rounded w-1/2 mx-auto mb-8"></div>
+                  <div className="space-y-6">
+                    <div className="h-10 bg-gray-700 rounded"></div>
+                    <div className="h-10 bg-gray-700 rounded"></div>
+                    <div className="h-5 bg-gray-700 rounded w-1/3"></div>
+                    <div className="h-12 bg-gray-700 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-              </Paper>
-            </motion.div>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
+      <style>{`
+        @keyframes pulse {
+          0% { opacity: 0.2; transform: translateY(0); }
+          50% { opacity: 0.3; transform: translateY(15px); }
+          100% { opacity: 0.2; transform: translateY(0); }
+        }
+        
+        @keyframes float {
+          0% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(20px) rotate(5deg); }
+          100% { transform: translateY(-20px) rotate(-5deg); }
+        }
+      `}</style>
+    </div>
   );
 };
 

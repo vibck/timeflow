@@ -21,15 +21,15 @@
 }
 
 /* Dark Mode Scrollbar */
-[data-theme='dark'] ::-webkit-scrollbar-track {
+.dark ::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
 }
 
-[data-theme='dark'] ::-webkit-scrollbar-thumb {
+.dark ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
 }
 
-[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+.dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
@@ -39,121 +39,33 @@
 }
 
 /* Verbesserte Fokus-Stile für Barrierefreiheit */
-:focus {
-  outline: 2px solid #3a86ff;
+:focus-visible {
+  outline: 2px solid hsl(var(--primary));
   outline-offset: 2px;
 }
 
-[data-theme='dark'] :focus {
-  outline-color: #60a5fa;
+.dark :focus-visible {
+  outline-color: hsl(var(--primary));
 }
 
 /* Verbesserte Auswahl-Stile */
 ::selection {
-  background-color: rgba(58, 134, 255, 0.2);
+  background-color: hsl(var(--primary) / 0.2);
 }
 
-[data-theme='dark'] ::selection {
-  background-color: rgba(96, 165, 250, 0.3);
+.dark ::selection {
+  background-color: hsl(var(--primary) / 0.3);
 }
 
-/* Verbesserte Link-Stile */
-a {
-  color: #3a86ff;
-  text-decoration: none;
-  position: relative;
+/* Keyframe Animationen für die Login/Register/ForgotPassword-Seiten */
+@keyframes pulse {
+  0% { opacity: 0.2; transform: translateY(0); }
+  50% { opacity: 0.3; transform: translateY(15px); }
+  100% { opacity: 0.2; transform: translateY(0); }
 }
 
-a:hover {
-  color: #2563eb;
-}
-
-a:after {
-  content: '';
-  position: absolute;
-  width: 100%;
-  transform: scaleX(0);
-  height: 1px;
-  bottom: 0;
-  left: 0;
-  background-color: #2563eb;
-  transform-origin: bottom right;
-  transition: transform 0.3s ease-out;
-}
-
-a:hover:after {
-  transform: scaleX(1);
-  transform-origin: bottom left;
-}
-
-[data-theme='dark'] a {
-  color: #60a5fa;
-}
-
-[data-theme='dark'] a:hover {
-  color: #93c5fd;
-}
-
-[data-theme='dark'] a:after {
-  background-color: #93c5fd;
-}
-
-/* Verbesserte Karten-Hover-Effekte */
-.MuiCard-root {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.MuiCard-root:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-}
-
-[data-theme='dark'] .MuiCard-root:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
-}
-
-/* Verbesserte Button-Hover-Effekte */
-.MuiButton-root {
-  position: relative;
-  overflow: hidden;
-}
-
-.MuiButton-root:after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.1);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.MuiButton-root:hover:after {
-  opacity: 1;
-}
-
-/* Verbesserte Formular-Elemente */
-.MuiOutlinedInput-root {
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
-  border-color: #3a86ff;
-}
-
-.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
-  border-color: #3a86ff;
-  border-width: 2px;
-  box-shadow: 0 0 0 4px rgba(58, 134, 255, 0.1);
-}
-
-[data-theme='dark'] .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
-  border-color: #60a5fa;
-}
-
-[data-theme='dark'] .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
-  border-color: #60a5fa;
-  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.2);
+@keyframes float {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(20px) rotate(5deg); }
+  100% { transform: translateY(-20px) rotate(-5deg); }
 } 

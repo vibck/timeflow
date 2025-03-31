@@ -1,111 +1,26 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom'; // useNavigate removed, as it is not used
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Container,
-  Paper,
-  Alert,
-  Grid // Grid hinzugefügt
-  // Stack entfernt, da nicht verwendet
-} from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Alert } from '@mui/material';
+import { Mail } from "lucide-react";
 import api from '../utils/api';
 
-// Animation variants (kopiert von Login/Register)
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.5
-    }
-  }
+const validateEmail = email => {
+  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return re.test(email);
 };
 
 const ForgotPassword = () => {
-  const theme = useTheme();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Gemeinsame Stile (kopiert von Register)
-  const commonTextFieldStyles = {
-    '& .MuiOutlinedInput-root': {
-      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-      borderRadius: '8px',
-      '& fieldset': {
-        borderColor: 'rgba(255, 255, 255, 0.3)'
-      },
-      '&:hover fieldset': {
-        borderColor: 'rgba(255, 255, 255, 0.6)'
-      },
-      '&.Mui-focused fieldset': {
-        borderColor: theme.palette.primary.main
-      },
-      '&.Mui-error fieldset': {
-        borderColor: theme.palette.error.light
-      },
-      '&:hover': {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)'
-      },
-      '&.Mui-focused': {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)'
-      },
-      '&.Mui-error': {
-        backgroundColor: 'rgba(255, 82, 82, 0.1)'
-      }
-    },
-    '& .MuiInputLabel-root': {
-      color: 'rgba(255, 255, 255, 0.7)'
-    },
-    '& .MuiInputLabel-root.Mui-focused': {
-      color: theme.palette.primary.main
-    },
-    '& .MuiInputLabel-root.Mui-error': { // Error label color hinzugefügt
-      color: theme.palette.error.light
-    },
-    '& .MuiFormHelperText-root': { // Helper text color hinzugefügt
-      color: theme.palette.error.light
-    }
-  };
-
-  const commonInputPropsStyles = {
-    style: {
-      color: theme.palette.common.white,
-      borderRadius: '8px'
-    },
-    sx: {
-      '& input:-webkit-autofill': {
-        WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset',
-        WebkitTextFillColor: theme.palette.common.white,
-        caretColor: theme.palette.common.white,
-        borderRadius: 'inherit',
-        transition: 'background-color 5000s ease-in-out 0s'
-      },
-      '& input:-webkit-autofill:hover, & input:-webkit-autofill:focus, & input:-webkit-autofill:active': {
-        WebkitBoxShadow: '0 0 0 100px rgba(20, 20, 40, 0.9) inset',
-        WebkitTextFillColor: theme.palette.common.white,
-        borderRadius: 'inherit'
-      }
-    }
-  };
-
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -113,150 +28,174 @@ const ForgotPassword = () => {
     setSuccess('');
     setIsLoading(true);
 
-    // Einfache E-Mail-Validierung hinzugefügt
-    if (!email || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-      setError('Please enter a valid email address.');
+    if (!validateEmail(email)) {
+      setError('Bitte geben Sie eine gültige E-Mail-Adresse ein');
       setIsLoading(false);
       return;
     }
 
     try {
       await api.post('/api/auth/forgot-password', { email });
-      setSuccess('If an account with this email exists, a reset link has been sent. Please check your inbox (including the spam folder).');
-      setEmail(''); // Feld leeren nach Erfolg
+      setSuccess('Wenn ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet. Bitte überprüfen Sie Ihren Posteingang (einschließlich des Spam-Ordners).');
+      setEmail('');
     } catch (err) {
-      // Zeige eine generische Fehlermeldung, um E-Mail-Enumeration zu vermeiden
-      setError('Anfrage fehlgeschlagen. Bitte versuche es später erneut.');
-      console.error('Forgot Password Error:', err); // Logge den tatsächlichen Fehler für Debugging
+      setError('Anfrage fehlgeschlagen. Bitte versuchen Sie es später erneut.');
+      console.error('Forgot Password Error:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Box sx={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(to bottom right, #1a1a2e, #16213e)',
-      p: 2
-    }}>
-      <Container maxWidth="sm"> {/* MaxWidth auf sm gesetzt für ein kompakteres Formular */}
-        <Grid container spacing={5} alignItems="center" justifyContent="center">
-          <Grid item xs={12}> {/* Nur eine Spalte für dieses einfache Formular */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={containerVariants}
-            >
-              <Paper
-                elevation={12}
-                sx={{
-                  p: { xs: 3, sm: 5 },
-                  borderRadius: 4,
-                  background: 'rgba(20, 20, 40, 0.8)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  color: theme.palette.common.white
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0a0f1e]">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0a0f1e] via-[#1a1f3e] to-[#0a0f1e] opacity-80"></div>
+
+      {/* Decorative elements */}
+      {mounted && (
+        <>
+          <div className="absolute top-0 left-0 w-full h-full">
+            <div
+              className="absolute top-[10%] left-[20%] w-32 h-32 rounded-full bg-[#ff0066] blur-[80px] opacity-20"
+              style={{
+                animation: "pulse 8s infinite alternate",
+              }}
+            />
+            <div
+              className="absolute top-[40%] right-[10%] w-40 h-40 rounded-full bg-[#3399ff] blur-[100px] opacity-20"
+              style={{
+                animation: "pulse 10s infinite alternate",
+              }}
+            />
+            <div
+              className="absolute bottom-[15%] left-[30%] w-36 h-36 rounded-full bg-[#9f7aea] blur-[90px] opacity-20"
+              style={{
+                animation: "pulse 9s infinite alternate",
+              }}
+            />
+          </div>
+
+          {/* Floating elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute rounded-lg opacity-10 bg-white"
+                style={{
+                  width: `${Math.random() * 100 + 50}px`,
+                  height: `${Math.random() * 100 + 50}px`,
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  transform: `rotate(${Math.random() * 30 - 15}deg)`,
+                  animation: `float ${Math.random() * 20 + 20}s infinite alternate ease-in-out`,
                 }}
-              >
-                <motion.div variants={itemVariants}>
-                  <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom align="center">
-                    Passwort vergessen
-                  </Typography>
-                  <Typography variant="body1" color="rgba(255, 255, 255, 0.7)" align="center" mb={4}>
-                    Gib deine E-Mail-Adresse ein. Wir senden dir einen Link, um dein Passwort zurückzusetzen.
-                  </Typography>
-                </motion.div>
+              />
+            ))}
+          </div>
+        </>
+      )}
 
-                {error && (
-                  <motion.div variants={itemVariants}>
-                    <Alert severity="error" sx={{ mb: 3, bgcolor: 'error.dark', color: '#fff' }}>{error}</Alert>
-                  </motion.div>
-                )}
+      {/* Content */}
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-md mx-auto rounded-2xl overflow-hidden shadow-2xl">
+          <div className="bg-[#1a1f3e]/40 backdrop-blur-xl p-8 flex items-center justify-center">
+            {mounted ? (
+              <div className="w-full">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-white">Passwort vergessen?</h2>
+                  <p className="text-gray-400 mt-2">Geben Sie Ihre E-Mail-Adresse ein, und wir senden Ihnen einen Link zum Zurücksetzen des Passworts</p>
+                </div>
 
-                {success && (
-                  <motion.div variants={itemVariants}>
-                    <Alert severity="success" sx={{ mb: 3, bgcolor: 'success.dark', color: '#fff' }}>{success}</Alert>
-                  </motion.div>
-                )}
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {error && (
+                    <Alert severity="error" className="mb-4">
+                      {error}
+                    </Alert>
+                  )}
+                  {success && (
+                    <Alert severity="success" className="mb-4">
+                      {success}
+                    </Alert>
+                  )}
 
-                <Box component="form" onSubmit={handleSubmit} noValidate>
-                  <motion.div variants={itemVariants}>
-                    <TextField
-                      fullWidth
-                      label="E-Mail-Adresse"
-                      variant="outlined"
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      margin="normal"
-                      required
-                      InputLabelProps={{ shrink: true, style: { color: 'rgba(255, 255, 255, 0.7)' } }}
-                      InputProps={commonInputPropsStyles}
-                      sx={{ ...commonTextFieldStyles, mb: 3 }} // Angepasster Margin Bottom
-                    />
-                  </motion.div>
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium text-gray-300 flex items-center">
+                      E-Mail-Adresse *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-gray-500" />
+                      </div>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@company.com"
+                        required
+                        className="pl-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors"
+                      />
+                    </div>
+                  </div>
 
-                  <motion.div variants={itemVariants} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      type="submit"
-                      fullWidth
-                      variant="contained"
-                      size="large"
-                      disabled={isLoading || !!success} // Button deaktivieren nach Erfolg
-                      sx={{
-                        py: 1.5,
-                        borderRadius: '8px',
-                        fontSize: 16,
-                        fontWeight: 'medium',
-                        color: theme.palette.common.white,
-                        background: `linear-gradient(45deg, ${theme.palette.secondary.main} 30%, ${theme.palette.primary.main} 90%)`,
-                        '&:hover': {
-                          background: `linear-gradient(45deg, ${theme.palette.secondary.dark} 30%, ${theme.palette.primary.dark} 90%)`
-                        },
-                        '&.Mui-disabled': {
-                          background: theme.palette.action.disabledBackground,
-                          color: theme.palette.action.disabled,
-                          cursor: 'not-allowed',
-                          pointerEvents: 'auto'
-                        }
-                      }}
-                    >
-                      {isLoading ? 'Wird gesendet...' : 'Reset-Link anfordern'}
-                    </Button>
-                  </motion.div>
-                </Box>
+                  <Button
+                    type="submit"
+                    disabled={isLoading || !!success}
+                    className="w-full h-11 bg-gradient-to-r from-[#ff0066] to-[#3399ff] hover:opacity-90 transition-all duration-300 shadow-lg shadow-[#3399ff]/20"
+                  >
+                    {isLoading ? 'Wird gesendet...' : 'Zurücksetzen-Link senden'}
+                  </Button>
 
-                <motion.div variants={itemVariants}>
-                  <Box textAlign="center" mt={4}> {/* Mehr Abstand nach oben */}
-                    <Link
-                      to="/login"
-                      style={{ textDecoration: 'none' }}
-                      sx={{
-                        display: 'inline-block', // Ensures the link only takes the width of its content
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        '&:hover': {
-                          color: theme.palette.primary.light
-                          // Optional: Add underline on hover if desired
-                          // textDecoration: 'underline'
-                        }
-                      }}
-                    >
-                      <Typography variant="body2" component="span"> {/* Use component="span" to keep it inline */}
-                        Zurück zur Anmeldung
-                      </Typography>
+                  <div className="text-center text-sm text-gray-400">
+                    Erinnern Sie sich an Ihr Passwort?{" "}
+                    <Link to="/login" className="text-[#3399ff] hover:text-white transition-colors">
+                      Zurück zur Anmeldung
                     </Link>
-                  </Box>
-                </motion.div>
+                  </div>
+                </form>
 
-              </Paper>
-            </motion.div>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
+                <div className="flex justify-center space-x-4 mt-8 text-xs text-gray-500">
+                  <Link to="/terms" className="hover:text-gray-300 transition-colors">
+                    AGB
+                  </Link>
+                  <Link to="/support" className="hover:text-gray-300 transition-colors">
+                    Support
+                  </Link>
+                  <Link to="/care" className="hover:text-gray-300 transition-colors">
+                    Kundenservice
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="w-full">
+                <div className="animate-pulse">
+                  <div className="h-6 bg-gray-700 rounded w-3/4 mx-auto mb-4"></div>
+                  <div className="h-4 bg-gray-700 rounded w-1/2 mx-auto mb-8"></div>
+                  <div className="space-y-6">
+                    <div className="h-10 bg-gray-700 rounded"></div>
+                    <div className="h-12 bg-gray-700 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes pulse {
+          0% { opacity: 0.2; transform: translateY(0); }
+          50% { opacity: 0.3; transform: translateY(15px); }
+          100% { opacity: 0.2; transform: translateY(0); }
+        }
+        
+        @keyframes float {
+          0% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(20px) rotate(5deg); }
+          100% { transform: translateY(-20px) rotate(-5deg); }
+        }
+      `}</style>
+    </div>
   );
 };
 

@@ -1,17 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Container,
-  Paper,
-  Alert,
-  LinearProgress
-} from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { motion } from 'framer-motion';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Alert } from '@mui/material';
+import { Eye, EyeOff, Lock } from "lucide-react";
 import api from '../utils/api';
 
 const passwordStrength = password => {
@@ -28,14 +20,20 @@ const passwordStrength = password => {
 };
 
 const ResetPassword = () => {
-  const theme = useTheme();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const token = searchParams.get('token');
 
@@ -70,132 +68,203 @@ const ResetPassword = () => {
     }
   };
 
+  const getPasswordStrengthColor = strength => {
+    if (strength >= 4) return 'bg-green-500';
+    if (strength >= 2) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
   if (!token) {
     return (
-      <Container maxWidth="sm">
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            py: 4
-          }}
-        >
-          <Alert severity="error">
-            Ungültiger oder fehlender Reset-Token
-          </Alert>
-        </Box>
-      </Container>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-[#0a0f1e]">
+        <Alert severity="error" className="max-w-md">
+          Ungültiger oder fehlender Reset-Token
+        </Alert>
+      </div>
     );
   }
 
   return (
-    <Container component="main" maxWidth="sm">
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          py: 4
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ width: '100%', maxWidth: 500 }}
-        >
-          <Paper elevation={3} sx={{ p: 4, borderRadius: 4 }}>
-            <Typography variant="h4" component="h1" gutterBottom align="center">
-              Passwort zurücksetzen
-            </Typography>
-            <Typography variant="body1" color="textSecondary" align="center" sx={{ mb: 3 }}>
-              Gib ein neues Passwort für dein Konto ein
-            </Typography>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0a0f1e]">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0a0f1e] via-[#1a1f3e] to-[#0a0f1e] opacity-80"></div>
 
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
+      {/* Decorative elements */}
+      {mounted && (
+        <>
+          <div className="absolute top-0 left-0 w-full h-full">
+            <div
+              className="absolute top-[10%] left-[20%] w-32 h-32 rounded-full bg-[#ff0066] blur-[80px] opacity-20"
+              style={{
+                animation: "pulse 8s infinite alternate",
+              }}
+            />
+            <div
+              className="absolute top-[40%] right-[10%] w-40 h-40 rounded-full bg-[#3399ff] blur-[100px] opacity-20"
+              style={{
+                animation: "pulse 10s infinite alternate",
+              }}
+            />
+            <div
+              className="absolute bottom-[15%] left-[30%] w-36 h-36 rounded-full bg-[#9f7aea] blur-[90px] opacity-20"
+              style={{
+                animation: "pulse 9s infinite alternate",
+              }}
+            />
+          </div>
 
-            {success && (
-              <Alert severity="success" sx={{ mb: 3 }}>
-                {success}
-              </Alert>
-            )}
-
-            <Box component="form" onSubmit={handleSubmit} noValidate>
-              <TextField
-                fullWidth
-                label="Neues Passwort"
-                variant="outlined"
-                type="password"
-                value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
-                margin="normal"
-                required
-                sx={{ mb: 1 }}
-              />
-
-              <Box mb={2}>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={passwordStrength(newPassword) * 20}
-                  sx={{
-                    height: 4,
-                    borderRadius: 2,
-                    backgroundColor: theme.palette.grey[200],
-                    '& .MuiLinearProgress-bar': {
-                      backgroundColor: passwordStrength(newPassword) >= 4 ? 
-                        theme.palette.success.main : 
-                        passwordStrength(newPassword) >= 2 ? 
-                          theme.palette.warning.main : 
-                          theme.palette.error.main
-                    }
-                  }}
-                />
-                <Typography variant="caption" color="textSecondary">
-                  Passwortstärke: {['Sehr schwach', 'Schwach', 'Mäßig', 'Gut', 'Stark', 'Sehr stark'][passwordStrength(newPassword)]}
-                </Typography>
-              </Box>
-
-              <TextField
-                fullWidth
-                label="Passwort bestätigen"
-                variant="outlined"
-                type="password"
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                margin="normal"
-                required
-                sx={{ mb: 3 }}
-              />
-
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                color="primary"
-                size="large"
-                disabled={isLoading}
-                sx={{
-                  py: 1.5,
-                  borderRadius: 2,
-                  fontSize: 16,
-                  fontWeight: 'medium'
+          {/* Floating elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute rounded-lg opacity-10 bg-white"
+                style={{
+                  width: `${Math.random() * 100 + 50}px`,
+                  height: `${Math.random() * 100 + 50}px`,
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  transform: `rotate(${Math.random() * 30 - 15}deg)`,
+                  animation: `float ${Math.random() * 20 + 20}s infinite alternate ease-in-out`,
                 }}
-              >
-                {isLoading ? 'Wird aktualisiert...' : 'Passwort speichern'}
-              </Button>
-            </Box>
-          </Paper>
-        </motion.div>
-      </Box>
-    </Container>
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Content */}
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-md mx-auto rounded-2xl overflow-hidden shadow-2xl">
+          <div className="bg-[#1a1f3e]/40 backdrop-blur-xl p-8 flex items-center justify-center">
+            {mounted ? (
+              <div className="w-full">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-white">Passwort zurücksetzen</h2>
+                  <p className="text-gray-400 mt-2">Gib ein neues Passwort für dein Konto ein</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {error && (
+                    <Alert severity="error" className="mb-4">
+                      {error}
+                    </Alert>
+                  )}
+                  {success && (
+                    <Alert severity="success" className="mb-4">
+                      {success}
+                    </Alert>
+                  )}
+
+                  <div className="space-y-2">
+                    <label htmlFor="newPassword" className="text-sm font-medium text-gray-300 flex items-center">
+                      Neues Passwort *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-gray-500" />
+                      </div>
+                      <Input
+                        id="newPassword"
+                        type={showNewPassword ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="pl-10 pr-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+                      >
+                        {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    {newPassword && (
+                      <div className="mt-1">
+                        <div className="flex h-1 mt-1 overflow-hidden rounded-full bg-gray-800">
+                          <div 
+                            className={`${getPasswordStrengthColor(passwordStrength(newPassword))}`} 
+                            style={{ width: `${passwordStrength(newPassword) * 20}%` }}
+                          />
+                        </div>
+                        <p className="mt-1 text-xs text-gray-400">
+                          {passwordStrength(newPassword) <= 2 && "Schwach"}
+                          {passwordStrength(newPassword) > 2 && passwordStrength(newPassword) < 4 && "Mittel"}
+                          {passwordStrength(newPassword) >= 4 && "Stark"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-300 flex items-center">
+                      Passwort bestätigen *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-gray-500" />
+                      </div>
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="pl-10 pr-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full h-11 bg-gradient-to-r from-[#ff0066] to-[#3399ff] hover:opacity-90 transition-all duration-300 shadow-lg shadow-[#3399ff]/20"
+                  >
+                    {isLoading ? 'Wird aktualisiert...' : 'Passwort speichern'}
+                  </Button>
+                </form>
+              </div>
+            ) : (
+              <div className="w-full">
+                <div className="animate-pulse">
+                  <div className="h-6 bg-gray-700 rounded w-3/4 mx-auto mb-4"></div>
+                  <div className="h-4 bg-gray-700 rounded w-1/2 mx-auto mb-8"></div>
+                  <div className="space-y-6">
+                    <div className="h-10 bg-gray-700 rounded"></div>
+                    <div className="h-10 bg-gray-700 rounded"></div>
+                    <div className="h-12 bg-gray-700 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes pulse {
+          0% { opacity: 0.2; transform: translateY(0); }
+          50% { opacity: 0.3; transform: translateY(15px); }
+          100% { opacity: 0.2; transform: translateY(0); }
+        }
+        
+        @keyframes float {
+          0% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(20px) rotate(5deg); }
+          100% { transform: translateY(-20px) rotate(-5deg); }
+        }
+      `}</style>
+    </div>
   );
 };
 

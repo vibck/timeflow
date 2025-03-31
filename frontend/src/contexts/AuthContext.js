@@ -33,15 +33,31 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = async token => {
-    localStorage.setItem('token', token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    
+  const login = async (emailOrToken, password) => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/auth/me`);
-      setCurrentUser(response.data.user);
+      let token;
+      
+      if (password === undefined) {
+        token = emailOrToken;
+      } else {
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
+          email: emailOrToken,
+          password
+        });
+        
+        token = response.data.token;
+        if (!token) {
+          throw new Error('Kein Token vom Server erhalten');
+        }
+      }
+      
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      const userResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/auth/me`);
+      setCurrentUser(userResponse.data.user);
       setIsAuthenticated(true);
-      return response.data.user;
+      return userResponse.data.user;
     } catch (error) {
       console.error('Fehler beim Abrufen der Benutzerinformationen:', error);
       localStorage.removeItem('token');
