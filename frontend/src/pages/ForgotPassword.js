@@ -112,7 +112,7 @@ const ForgotPassword = () => {
                       {error}
                     </Alert>
                   )}
-                  {success && (
+                {success && (
                     <Alert severity="success" className="mb-4">
                       {success}
                     </Alert>
@@ -128,28 +128,28 @@ const ForgotPassword = () => {
                       </div>
                       <Input
                         id="email"
-                        type="email"
-                        value={email}
+                      type="email"
+                      value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="name@company.com"
-                        required
+                      required
                         className="pl-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors"
-                      />
+                    />
                     </div>
                   </div>
 
-                  <Button
-                    type="submit"
+                    <Button
+                      type="submit"
                     disabled={isLoading || !!success}
                     className="w-full h-11 bg-gradient-to-r from-[#ff0066] to-[#3399ff] hover:opacity-90 transition-all duration-300 shadow-lg shadow-[#3399ff]/20"
                   >
                     {isLoading ? 'Wird gesendet...' : 'Zurücksetzen-Link senden'}
-                  </Button>
+                    </Button>
 
                   <div className="text-center text-sm text-gray-400">
                     Erinnern Sie sich an Ihr Passwort?{" "}
                     <Link to="/login" className="text-[#3399ff] hover:text-white transition-colors">
-                      Zurück zur Anmeldung
+                        Zurück zur Anmeldung
                     </Link>
                   </div>
                 </form>

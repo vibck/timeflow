@@ -78,8 +78,8 @@ const ResetPassword = () => {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-[#0a0f1e]">
         <Alert severity="error" className="max-w-md">
-          Ungültiger oder fehlender Reset-Token
-        </Alert>
+            Ungültiger oder fehlender Reset-Token
+          </Alert>
       </div>
     );
   }
@@ -145,16 +145,16 @@ const ResetPassword = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {error && (
+            {error && (
                     <Alert severity="error" className="mb-4">
-                      {error}
-                    </Alert>
-                  )}
-                  {success && (
+                {error}
+              </Alert>
+            )}
+            {success && (
                     <Alert severity="success" className="mb-4">
-                      {success}
-                    </Alert>
-                  )}
+                {success}
+              </Alert>
+            )}
 
                   <div className="space-y-2">
                     <label htmlFor="newPassword" className="text-sm font-medium text-gray-300 flex items-center">
@@ -167,10 +167,10 @@ const ResetPassword = () => {
                       <Input
                         id="newPassword"
                         type={showNewPassword ? "text" : "password"}
-                        value={newPassword}
+                value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="••••••••"
-                        required
+                required
                         className="pl-10 pr-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors"
                       />
                       <button
@@ -209,10 +209,10 @@ const ResetPassword = () => {
                       <Input
                         id="confirmPassword"
                         type={showConfirmPassword ? "text" : "password"}
-                        value={confirmPassword}
+                value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
-                        required
+                required
                         className="pl-10 pr-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors"
                       />
                       <button
@@ -225,13 +225,13 @@ const ResetPassword = () => {
                     </div>
                   </div>
 
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
+              <Button
+                type="submit"
+                disabled={isLoading}
                     className="w-full h-11 bg-gradient-to-r from-[#ff0066] to-[#3399ff] hover:opacity-90 transition-all duration-300 shadow-lg shadow-[#3399ff]/20"
-                  >
-                    {isLoading ? 'Wird aktualisiert...' : 'Passwort speichern'}
-                  </Button>
+              >
+                {isLoading ? 'Wird aktualisiert...' : 'Passwort speichern'}
+              </Button>
                 </form>
               </div>
             ) : (

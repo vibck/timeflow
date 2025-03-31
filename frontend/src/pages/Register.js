@@ -190,7 +190,7 @@ const Register = () => {
                 </div>
 
                 <form onSubmit={handleRegister} className="space-y-5">
-                  {error && (
+                {error && (
                     <Alert severity="error" className="mb-4">
                       {error}
                     </Alert>
@@ -207,10 +207,10 @@ const Register = () => {
                       <Input
                         id="name"
                         type="text"
-                        value={name}
+                      value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Max Mustermann"
-                        required
+                      required
                         className="pl-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors"
                       />
                     </div>
@@ -226,11 +226,11 @@ const Register = () => {
                       </div>
                       <Input
                         id="email"
-                        type="email"
-                        value={email}
+                      type="email"
+                      value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="name@company.com"
-                        required
+                      required
                         className={`pl-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors ${emailError ? 'border-red-500' : ''}`}
                       />
                       {emailError && (
@@ -250,15 +250,15 @@ const Register = () => {
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
-                        value={password}
+                      value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        required
+                      required
                         className="pl-10 pr-10 bg-[#1a1f3e]/50 border-[#ffffff20] text-white focus:border-[#3399ff] transition-colors"
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
+                              onClick={() => setShowPassword(!showPassword)}
                         className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
                       >
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -331,13 +331,13 @@ const Register = () => {
                     </label>
                   </div>
 
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
+                    <Button
+                      type="submit"
+                      disabled={isLoading}
                     className="w-full h-11 bg-gradient-to-r from-[#ff0066] to-[#3399ff] hover:opacity-90 transition-all duration-300 shadow-lg shadow-[#3399ff]/20"
                   >
                     {isLoading ? 'Wird registriert...' : 'Registrieren'}
-                  </Button>
+                    </Button>
 
                   <div className="text-center text-sm text-gray-400">
                     Bereits registriert?{" "}
