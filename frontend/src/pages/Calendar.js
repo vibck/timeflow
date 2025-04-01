@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -18,13 +18,15 @@ import {
   isToday, 
   getDay, 
   isSameDay,
-  parseISO
+  parseISO,
+  addMinutes
 } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Alert } from '@mui/material';
 import api from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import Holidays from 'date-holidays';
+import EventForm from '../pages/EventForm';
 
 // Beispiel-Events für die Anzeige, falls keine vom Backend geladen werden können
 const sampleEvents = [
@@ -47,6 +49,51 @@ const Calendar = () => {
   const [showHolidays, setShowHolidays] = useState(true);
   const [userState, setUserState] = useState('BY'); // Default: Bayern
 
+  // Zustand für das EventForm-Popup
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [initialEventData, setInitialEventData] = useState(null);
+
+  // Lade Termine vom Backend
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/api/events');
+      
+      // Konvertiere Datumsstrings in Date-Objekte
+      const formattedEvents = response.data.map(event => ({
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        location: event.location,
+        datetime: event.start_time,
+        end_time: event.end_time,
+        date: new Date(event.start_time),
+        time: event.allDay 
+          ? 'Ganztägig' 
+          : `${format(new Date(event.start_time), 'HH:mm')} - ${format(new Date(event.end_time), 'HH:mm')}`,
+        color: event.color || "#3399ff", // Fallback color
+        event_type: event.event_type,
+        originalEvent: event // Originale Eventdaten für später
+      }));
+      
+      setEvents(formattedEvents);
+      
+      // Für die Sidebar-Komponente - wir speichern die Events global
+      window.calendarEvents = formattedEvents;
+    } catch (error) {
+      console.error('Fehler beim Laden der Termine:', error);
+      setError('Fehler beim Laden der Termine. Bitte versuche es später erneut.');
+      // Verwende Beispiel-Events als Fallback
+      setEvents(sampleEvents);
+      
+      // Fallback für die Sidebar
+      window.calendarEvents = sampleEvents;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
     
@@ -67,41 +114,6 @@ const Calendar = () => {
         }
       } catch (error) {
         console.error('Fehler beim Laden der Benutzereinstellungen:', error);
-      }
-    };
-    
-    // Lade Termine vom Backend
-    const fetchEvents = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get('/api/events');
-        
-        // Konvertiere Datumsstrings in Date-Objekte
-        const formattedEvents = response.data.map(event => ({
-          id: event.id,
-          title: event.title,
-          date: new Date(event.start_time),
-          time: event.allDay 
-            ? 'Ganztägig' 
-            : `${format(new Date(event.start_time), 'HH:mm')} - ${format(new Date(event.end_time), 'HH:mm')}`,
-          color: event.color || "#3399ff", // Fallback color
-          originalEvent: event // Originale Eventdaten für später
-        }));
-        
-        setEvents(formattedEvents);
-        
-        // Für die Sidebar-Komponente - wir speichern die Events global
-        window.calendarEvents = formattedEvents;
-      } catch (error) {
-        console.error('Fehler beim Laden der Termine:', error);
-        setError('Fehler beim Laden der Termine. Bitte versuche es später erneut.');
-        // Verwende Beispiel-Events als Fallback
-        setEvents(sampleEvents);
-        
-        // Fallback für die Sidebar
-        window.calendarEvents = sampleEvents;
-      } finally {
-        setLoading(false);
       }
     };
     
@@ -206,7 +218,7 @@ const Calendar = () => {
     return [...dayEvents, ...dayHolidays];
   };
 
-  // Navigiere zur Termin-Erstellungsseite
+  // Öffne das Termin-Erstellen-Popup
   const handleAddEvent = (day) => {
     // Startzeit für den neuen Termin (default 9:00 - 10:00 Uhr)
     const startTime = new Date(day);
@@ -215,20 +227,172 @@ const Calendar = () => {
     const endTime = new Date(day);
     endTime.setHours(10, 0, 0, 0);
     
-    navigate('/events/new', { 
-      state: { 
-        defaultStart: startTime.toISOString(),
-        defaultEnd: endTime.toISOString()
-      } 
+    setInitialEventData({
+      start_time: startTime,
+      end_time: endTime
     });
+    setSelectedEvent(null);
+    setShowEventForm(true);
   };
 
-  // Navigiere zur Termin-Bearbeitungsseite
+  // Öffne das Termin-Bearbeiten-Popup
   const handleEditEvent = (event) => {
-    if (event.originalEvent) {
-      navigate(`/events/${event.id}/edit`);
+    // Prüfe, ob wir ein gültiges Event-Objekt haben
+    if (event && event.id) {
+      try {
+        // Sichere Erstellung von Date-Objekten mit Fallbacks
+        const createSafeDate = (dateValue) => {
+          if (!dateValue) return new Date();
+          
+          try {
+            const date = new Date(dateValue);
+            // Überprüfe, ob das Datum gültig ist
+            if (isNaN(date.getTime())) {
+              console.warn('Ungültiges Datum erkannt:', dateValue);
+              return new Date(); // Fallback auf aktuelles Datum
+            }
+            return date;
+          } catch (e) {
+            console.error('Fehler beim Erstellen des Date-Objekts:', e);
+            return new Date(); // Fallback auf aktuelles Datum
+          }
+        };
+        
+        setSelectedEvent(event);
+        
+        // Überprüfe und parse die Datumswerte sicher
+        const possibleDateValue = event.datetime || event.start_time || event.date;
+        const startTime = createSafeDate(possibleDateValue);
+        
+        // Für end_time: Verwende entweder das vorhandene Feld oder berechne es basierend auf startTime
+        const endTime = event.end_time 
+          ? createSafeDate(event.end_time) 
+          : addMinutes(startTime, 60); // Standard: 1 Stunde nach Beginn
+        
+        // Bereite die Event-Daten vor
+        const eventData = {
+          id: event.id,
+          title: event.title,
+          description: event.description || '',
+          location: event.location || '',
+          start_time: startTime,
+          end_time: endTime,
+          event_type: event.event_type || 'personal'
+        };
+        
+        setInitialEventData(eventData);
+        setShowEventForm(true);
+      } catch (error) {
+        console.error('Fehler beim Öffnen des Termin-Popups:', error);
+        // Trotzdem versuchen, ein Basis-Popup zu öffnen
+        setSelectedEvent(event);
+        setInitialEventData({
+          id: event.id,
+          title: event.title,
+          description: event.description || '',
+          location: event.location || '',
+          start_time: new Date(),
+          end_time: addMinutes(new Date(), 60),
+          event_type: event.event_type || 'personal'
+        });
+        setShowEventForm(true);
+      }
     }
   };
+
+  // Schließe das EventForm-Popup und lade die Termine neu
+  const handleCloseEventForm = () => {
+    setShowEventForm(false);
+    setSelectedEvent(null);
+    setInitialEventData(null);
+    
+    // Termine neu laden
+    fetchEvents();
+  };
+
+  // Funktion, die auch für die Sidebar verfügbar gemacht wird, um das Popup zu öffnen
+  const openEventFormPopup = (event) => {
+    if (event && event.id) {
+      try {
+        // Sichere Erstellung von Date-Objekten mit Fallbacks
+        const createSafeDate = (dateValue) => {
+          if (!dateValue) return new Date();
+          
+          try {
+            const date = new Date(dateValue);
+            // Überprüfe, ob das Datum gültig ist
+            if (isNaN(date.getTime())) {
+              console.warn('Ungültiges Datum erkannt:', dateValue);
+              return new Date(); // Fallback auf aktuelles Datum
+            }
+            return date;
+          } catch (e) {
+            console.error('Fehler beim Erstellen des Date-Objekts:', e);
+            return new Date(); // Fallback auf aktuelles Datum
+          }
+        };
+        
+        setSelectedEvent(event);
+        
+        // Überprüfe und parse die Datumswerte sicher
+        const possibleDateValue = event.datetime || event.start_time || event.date;
+        const startTime = createSafeDate(possibleDateValue);
+        
+        // Für end_time: Verwende entweder das vorhandene Feld oder berechne es basierend auf startTime
+        const endTime = event.end_time 
+          ? createSafeDate(event.end_time) 
+          : addMinutes(startTime, 60); // Standard: 1 Stunde nach Beginn
+        
+        setInitialEventData({
+          id: event.id,
+          title: event.title,
+          description: event.description || '',
+          location: event.location || '',
+          start_time: startTime,
+          end_time: endTime,
+          event_type: event.event_type || 'personal'
+        });
+        setShowEventForm(true);
+      } catch (error) {
+        console.error('Fehler beim Öffnen des Popup-Formulars:', error);
+        // Trotzdem versuchen, ein Basis-Popup zu öffnen
+        setSelectedEvent(event);
+        setInitialEventData({
+          id: event.id,
+          title: event.title,
+          description: event.description || '',
+          location: event.location || '',
+          start_time: new Date(),
+          end_time: addMinutes(new Date(), 60),
+          event_type: event.event_type || 'personal'
+        });
+        setShowEventForm(true);
+      }
+    }
+  };
+
+  // Globale Funktion zuweisen, damit sie von der Sidebar verwendet werden kann
+  useEffect(() => {
+    // Nur zuweisen, wenn nicht bereits definiert (vom App.js)
+    if (!window.openEventFormPopup) {
+      window.openEventFormPopup = openEventFormPopup;
+    }
+    
+    // Globale Funktion zum Aktualisieren der Kalenderereignisse
+    window.refreshCalendarEvents = () => {
+      fetchEvents();
+    };
+    
+    // Cleanup - nur löschen, wenn es unsere eigene Instanz ist
+    return () => {
+      if (window.openEventFormPopup === openEventFormPopup) {
+        window.openEventFormPopup = null;
+      }
+      
+      // Entferne die Aktualisierungsfunktion
+      window.refreshCalendarEvents = null;
+    };
+  }, []);
 
   // Wochentagsüberschriften
   const weekDays = ["MO", "DI", "MI", "DO", "FR", "SA", "SO"];
@@ -427,6 +591,16 @@ const Calendar = () => {
           </div>
         </div>
       </div>
+      
+      {/* Rendern des EventForm-Popups */}
+      {showEventForm && (
+        <EventForm
+          open={showEventForm}
+          onClose={handleCloseEventForm}
+          initialData={initialEventData}
+          isEdit={!!selectedEvent}
+        />
+      )}
     </div>
   );
 };

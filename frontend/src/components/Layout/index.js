@@ -209,7 +209,40 @@ const Layout = () => {
   };
 
   const handleEditEvent = (event) => {
-    navigate(`/events/${event.id}/edit`);
+    // Direkt das Popup öffnen, wenn die Funktion verfügbar ist
+    if (window.openEventFormPopup) {
+      window.openEventFormPopup(event);
+    } else {
+      // Wenn die Funktion nicht verfügbar ist (z.B. beim ersten Laden), 
+      // verwenden wir einen Timer, um die Funktion aufzurufen, sobald sie verfügbar ist
+      const checkAndOpenPopup = () => {
+        if (window.openEventFormPopup) {
+          window.openEventFormPopup(event);
+          return true;
+        }
+        return false;
+      };
+      
+      // Wenn die Funktion nicht sofort verfügbar ist, navigieren wir zur Calendar-Seite
+      // und versuchen dann, das Popup zu öffnen, wenn die Funktion verfügbar wird
+      navigate(`/calendar`);
+      
+      // Versuche, das Popup zu öffnen, nachdem wir zur Calendar-Seite navigiert sind
+      // und die Funktion wahrscheinlich verfügbar geworden ist
+      setTimeout(() => {
+        if (!checkAndOpenPopup()) {
+          // Wenn die Funktion nach 100ms immer noch nicht verfügbar ist,
+          // versuchen wir es alle 100ms für maximal 1 Sekunde
+          let attempts = 0;
+          const intervalId = setInterval(() => {
+            attempts += 1;
+            if (checkAndOpenPopup() || attempts >= 10) {
+              clearInterval(intervalId);
+            }
+          }, 100);
+        }
+      }, 100);
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;

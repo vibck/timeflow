@@ -924,38 +924,40 @@ const FullScreenCalendar = ({ data = [], onAddEvent, onSelectEvent, onSelectDay 
               </IconButton>
             </Box>
 
-            <Button 
-              variant="contained" 
-              startIcon={<AddIcon />} 
-              onClick={handleAddEvent}
-              sx={{
-                boxShadow: '0 2px 5px rgba(0,0,0,0.15)',
-                borderRadius: '8px',
-                textTransform: 'none',
-                fontWeight: 600,
-                height: '32px',
-                flex: { xs: 1, sm: 'none' }
-              }}
-              size="small"
-            >
-              Termin
-            </Button>
-            
-            {/* Refresh-Button, der handleRefresh verwendet */}
-            <IconButton
-              onClick={handleRefresh}
-              size="small"
-              sx={{
-                height: '32px',
-                width: '32px',
-                ml: 0.5
-              }}
-              aria-label="Kalender aktualisieren"
-            >
-              <Tooltip title="Aktualisieren">
-                <RefreshIcon fontSize="small" />
-              </Tooltip>
-            </IconButton>
+            <Box>
+              <Button 
+                variant="contained" 
+                startIcon={<AddIcon />} 
+                onClick={handleAddEvent}
+                sx={{
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.15)',
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  height: '32px',
+                  flex: { xs: 1, sm: 'none' }
+                }}
+                size="small"
+              >
+                Termin
+              </Button>
+              
+              {/* Refresh-Button, der handleRefresh verwendet */}
+              <IconButton
+                onClick={handleRefresh}
+                size="small"
+                sx={{
+                  height: '32px',
+                  width: '32px',
+                  ml: 0.5
+                }}
+                aria-label="Kalender aktualisieren"
+              >
+                <Tooltip title="Aktualisieren">
+                  <RefreshIcon fontSize="small" />
+                </Tooltip>
+              </IconButton>
+            </Box>
           </Box>
         </Box>
       </Box>
