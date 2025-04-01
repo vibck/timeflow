@@ -16,7 +16,8 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle
+  DialogTitle,
+  useTheme
 } from '@mui/material';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -30,62 +31,58 @@ import ReminderForm from '../components/Reminders/ReminderForm';
 registerLocale('de', de);
 setDefaultLocale('de');
 
-// Benutzerdefinierte Eingabe für den DateTimePicker
-const CustomDateTimePickerInput = forwardRef(({ value, onClick, placeholder, label, error, helperText, isReadOnly, size, sx }, ref) => (
-  <TextField
-    fullWidth
-    label={label}
-    onClick={isReadOnly ? undefined : onClick}
-    value={value}
-    placeholder={placeholder}
-    error={!!error}
-    helperText={helperText}
-    InputProps={{
-      readOnly: true
-    }}
-    size={size}
-    sx={sx}
+// Benutzerdefinierter DatePicker-Input, angepasst an unser Design
+const CustomDatePickerInput = forwardRef(({ value, onClick, error }, ref) => (
+  <div 
+    className="custom-datepicker-input"
+    onClick={onClick}
     ref={ref}
-  />
+    style={{
+      height: '40px',
+      borderRadius: '0.375rem',
+      backgroundColor: document.documentElement.classList.contains('dark') ? 'rgba(42, 47, 78, 1)' : 'white',
+      border: document.documentElement.classList.contains('dark') ? '1px solid rgba(58, 63, 94, 1)' : '1px solid rgba(209, 213, 219, 1)',
+      color: document.documentElement.classList.contains('dark') ? 'white' : 'rgba(17, 24, 39, 1)',
+      padding: '8px 12px',
+      width: '100%',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      fontSize: '0.875rem'
+    }}
+  >
+    {value}
+  </div>
 ));
 
-const EventForm = () => {
+const EventForm = ({ open, onClose, initialData, isEdit = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isEditMode, setIsEditMode] = useState(!!id);
-  const [isViewMode, setIsViewMode] = useState(false);
-  const [eventId, setEventId] = useState(id);
+  const theme = useTheme();
   
-  // Bestimme den Modus basierend auf der URL
-  useEffect(() => {
-    if (id) {
-      // Wenn die URL /events/:id/edit ist, sind wir im Bearbeitungsmodus
-      const isEditUrl = location.pathname.endsWith('/edit');
-      setIsEditMode(true);
-      setIsViewMode(!isEditUrl);
-      setEventId(id);
-    } else {
-      // Wenn keine ID vorhanden ist, sind wir im Erstellungsmodus
-      setIsEditMode(false);
-      setIsViewMode(false);
-      setEventId(null);
-    }
-  }, [id, location.pathname]);
+  // Bestimme, ob der Popup-Modus oder der Seitenmodus verwendet wird
+  const isPopupMode = Boolean(open !== undefined && onClose);
   
-  // Hole Standardwerte aus dem Location-State (wenn von Kalender-Slot ausgewählt)
-  const defaultStart = location.state?.defaultStart ? new Date(location.state.defaultStart) : new Date();
-  const defaultEnd = location.state?.defaultEnd ? new Date(location.state.defaultEnd) : addMinutes(new Date(), 60);
+  // Hole ID entweder aus Params oder initialData
+  const [eventId, setEventId] = useState(initialData?.id || id || null);
+  const [isEditMode, setIsEditMode] = useState(isEdit || Boolean(eventId));
+  
+  // Hole Standardwerte aus dem Location-State oder initialData
+  const defaultStart = initialData?.start_time ? new Date(initialData.start_time) : 
+                     (location.state?.defaultStart ? new Date(location.state.defaultStart) : new Date());
+  const defaultEnd = initialData?.end_time ? new Date(initialData.end_time) : 
+                   (location.state?.defaultEnd ? new Date(location.state.defaultEnd) : addMinutes(new Date(), 60));
   
   // Formularstatus
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [location_, setLocation] = useState('');
+  const [title, setTitle] = useState(initialData?.title || '');
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [location_, setLocation] = useState(initialData?.location || '');
   const [startTime, setStartTime] = useState(defaultStart);
   const [endTime, setEndTime] = useState(defaultEnd);
-  const [eventType, setEventType] = useState('personal');
+  const [eventType, setEventType] = useState(initialData?.event_type || 'personal');
   const [reminders, setReminders] = useState([]);
-  const [showReminderForm, setShowReminderForm] = useState(false);
+  const [showReminderForm, setShowReminderForm] = useState(true);
   const [originalStartTime, setOriginalStartTime] = useState(null);
   
   // UI-Status
@@ -95,10 +92,22 @@ const EventForm = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   
+  // Stil der Eingabefelder
+  const inputStyle = {
+    height: '40px',
+    borderRadius: '0.375rem',
+    bgcolor: theme.palette.mode === 'dark' ? 'rgba(42, 47, 78, 1)' : 'white',
+    border: theme.palette.mode === 'dark' ? '1px solid rgba(58, 63, 94, 1)' : '1px solid rgba(209, 213, 219, 1)',
+    color: theme.palette.mode === 'dark' ? 'white' : 'rgba(17, 24, 39, 1)',
+    '& .MuiOutlinedInput-notchedOutline': {
+      border: 'none'
+    }
+  };
+  
   // Lade Termindaten und Erinnerungen, wenn im Bearbeitungsmodus
   useEffect(() => {
     const fetchEventAndReminders = async () => {
-      if (!isEditMode) return;
+      if (!isEditMode || !eventId) return;
       
       try {
         setLoading(true);
@@ -138,7 +147,16 @@ const EventForm = () => {
     };
     
     fetchEventAndReminders();
-  }, [id, isEditMode, eventId]);
+  }, [isEditMode, eventId]);
+  
+  // Schließe das Formular, wenn es ein Popup ist
+  const handleClose = () => {
+    if (isPopupMode && onClose) {
+      onClose();
+    } else {
+      navigate('/calendar');
+    }
+  };
   
   // Behandle erfolgreiche Terminerstellung
   const handleSuccessfulCreate = async createdEvent => {
@@ -146,7 +164,6 @@ const EventForm = () => {
     
     // Setze die Event-ID und aktualisiere den Modus
     setEventId(createdEvent.id);
-    setShowReminderForm(true);
     setIsEditMode(true);
     
     // Lade Erinnerungen für den neuen Termin
@@ -173,7 +190,7 @@ const EventForm = () => {
   
   // Formular absenden
   const handleSubmit = async e => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     
     // Validierung mit validateForm-Funktion
     if (!validateForm()) {
@@ -212,15 +229,51 @@ const EventForm = () => {
         if (reminders.length > 0) {
           await updateRemindersForNewEventTime(response.data.start_time);
         }
+        
+        // Aktualisiere Calendar-Events
+        if (window.refreshCalendarEvents) {
+          window.refreshCalendarEvents();
+        }
       } else {
         // Neuen Termin erstellen
         const response = await api.post('/api/events', eventData);
         if (response.data && response.data.id) {
+          // Speichere temporäre Erinnerungen, wenn vorhanden
+          const tempReminders = reminders.filter(r => r.is_temp || (r.id && r.id.toString().startsWith('temp-')));
+          
+          if (tempReminders.length > 0) {
+            try {
+              await Promise.all(tempReminders.map(reminder => {
+                return api.post('/api/reminders', {
+                  event_id: response.data.id,
+                  reminder_time: reminder.reminder_time
+                });
+              }));
+              setSuccess('Termin und Erinnerungen erfolgreich erstellt!');
+            } catch (reminderErr) {
+              console.error('Fehler beim Erstellen der Erinnerungen:', reminderErr);
+              setSuccess('Termin erstellt, aber Erinnerungen konnten nicht gespeichert werden.');
+            }
+          } else {
+            setSuccess('Termin erfolgreich erstellt!');
+          }
+          
           handleSuccessfulCreate(response.data);
+          
+          // Aktualisiere Calendar-Events
+          if (window.refreshCalendarEvents) {
+            window.refreshCalendarEvents();
+          }
         } else {
           throw new Error('Keine gültige Event-ID erhalten');
         }
       }
+      
+      // Schließe das Formular nach erfolgreicher Speicherung
+      setTimeout(() => {
+        handleClose();
+      }, 1500);
+      
     } catch (err) {
       console.error('Fehler beim Speichern des Termins:', err);
       if (err.response && err.response.status === 401) {
@@ -306,9 +359,9 @@ const EventForm = () => {
       setSuccess('Termin erfolgreich gelöscht!');
       setDeleteDialogOpen(false);
       
-      // Nach erfolgreicher Löschung zur Kalenderansicht zurückkehren
+      // Nach erfolgreicher Löschung Dialog schließen
       setTimeout(() => {
-        navigate('/calendar');
+        if (onClose) onClose();
       }, 1500);
     } catch (err) {
       console.error('Fehler beim Löschen des Termins:', err);
@@ -339,86 +392,124 @@ const EventForm = () => {
     return Object.keys(errors).length === 0;
   };
 
-  return (
-    <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" component="h2">
-          {isViewMode ? 'Termin anzeigen' : (isEditMode ? 'Termin bearbeiten' : 'Neuer Termin')}
-        </Typography>
-      </Box>
+  // Rendere die Komponente im Dialog oder als Seite, je nach Modus
+  const renderFormContent = () => (
+    <>
+      <DialogTitle sx={{ 
+        fontSize: '1.1rem', 
+        fontWeight: 500,
+        py: 1.5,
+        color: theme => theme.palette.mode === 'dark' ? 'white' : '#1f2937'
+      }}>
+        {isEditMode ? 'Termin bearbeiten' : 'Neuer Termin'}
+      </DialogTitle>
       
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
-      
-      <Box component={isViewMode ? 'div' : 'form'} onSubmit={!isViewMode ? handleSubmit : undefined}>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
+      <DialogContent sx={{ pt: 1, pb: 2 }}>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+        
+        <Box sx={{ mt: 0.5 }}>
+          <Box sx={{ mb: 2 }}>
+            <Typography sx={{ 
+              display: 'block', 
+              fontSize: '0.8rem', 
+              fontWeight: 500, 
+              mb: 0.5,
+              color: theme => theme.palette.mode === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(55, 65, 81, 1)'
+            }}>
+              Titel
+            </Typography>
             <TextField
               fullWidth
-              label="Titel"
+              placeholder="Titel eingeben"
               value={title}
               onChange={e => setTitle(e.target.value)}
               required
-              disabled={loading || isViewMode}
+              disabled={loading}
+              variant="outlined"
+              size="small"
               InputProps={{
-                readOnly: isViewMode
+                sx: inputStyle
               }}
             />
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} sm={6}>
-            <DatePicker
-              selected={startTime}
-              onChange={handleStartTimeChange}
-              showTimeSelect
-              timeFormat="HH:mm"
-              timeIntervals={15}
-              dateFormat="dd.MM.yyyy HH:mm"
-              locale="de"
-              minDate={new Date()}
-              disabled={loading || isViewMode}
-              customInput={
-                <CustomDateTimePickerInput 
-                  label="Startzeit" 
-                  error={validationErrors.time}
-                  isReadOnly={isViewMode}
+          <Box sx={{ mb: 2, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ 
+                display: 'block', 
+                fontSize: '0.8rem', 
+                fontWeight: 500, 
+                mb: 0.5,
+                color: theme => theme.palette.mode === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(55, 65, 81, 1)'
+              }}>
+                Startzeit
+              </Typography>
+              <div style={{ height: '40px' }}>
+                <DatePicker
+                  selected={startTime}
+                  onChange={handleStartTimeChange}
+                  showTimeSelect
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  dateFormat="dd.MM.yyyy HH:mm"
+                  locale="de"
+                  minDate={new Date()}
+                  disabled={loading}
+                  customInput={<CustomDatePickerInput />}
+                  wrapperClassName="datepicker-wrapper"
                 />
-              }
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <DatePicker
-              selected={endTime}
-              onChange={newValue => setEndTime(newValue)}
-              showTimeSelect
-              timeFormat="HH:mm"
-              timeIntervals={15}
-              dateFormat="dd.MM.yyyy HH:mm"
-              locale="de"
-              minDate={startTime}
-              disabled={loading || isViewMode}
-              customInput={
-                <CustomDateTimePickerInput 
-                  label="Endzeit" 
-                  error={validationErrors.time}
-                  helperText={validationErrors.time || ''}
-                  isReadOnly={isViewMode}
+              </div>
+            </Box>
+            
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ 
+                display: 'block', 
+                fontSize: '0.8rem', 
+                fontWeight: 500, 
+                mb: 0.5,
+                color: theme => theme.palette.mode === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(55, 65, 81, 1)'
+              }}>
+                Endzeit
+              </Typography>
+              <div style={{ height: '40px' }}>
+                <DatePicker
+                  selected={endTime}
+                  onChange={newValue => setEndTime(newValue)}
+                  showTimeSelect
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  dateFormat="dd.MM.yyyy HH:mm"
+                  locale="de"
+                  minDate={startTime}
+                  disabled={loading}
+                  customInput={<CustomDatePickerInput />}
+                  wrapperClassName="datepicker-wrapper"
                 />
-              }
-            />
-          </Grid>
+              </div>
+            </Box>
+          </Box>
           
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Termintyp</InputLabel>
+          <Box sx={{ mb: 2, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ 
+                display: 'block', 
+                fontSize: '0.8rem', 
+                fontWeight: 500, 
+                mb: 0.5,
+                color: theme => theme.palette.mode === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(55, 65, 81, 1)'
+              }}>
+                Termintyp
+              </Typography>
               <Select
+                fullWidth
                 value={eventType}
                 onChange={e => setEventType(e.target.value)}
-                label="Termintyp"
-                disabled={loading || isViewMode}
-                inputProps={{
-                  readOnly: isViewMode
+                disabled={loading}
+                size="small"
+                sx={{
+                  height: '40px',
+                  ...inputStyle
                 }}
               >
                 <MenuItem value="personal">Persönlich</MenuItem>
@@ -426,96 +517,156 @@ const EventForm = () => {
                 <MenuItem value="health">Gesundheit</MenuItem>
                 <MenuItem value="other">Sonstiges</MenuItem>
               </Select>
-            </FormControl>
-          </Grid>
+            </Box>
+            
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ 
+                display: 'block', 
+                fontSize: '0.8rem', 
+                fontWeight: 500, 
+                mb: 0.5,
+                color: theme => theme.palette.mode === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(55, 65, 81, 1)'
+              }}>
+                Ort
+              </Typography>
+              <TextField
+                fullWidth
+                placeholder="Ort eingeben"
+                value={location_}
+                onChange={e => setLocation(e.target.value)}
+                disabled={loading}
+                size="small"
+                InputProps={{
+                  sx: inputStyle
+                }}
+              />
+            </Box>
+          </Box>
           
-          <Grid item xs={12} sm={6}>
+          <Box sx={{ mb: 1 }}>
+            <Typography sx={{ 
+              display: 'block', 
+              fontSize: '0.8rem', 
+              fontWeight: 500, 
+              mb: 0.5,
+              color: theme => theme.palette.mode === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(55, 65, 81, 1)'
+            }}>
+              Beschreibung
+            </Typography>
             <TextField
               fullWidth
-              label="Ort"
-              value={location_}
-              onChange={e => setLocation(e.target.value)}
-              disabled={loading || isViewMode}
-              InputProps={{
-                readOnly: isViewMode
-              }}
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Beschreibung"
+              placeholder="Beschreibung eingeben"
               value={description}
               onChange={e => setDescription(e.target.value)}
               multiline
-              rows={4}
-              disabled={loading || isViewMode}
+              rows={2}
+              disabled={loading}
+              size="small"
               InputProps={{
-                readOnly: isViewMode
+                sx: {
+                  borderRadius: '0.375rem',
+                  bgcolor: theme => theme.palette.mode === 'dark' ? 'rgba(42, 47, 78, 1)' : 'white',
+                  border: theme => theme.palette.mode === 'dark' ? '1px solid rgba(58, 63, 94, 1)' : '1px solid rgba(209, 213, 219, 1)',
+                  color: theme => theme.palette.mode === 'dark' ? 'white' : 'rgba(17, 24, 39, 1)',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    border: 'none'
+                  }
+                }
               }}
             />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-              <Button 
-                variant="outlined" 
-                onClick={() => navigate('/calendar')}
-                disabled={loading}
-              >
-                {isViewMode ? 'Zurück zum Kalender' : 'Abbrechen'}
-              </Button>
-              
-              <Box>
-                {isViewMode ? (
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => navigate(`/events/${eventId}/edit`)}
-                    disabled={loading}
-                  >
-                    Bearbeiten
-                  </Button>
-                ) : (
-                  <>
-                    {isEditMode && (
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        onClick={() => setDeleteDialogOpen(true)}
-                        disabled={loading}
-                        sx={{ mr: 1 }}
-                      >
-                        Löschen
-                      </Button>
-                    )}
-                    
-                    <Button 
-                      type="submit" 
-                      variant="contained" 
-                      color="primary"
-                      disabled={loading}
-                    >
-                      {loading ? 'Wird gespeichert...' : (isEditMode ? 'Aktualisieren' : 'Erstellen')}
-                    </Button>
-                  </>
-                )}
-              </Box>
-            </Box>
-          </Grid>
-        </Grid>
-      </Box>
+          </Box>
+        </Box>
+        
+        {/* CSS für DatePicker-Wrapper */}
+        <style jsx="true">{`
+          .datepicker-wrapper {
+            width: 100%;
+          }
+          .react-datepicker-wrapper {
+            width: 100%;
+          }
+          .react-datepicker__input-container {
+            width: 100%;
+          }
+        `}</style>
+        
+        {/* Erinnerungsformular hinzufügen (nur wenn der Termin bereits existiert) */}
+        {showReminderForm && (
+          <Box sx={{ mt: 2 }}>
+            <ReminderForm 
+              eventId={eventId}
+              eventStartTime={startTime}
+              existingReminders={reminders}
+              onReminderChange={setReminders}
+            />
+          </Box>
+        )}
+      </DialogContent>
       
-      {/* Erinnerungsformular hinzufügen (nur wenn der Termin bereits existiert) */}
-      {showReminderForm && (
-        <ReminderForm 
-          eventId={eventId}
-          eventStartTime={startTime}
-          existingReminders={reminders}
-          onReminderChange={setReminders}
-          readOnly={isViewMode}
-        />
+      <DialogActions sx={{ px: 2, pb: 2, pt: 0, justifyContent: 'flex-end' }}>
+        <Button 
+          onClick={handleClose} 
+          disabled={loading}
+          variant="text"
+          sx={{
+            px: 2,
+            py: 1,
+            mr: 1,
+            borderRadius: '0.375rem',
+            backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(42, 47, 78, 1)' : 'rgba(243, 244, 246, 1)',
+            color: theme => theme.palette.mode === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(75, 85, 99, 1)',
+            fontSize: '0.875rem',
+            '&:hover': {
+              backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(42, 47, 78, 0.9)' : 'rgba(229, 231, 235, 1)',
+              color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 1)' : 'rgba(31, 41, 55, 1)',
+            }
+          }}
+        >
+          Abbrechen
+        </Button>
+        <Button 
+          onClick={handleSubmit} 
+          disabled={loading}
+          sx={{
+            px: 2,
+            py: 1,
+            borderRadius: '0.375rem',
+            background: 'linear-gradient(to right, #ff0066, #3399ff)',
+            color: 'white',
+            fontSize: '0.875rem',
+            '&:hover': {
+              opacity: 0.9
+            }
+          }}
+        >
+          {loading ? 'Wird gespeichert...' : (isEditMode ? 'Speichern' : 'Erstellen')}
+        </Button>
+      </DialogActions>
+      
+      {/* Löschen-Button in einem separaten Abschnitt */}
+      {isEditMode && (
+        <Box sx={{ position: 'absolute', left: 16, bottom: 14 }}>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={() => setDeleteDialogOpen(true)}
+            disabled={loading}
+            size="small"
+            sx={{
+              px: 2,
+              py: 1,
+              fontSize: '0.875rem',
+              borderColor: '#f43f5e',
+              color: '#f43f5e',
+              '&:hover': {
+                borderColor: '#e11d48',
+                backgroundColor: 'rgba(244, 63, 94, 0.04)'
+              }
+            }}
+          >
+            Löschen
+          </Button>
+        </Box>
       )}
       
       {/* Bestätigungsdialog für das Löschen */}
@@ -530,14 +681,72 @@ const EventForm = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
+          <Button 
+            onClick={() => setDeleteDialogOpen(false)} 
+            sx={{
+              px: 2,
+              py: 1,
+              mr: 1,
+              borderRadius: '0.375rem',
+              backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(42, 47, 78, 1)' : 'rgba(243, 244, 246, 1)',
+              color: theme => theme.palette.mode === 'dark' ? 'rgba(156, 163, 175, 1)' : 'rgba(75, 85, 99, 1)',
+              '&:hover': {
+                backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(42, 47, 78, 0.9)' : 'rgba(229, 231, 235, 1)',
+                color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 1)' : 'rgba(31, 41, 55, 1)',
+              }
+            }}
+          >
             Abbrechen
           </Button>
-          <Button onClick={handleDelete} color="error">
+          <Button 
+            onClick={handleDelete} 
+            sx={{
+              px: 2,
+              py: 1,
+              borderRadius: '0.375rem',
+              background: 'linear-gradient(to right, #f43f5e, #e11d48)',
+              color: 'white',
+              '&:hover': {
+                opacity: 0.9
+              }
+            }}
+          >
             Löschen
           </Button>
         </DialogActions>
       </Dialog>
+    </>
+  );
+  
+  // Rendere Dialog für Popup-Modus oder Paper für Seitenmodus
+  return isPopupMode ? (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: '0.75rem',
+          bgcolor: theme => theme.palette.mode === 'dark' ? '#1a1f3e' : 'white',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }
+      }}
+    >
+      {renderFormContent()}
+    </Dialog>
+  ) : (
+    <Paper 
+      sx={{ 
+        maxWidth: 600, 
+        mx: 'auto', 
+        mt: 4, 
+        borderRadius: '0.75rem',
+        bgcolor: theme => theme.palette.mode === 'dark' ? '#1a1f3e' : 'white',
+        overflow: 'hidden'
+      }}
+    >
+      {renderFormContent()}
     </Paper>
   );
 };

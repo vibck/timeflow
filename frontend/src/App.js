@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -53,6 +53,74 @@ const PrivateRoute = ({ children }) => {
  */
 const AppContent = () => {
   const { theme } = useTheme();
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [eventData, setEventData] = useState(null);
+  
+  // Funktion zum Öffnen des Popups
+  const openEventFormPopup = (event) => {
+    if (event) {
+      try {
+        // Sichere Erstellung von Date-Objekten mit Fallbacks
+        const createSafeDate = (dateValue) => {
+          if (!dateValue) return new Date();
+          
+          try {
+            const date = new Date(dateValue);
+            // Überprüfe, ob das Datum gültig ist
+            if (isNaN(date.getTime())) {
+              console.warn('Ungültiges Datum erkannt:', dateValue);
+              return new Date(); // Fallback auf aktuelles Datum
+            }
+            return date;
+          } catch (e) {
+            console.error('Fehler beim Erstellen des Date-Objekts:', e);
+            return new Date(); // Fallback auf aktuelles Datum
+          }
+        };
+        
+        // Verwende die vorhandenen oder berechneten Werte
+        const startTime = createSafeDate(event.datetime || event.start_time);
+        const endTime = createSafeDate(event.end_time) || new Date(startTime.getTime() + 60 * 60 * 1000); // +1 Stunde als Fallback
+        
+        // Prüfe, ob es sich um ein neues oder bestehendes Event handelt
+        const isNew = event.id && event.id.toString().startsWith('new-event-');
+        
+        setEventData({
+          id: isNew ? null : event.id, // Keine ID für neue Events
+          title: event.title || '',
+          description: event.description || '',
+          location: event.location || '',
+          start_time: startTime,
+          end_time: endTime,
+          event_type: event.event_type || 'personal'
+        });
+        setShowEventForm(true);
+      } catch (error) {
+        console.error('Fehler beim Öffnen des Popups:', error);
+        // Fehlermeldung anzeigen (optional)
+      }
+    }
+  };
+  
+  // Funktion zum Schließen des Popups
+  const closeEventFormPopup = () => {
+    setShowEventForm(false);
+    setEventData(null);
+    
+    // Termine neu laden - Diese Funktion könnte ein globales Event auslösen
+    if (window.refreshCalendarEvents) {
+      window.refreshCalendarEvents();
+    }
+  };
+  
+  // Funktion global verfügbar machen
+  useEffect(() => {
+    window.openEventFormPopup = openEventFormPopup;
+    
+    return () => {
+      window.openEventFormPopup = null;
+    };
+  }, []);
 
   return (
     <MuiThemeProvider theme={theme}>
@@ -87,6 +155,16 @@ const AppContent = () => {
             {/* 404-Seite */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          
+          {/* Globales EventForm-Popup */}
+          {showEventForm && (
+            <EventForm
+              open={showEventForm}
+              onClose={closeEventFormPopup}
+              initialData={eventData}
+              isEdit={true}
+            />
+          )}
         </Router>
       </LocalizationProvider>
     </MuiThemeProvider>

@@ -21,6 +21,24 @@ import { useTheme } from '../contexts/ThemeContext';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import api from '../utils/api';
+import { 
+  Grid, 
+  Card, 
+  CardContent, 
+  Typography, 
+  Divider, 
+  TextField, 
+  IconButton,
+  Checkbox,
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormGroup,
+  FormControlLabel,
+  Paper
+} from '@mui/material';
 
 export default function Dashboard() {
   const { currentUser } = useAuth();
@@ -166,7 +184,29 @@ export default function Dashboard() {
   };
 
   const handleAddAppointment = () => {
-    navigate('/events/new');
+    // Anstatt zur URL zu navigieren, öffnen wir direkt das Popup
+    const startTime = new Date();
+    const endTime = new Date(startTime);
+    endTime.setHours(startTime.getHours() + 1); // Standard: 1 Stunde später
+    
+    // Initialisiere ein leeres Event mit aktueller Zeit
+    const emptyEvent = {
+      id: 'new-event-' + Date.now(), // Temporäre ID für das neue Event
+      title: '',
+      description: '',
+      location: '',
+      start_time: startTime,
+      end_time: endTime,
+      event_type: 'personal'
+    };
+    
+    // Öffne das EventForm-Popup mit dem leeren Event
+    if (window.openEventFormPopup) {
+      window.openEventFormPopup(emptyEvent);
+    } else {
+      // Fallback zur alten Methode, falls die globale Funktion nicht verfügbar ist
+      navigate('/events/new');
+    }
   };
 
   // Task category options
@@ -474,7 +514,54 @@ export default function Dashboard() {
                 {upcomingEvents
                   .slice(0, showAllEvents ? upcomingEvents.length : 5)
                   .map((event) => (
-                  <div key={event.id} className={`p-3 ${mode === 'dark' ? 'bg-[#2a2f4e] hover:bg-[#323752]' : 'bg-gray-50 hover:bg-gray-100'} rounded-md transition-colors`}>
+                  <div 
+                    key={event.id} 
+                    className={`p-3 ${mode === 'dark' ? 'bg-[#2a2f4e] hover:bg-[#323752]' : 'bg-gray-50 hover:bg-gray-100'} rounded-md transition-colors cursor-pointer`}
+                    onClick={() => {
+                      // Bereite das Event-Objekt mit korrekten Datumsformaten vor
+                      const formattedEvent = {
+                        ...event,
+                        // Füge ein zusätzliches start_time-Feld hinzu, das ein gültiges Date-Objekt enthält
+                        // date ist ein String im Format 'dd.MM.yyyy', daher konvertieren wir es
+                        start_time: (() => {
+                          try {
+                            // Falls event.date im Format 'dd. MMM' und event.time im Format 'HH:mm - HH:mm' ist,
+                            // müssen wir dies korrekt parsen
+                            const [day, month] = event.date.split('.');
+                            const [startTime] = event.time.split('-')[0].trim().split(':');
+                            const startHour = parseInt(startTime, 10) || 9; // Standardwert 9 Uhr falls nicht parsebar
+                            
+                            // Verwende das aktuelle Jahr, wenn nicht im Date enthalten
+                            const currentYear = new Date().getFullYear();
+                            const monthNumber = parseInt(month.trim(), 10) - 1; // Monate sind 0-basiert in JS
+                            const dayNumber = parseInt(day.trim(), 10);
+                            
+                            // Erstelle ein gültiges Datum
+                            const date = new Date(currentYear, monthNumber, dayNumber, startHour, 0, 0);
+                            return date;
+                          } catch (e) {
+                            console.error('Fehler beim Parsen des Datums:', e);
+                            return new Date(); // Fallback auf aktuelles Datum
+                          }
+                        })()
+                      };
+                      
+                      // Öffne das EventForm-Popup mit dem formatierten Event-Objekt
+                      if (window.openEventFormPopup) {
+                        window.openEventFormPopup(formattedEvent);
+                      } else {
+                        // Fallback: Navigiere zur Kalenderseite
+                        navigate('/calendar');
+                        
+                        // Versuche, das Popup nach der Navigation zu öffnen
+                        setTimeout(() => {
+                          if (window.openEventFormPopup) {
+                            window.openEventFormPopup(formattedEvent);
+                          }
+                        }, 100);
+                      }
+                    }}
+                  >
                     <div className="flex items-center mb-2">
                       <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: event.color }}></div>
                       <h3 className={`font-medium ${mode === 'dark' ? 'text-white' : 'text-gray-900'}`}>{event.title}</h3>

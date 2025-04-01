@@ -59,6 +59,8 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
   const [error, setError] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reminderToDelete, setReminderToDelete] = useState(null);
+  // Temporärer Speicher für neue Erinnerungen, wenn noch kein Event-ID existiert
+  const [tempReminders, setTempReminders] = useState([]);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -103,8 +105,12 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
     }
     
     // Prüfe, ob bereits eine Erinnerung mit der gleichen Zeit existiert
-    const duplicateReminder = existingReminders.find(
-      reminder => reminder.reminder_time === reminderTime.toISOString()
+    const remindersList = eventId ? existingReminders : tempReminders;
+    const duplicateReminder = remindersList.find(
+      reminder => {
+        const reminderTimeStr = reminderTime.toISOString();
+        return reminder.reminder_time === reminderTimeStr;
+      }
     );
     
     if (duplicateReminder) {
@@ -118,10 +124,42 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
 
   // Füge eine neue Erinnerung hinzu
   const handleAddReminder = async () => {
-    if (!reminderTime || !eventId) return;
+    if (!reminderTime) return;
     
     // Validiere die Erinnerungszeit
     if (!validateReminderTime()) {
+      return;
+    }
+    
+    // Bei neuen Terminen (ohne eventId) fügen wir Erinnerungen temporär hinzu
+    if (!eventId) {
+      const tempReminder = {
+        id: 'temp-' + Date.now(),
+        event_id: null,
+        reminder_time: reminderTime.toISOString(),
+        is_sent: false,
+        is_temp: true
+      };
+      
+      setTempReminders([...tempReminders, tempReminder]);
+      
+      // Aktualisiere die Liste der Erinnerungen im Eltern-Component
+      if (onReminderChange) {
+        onReminderChange([...existingReminders, tempReminder]);
+      }
+      
+      // Zeige Erfolgsmeldung
+      setSnackbar({
+        open: true,
+        message: 'Erinnerung wird erstellt, wenn der Termin gespeichert wird',
+        severity: 'success'
+      });
+      
+      // Setze die Erinnerungszeit zurück
+      const defaultOption = presetOptions.find(opt => opt.value === '30min');
+      setPresetOption('30min');
+      setReminderTime(addMinutes(new Date(eventStartTime), -defaultOption.minutes));
+      
       return;
     }
     
@@ -173,6 +211,21 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
   // Lösche eine Erinnerung
   const handleDeleteReminder = async () => {
     if (!reminderToDelete) return;
+    
+    // Wenn es eine temporäre Erinnerung ist (bei neuen Terminen)
+    if (reminderToDelete.is_temp || reminderToDelete.id.toString().startsWith('temp-')) {
+      setTempReminders(tempReminders.filter(r => r.id !== reminderToDelete.id));
+      onReminderChange(existingReminders.filter(r => r.id !== reminderToDelete.id));
+      
+      setSnackbar({
+        open: true,
+        message: 'Erinnerung entfernt',
+        severity: 'success'
+      });
+      
+      closeDeleteDialog();
+      return;
+    }
     
     try {
       setLoading(true);
@@ -322,7 +375,22 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
             startIcon={<AddIcon />}
             onClick={handleAddReminder}
             disabled={loading}
-            sx={{ ml: 2, mt: presetOption === 'custom' ? 0 : 1 }}
+            sx={{ 
+              ml: 2, 
+              mt: presetOption === 'custom' ? 0 : 1,
+              px: 2,
+              py: 1,
+              borderRadius: '0.375rem',
+              background: 'linear-gradient(to right, #ff0066, #3399ff)',
+              color: 'white',
+              fontSize: '0.875rem',
+              textTransform: 'none',
+              boxShadow: 'none',
+              '&:hover': {
+                opacity: 0.9,
+                boxShadow: 'none'
+              }
+            }}
           >
             Hinzufügen
           </Button>
