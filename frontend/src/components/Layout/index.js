@@ -63,39 +63,9 @@ const Layout = () => {
 
   // Lade Dummy-Events für alle Seiten
   useEffect(() => {
-    // Wenn keine Events vorhanden sind, erstellen wir Dummy-Daten
+    // Stattdessen werden die Events durch die API-Calls geladen
     if (calendarEvents.length === 0) {
-      const today = new Date();
-      const tomorrow = new Date();
-      tomorrow.setDate(today.getDate() + 1);
-      const dayAfterTomorrow = new Date();
-      dayAfterTomorrow.setDate(today.getDate() + 2);
-      
-      const dummyEvents = [
-        { 
-          id: 'event-1', 
-          title: 'Statusmeeting', 
-          date: today, 
-          time: '14:30 - 15:30',
-          color: '#3399ff'
-        },
-        { 
-          id: 'event-2', 
-          title: 'Produktplanung', 
-          date: tomorrow, 
-          time: '10:00 - 11:30',
-          color: '#ff0066'
-        },
-        { 
-          id: 'event-3', 
-          title: 'Design Review', 
-          date: dayAfterTomorrow, 
-          time: '16:00 - 17:00',
-          color: '#00cc66'
-        }
-      ];
-      
-      setCalendarEvents(dummyEvents);
+      setCalendarEvents([]);
     }
   }, [calendarEvents.length]);
 
@@ -107,12 +77,8 @@ const Layout = () => {
         // const response = await api.get('/api/notifications');
         // setNotifications(response.data);
         
-        // Dummy-Daten für die Demo
-        setNotifications([
-          { id: 1, title: "Erinnerung: Produktmeeting", read: false, time: "Heute, 09:30", type: "meeting", eventId: "product-123" },
-          { id: 2, title: "Neue Nachricht von Alex", read: false, time: "Gestern, 16:45", type: "message" },
-          { id: 3, title: "Design Review verschoben", read: true, time: "15.05.2024, 14:30", type: "calendar", eventId: "design-456" }
-        ]);
+        // Leere Benachrichtigungen statt Dummy-Daten
+        setNotifications([]);
       } catch (error) {
         console.error('Fehler beim Laden der Benachrichtigungen:', error);
       }
@@ -290,21 +256,77 @@ const Layout = () => {
         <div className="mt-8 pt-8 border-t border-white/10">
           <h3 className="text-xs uppercase text-gray-500 font-medium mb-4 tracking-wider">Kommende Termine</h3>
           <div className="space-y-3">
-            {calendarEvents.slice(0, 3).map(event => (
-              <div 
-                key={event.id} 
-                className="p-3 rounded-lg bg-[#1a1f3e] border border-[#2a2f4e] transition-colors cursor-pointer"
-                onClick={() => handleEditEvent && handleEditEvent(event)}
-              >
-                <div className="flex items-center">
-                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: event.color }}></div>
-                  <span className="text-sm font-medium">{event.title}</span>
+            {calendarEvents
+              .filter(event => {
+                // Aktuelle Zeit zum Vergleich
+                const now = new Date();
+                
+                // Wenn es ein Event mit end_time gibt, prüfen, ob es bereits vorbei ist
+                if (event.end_time) {
+                  const eventEndTime = new Date(event.end_time);
+                  // Behalte das Event, wenn die Endzeit in der Zukunft liegt (noch nicht vorbei)
+                  return eventEndTime > now;
+                }
+                
+                // Fallback für Events ohne explizite Endzeit: Prüfe das Datum
+                if (event.date) {
+                  const eventDate = new Date(event.date);
+                  // Wenn es heute ist, behalte es (ohne Endzeit ist es vermutlich ganztägig)
+                  if (eventDate.getDate() === now.getDate() && 
+                      eventDate.getMonth() === now.getMonth() && 
+                      eventDate.getFullYear() === now.getFullYear()) {
+                    return true;
+                  }
+                  // Ansonsten behalte nur zukünftige Termine
+                  return eventDate >= now;
+                }
+                
+                return true; // Fallback für Events ohne Datum oder Endzeit
+              })
+              // Sortiere nach Datum und Zeit
+              .sort((a, b) => {
+                const dateA = new Date(a.datetime || a.date || a.start_time);
+                const dateB = new Date(b.datetime || b.date || b.start_time);
+                return dateA - dateB;
+              })
+              // Zeige nur die nächsten drei Termine
+              .slice(0, 3)
+              .map(event => (
+                <div 
+                  key={event.id} 
+                  className="p-3 rounded-lg bg-[#1a1f3e] border border-[#2a2f4e] transition-colors cursor-pointer"
+                  onClick={() => handleEditEvent && handleEditEvent(event)}
+                >
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: event.color }}></div>
+                    <span className="text-sm font-medium">{event.title}</span>
+                  </div>
+                  <div className="mt-1 text-xs text-gray-400">
+                    {format(new Date(event.date), 'dd. MMM', { locale: de })} • {event.time}
+                  </div>
                 </div>
-                <div className="mt-1 text-xs text-gray-400">
-                  {format(event.date, 'dd. MMM', { locale: de })} • {event.time}
-                </div>
+              ))}
+              
+            {calendarEvents.filter(event => {
+                const now = new Date();
+                if (event.end_time) {
+                  return new Date(event.end_time) > now;
+                }
+                if (event.date) {
+                  const eventDate = new Date(event.date);
+                  if (eventDate.getDate() === now.getDate() && 
+                      eventDate.getMonth() === now.getMonth() && 
+                      eventDate.getFullYear() === now.getFullYear()) {
+                    return true;
+                  }
+                  return eventDate >= now;
+                }
+                return true;
+              }).length === 0 && (
+              <div className="p-3 text-center text-gray-400 text-sm">
+                Keine kommenden Termine
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

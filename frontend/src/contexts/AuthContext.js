@@ -73,12 +73,23 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
+  // Funktion zum Aktualisieren der Benutzerdaten im Kontext
+  const updateUserData = (userData) => {
+    if (!currentUser) return;
+    
+    setCurrentUser(prevUserData => ({
+      ...prevUserData,
+      ...userData
+    }));
+  };
+
   const value = {
     currentUser,
     isAuthenticated,
     loading,
     login,
-    logout
+    logout,
+    updateUserData
   };
 
   return (

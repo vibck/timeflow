@@ -28,14 +28,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Holidays from 'date-holidays';
 import EventForm from '../pages/EventForm';
 
-// Beispiel-Events für die Anzeige, falls keine vom Backend geladen werden können
-const sampleEvents = [
-  { id: 1, title: "Produktmeeting", date: new Date(2024, new Date().getMonth(), 10), time: "10:00 - 11:30", color: "#3399ff" },
-  { id: 2, title: "Design Review", date: new Date(2024, new Date().getMonth(), 15), time: "14:00 - 15:00", color: "#ff0066" },
-  { id: 3, title: "Team Mittagessen", date: new Date(2024, new Date().getMonth(), 18), time: "12:30 - 13:30", color: "#9f7aea" },
-  { id: 4, title: "Kundengespräch", date: new Date(2024, new Date().getMonth(), 22), time: "09:00 - 10:00", color: "#38b2ac" },
-  { id: 5, title: "Projektabgabe", date: new Date(2024, new Date().getMonth(), 28), time: "Ganztägig", color: "#ff0066" },
-];
+// Keine Beispiel-Events mehr definieren
 
 const Calendar = () => {
   const navigate = useNavigate();
@@ -84,11 +77,11 @@ const Calendar = () => {
     } catch (error) {
       console.error('Fehler beim Laden der Termine:', error);
       setError('Fehler beim Laden der Termine. Bitte versuche es später erneut.');
-      // Verwende Beispiel-Events als Fallback
-      setEvents(sampleEvents);
+      // Keine Fallback-Events mehr
+      setEvents([]);
       
-      // Fallback für die Sidebar
-      window.calendarEvents = sampleEvents;
+      // Leere Events für die Sidebar
+      window.calendarEvents = [];
     } finally {
       setLoading(false);
     }

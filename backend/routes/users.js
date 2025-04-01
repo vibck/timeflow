@@ -36,6 +36,93 @@ router.get('/settings', authenticateJWT, async (req, res) => {
   }
 });
 
+// Benutzerprofil abrufen
+router.get('/profile', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const result = await db.query(
+      'SELECT id, name, email, profile_picture, google_id, created_at FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ message: 'Serverfehler beim Abrufen des Benutzerprofils' });
+  }
+});
+
+// Benutzerprofil aktualisieren
+router.put('/profile', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name, email, profile_picture } = req.body;
+    
+    // Validierung für E-Mail
+    if (email) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: 'Ungültige E-Mail-Adresse' });
+      }
+      
+      // Prüfe, ob die E-Mail bereits von einem anderen Benutzer verwendet wird
+      const emailCheck = await db.query(
+        'SELECT id FROM users WHERE email = $1 AND id != $2',
+        [email, userId]
+      );
+      
+      if (emailCheck.rows.length > 0) {
+        return res.status(400).json({ message: 'Diese E-Mail wird bereits von einem anderen Benutzer verwendet' });
+      }
+    }
+    
+    // Baue die Abfrage dynamisch auf
+    let query = 'UPDATE users SET updated_at = CURRENT_TIMESTAMP';
+    const values = [];
+    let paramCount = 1;
+    
+    if (name) {
+      query += `, name = $${paramCount}`;
+      values.push(name);
+      paramCount++;
+    }
+    
+    if (email) {
+      query += `, email = $${paramCount}`;
+      values.push(email);
+      paramCount++;
+    }
+    
+    if (profile_picture) {
+      query += `, profile_picture = $${paramCount}`;
+      values.push(profile_picture);
+      paramCount++;
+    }
+    
+    query += ` WHERE id = $${paramCount} RETURNING id, name, email, profile_picture, google_id, created_at`;
+    values.push(userId);
+    
+    const result = await db.query(query, values);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+    }
+    
+    res.json({
+      message: 'Benutzerprofil erfolgreich aktualisiert',
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    res.status(500).json({ message: 'Serverfehler beim Aktualisieren des Benutzerprofils' });
+  }
+});
+
 // Benutzereinstellungen aktualisieren
 router.put('/settings', authenticateJWT, async (req, res) => {
   try {

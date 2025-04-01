@@ -45,13 +45,7 @@ export default function Dashboard() {
   const { mode } = useTheme();
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [tasks, setTasks] = useState([
-    { id: 1, title: "Präsentation vorbereiten", completed: false, dueDate: "Morgen, 14:00", category: "work" },
-    { id: 2, title: "Meeting mit Marketing-Team", completed: false, dueDate: "Heute, 15:30", category: "work" },
-    { id: 3, title: "Projektplan aktualisieren", completed: true, dueDate: "Gestern", category: "work" },
-    { id: 4, title: "Mila von der Schule abholen", completed: false, dueDate: "02. Apr, 10:00", category: "personal" },
-    { id: 5, title: "Zahnarzttermin vereinbaren", completed: false, dueDate: "Diese Woche", category: "health" },
-  ]);
+  const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("");
   const [newTaskCategory, setNewTaskCategory] = useState("work");
   const [newTaskDueDate, setNewTaskDueDate] = useState("Heute");
@@ -60,6 +54,7 @@ export default function Dashboard() {
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [showAllEvents, setShowAllEvents] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [healthIntervals, setHealthIntervals] = useState([]);
   const [loading, setLoading] = useState(true);
   
   const getUserName = () => {
@@ -217,6 +212,109 @@ export default function Dashboard() {
     { id: "other", name: "Sonstiges", color: "#9966cc" }
   ];
 
+  // Formatiere Datum relativ zum aktuellen Datum
+  const formatRelativeDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = Math.abs(date - now);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays < 30) {
+        return `vor ${diffDays} Tagen`;
+      } else if (diffDays < 365) {
+        const months = Math.floor(diffDays / 30);
+        return `vor ${months} Monaten`;
+      } else {
+        const years = Math.floor(diffDays / 365);
+        return `vor ${years} Jahren`;
+      }
+    } catch (error) {
+      console.error('Fehler bei der Datumsformatierung:', error);
+      return 'unbekannt';
+    }
+  };
+  
+  // Berechne den Fortschritt eines Intervalls
+  const calculateProgress = (lastVisit, nextVisit) => {
+    try {
+      const now = new Date();
+      // Stelle sicher, dass wir Date-Objekte haben
+      const last = lastVisit instanceof Date ? lastVisit : new Date(lastVisit);
+      const next = nextVisit instanceof Date ? nextVisit : new Date(nextVisit);
+      
+      // Prüfe, ob die Daten gültig sind
+      if (isNaN(last.getTime()) || isNaN(next.getTime())) {
+        console.error('Ungültige Datumswerte für Fortschrittsberechnung:', { lastVisit, nextVisit });
+        return 0;
+      }
+      
+      // Setze Uhrzeit auf Mitternacht für konsistente Berechnungen
+      const lastDate = new Date(last);
+      lastDate.setHours(0, 0, 0, 0);
+      
+      const nextDate = new Date(next);
+      nextDate.setHours(0, 0, 0, 0);
+      
+      const nowDate = new Date(now);
+      nowDate.setHours(0, 0, 0, 0);
+      
+      // Gesamt Zeitspanne
+      const total = nextDate - lastDate;
+      
+      // Wenn das Intervall ungültig ist oder 0, gib 0% zurück
+      if (total <= 0) {
+        console.warn('Ungültiges Intervall: Die Zeitspanne ist 0 oder negativ');
+        return 0;
+      }
+      
+      // Vergangene Zeit
+      const elapsed = nowDate - lastDate;
+      
+      // Fortschritt berechnen und auf 0-100% begrenzen
+      const progress = Math.min(Math.max((elapsed / total) * 100, 0), 100);
+      
+      return progress;
+    } catch (error) {
+      console.error('Fehler bei der Fortschrittsberechnung:', error);
+      return 0;
+    }
+  };
+  
+  // Prüfe, ob ein Termin überfällig ist
+  const isOverdue = (nextVisit) => {
+    try {
+      // Stelle sicher, dass wir ein Date-Objekt haben
+      const nextDate = nextVisit instanceof Date ? nextVisit : new Date(nextVisit);
+      
+      // Prüfe, ob das Datum gültig ist
+      if (isNaN(nextDate.getTime())) {
+        console.error('Ungültiges Datum für nächsten Besuch:', nextVisit);
+        return false;
+      }
+      
+      // Vergleiche nur Datum ohne Uhrzeit
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const nextDateOnly = new Date(nextDate);
+      nextDateOnly.setHours(0, 0, 0, 0);
+      
+      console.log('Dashboard - Überfälligkeitsprüfung:', {
+        original: nextVisit,
+        nextDate: nextDate,
+        nextDateOnly: nextDateOnly,
+        today: today,
+        isOverdue: nextDateOnly < today
+      });
+      
+      return nextDateOnly < today;
+    } catch (error) {
+      console.error('Fehler bei der Überprüfung auf Überfälligkeit:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -233,22 +331,67 @@ export default function Dashboard() {
         setUpcomingEvents(events);
       } catch (error) {
         console.error('Fehler beim Laden der Termine:', error);
-        // Fallback zu statischen Daten bei Fehler
-        setUpcomingEvents([
-          { id: 1, title: "Mila Abholen", date: "02. Apr", time: "10:00 - 10:15", color: "#3399ff" },
-          { id: 2, title: "Weiberfastnacht", date: "27. Mär", time: "Ganztägig", color: "#9966cc" },
-          { id: 3, title: "Rosenmontag", date: "03. Mär", time: "Ganztägig", color: "#9966cc" },
-          { id: 4, title: "Teambesprechung", date: "05. Apr", time: "09:30 - 10:30", color: "#3399ff" },
-          { id: 5, title: "Quartalsbericht", date: "10. Apr", time: "14:00 - 15:00", color: "#3399ff" },
-          { id: 6, title: "Geburtstagsfeier Lisa", date: "15. Apr", time: "19:00 - 22:00", color: "#ff9900" },
-          { id: 7, title: "Arzttermin", date: "18. Apr", time: "11:30 - 12:15", color: "#66cc66" },
-        ]);
+        // Keine Fallback-Daten mehr
+        setUpcomingEvents([]);
       } finally {
         setLoading(false);
       }
     };
 
+    // Lade Gesundheitsintervalle
+    const fetchHealthIntervals = async () => {
+      try {
+        const response = await api.get('/api/health-intervals');
+        console.log('Rohe API-Antwort (Health Intervals):', response.data);
+        
+        // Konvertiere die API-Daten in das richtige Format
+        const formattedIntervals = response.data.map(interval => {
+          // Stelle sicher, dass die Daten gültig sind
+          if (!interval.last_appointment) {
+            console.warn('Ungültige Intervalldaten in API-Antwort (fehlendes last_appointment):', interval);
+            return null;
+          }
+          
+          // Das nächste Datum wird entweder aus next_appointment oder next_suggested_date gelesen
+          const nextDateValue = interval.next_appointment || interval.next_suggested_date;
+          if (!nextDateValue) {
+            console.warn('Ungültige Intervalldaten in API-Antwort (fehlendes nächstes Datum):', interval);
+            return null;
+          }
+          
+          const lastVisitDate = new Date(interval.last_appointment);
+          const nextVisitDate = new Date(nextDateValue);
+          
+          // Prüfe, ob die Datumsangaben gültig sind
+          if (isNaN(lastVisitDate.getTime()) || isNaN(nextVisitDate.getTime())) {
+            console.warn('Ungültige Datumswerte in Intervall:', interval);
+            return null;
+          }
+          
+          return {
+            id: interval.id,
+            title: interval.interval_type,
+            interval: interval.interval_months,
+            lastVisit: lastVisitDate,
+            nextVisit: nextVisitDate,
+            notes: interval.notes || ''
+          };
+        })
+        .filter(interval => interval !== null); // Entferne ungültige Intervalldaten
+        
+        // Sortiere nach nächstem Besuchsdatum
+        formattedIntervals.sort((a, b) => a.nextVisit - b.nextVisit);
+        
+        console.log('Geladene Gesundheitsintervalle:', formattedIntervals);
+        setHealthIntervals(formattedIntervals);
+      } catch (error) {
+        console.error('Fehler beim Laden der Gesundheitsintervalle:', error);
+        setHealthIntervals([]);
+      }
+    };
+
     fetchEvents();
+    fetchHealthIntervals();
   }, []);
 
   return (
@@ -657,24 +800,63 @@ export default function Dashboard() {
             <div className="flex justify-between items-start">
               <div>
                 <h3 className={`text-sm ${mode === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Gesundheitsintervalle</h3>
-                <p className={`text-2xl font-bold mt-1 ${mode === 'dark' ? 'text-white' : 'text-gray-900'}`}>Zahnarzt</p>
+                {healthIntervals.length > 0 ? (
+                  <p className={`text-2xl font-bold mt-1 ${mode === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                    {healthIntervals[0].title}
+                  </p>
+                ) : (
+                  <p className={`text-2xl font-bold mt-1 ${mode === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                    Keine Intervalle
+                  </p>
+                )}
               </div>
               <div className={`${mode === 'dark' ? 'bg-[#2a2f4e]' : 'bg-gray-50'} p-2 rounded-full`}>
                 <Activity className="h-5 w-5 text-[#66cc66]" />
               </div>
             </div>
             <div className={`mt-4 pt-4 border-t ${mode === 'dark' ? 'border-[#2a2f4e]' : 'border-gray-200'}`}>
-              <div className="flex items-center">
-                <div className="w-2 h-2 rounded-full bg-[#66cc66] mr-2"></div>
-                <p className={`text-sm ${mode === 'dark' ? 'text-white' : 'text-gray-900'}`}>Nächster Termin fällig</p>
-              </div>
-              <div className={`w-full ${mode === 'dark' ? 'bg-[#2a2f4e]' : 'bg-gray-100'} h-2 rounded-full overflow-hidden mt-3`}>
-                <div className="h-full bg-gradient-to-r from-[#66cc66] to-[#88ee88]" style={{ width: "70%" }}></div>
-              </div>
-              <div className={`flex justify-between mt-2 text-xs ${mode === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                <span>Letzter Besuch: vor 4 Monaten</span>
-                <span>70%</span>
-              </div>
+              {healthIntervals.length > 0 ? (
+                <>
+                  <div className="flex items-center">
+                    <div className={`w-2 h-2 rounded-full mr-2 ${
+                      isOverdue(healthIntervals[0].nextVisit) ? 'bg-[#ff0066]' : 'bg-[#66cc66]'
+                    }`}></div>
+                    <p className={`text-sm ${mode === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      {isOverdue(healthIntervals[0].nextVisit) 
+                        ? 'Überfällig' 
+                        : `Nächster Termin: ${format(new Date(healthIntervals[0].nextVisit), 'dd.MM.yyyy', { locale: de })}`
+                      }
+                    </p>
+                  </div>
+                  <div className={`w-full ${mode === 'dark' ? 'bg-[#2a2f4e]' : 'bg-gray-100'} h-2 rounded-full overflow-hidden mt-3`}>
+                    <div 
+                      className={`h-full ${
+                        isOverdue(healthIntervals[0].nextVisit)
+                          ? 'bg-gradient-to-r from-[#ff0066] to-[#ff3366]'
+                          : 'bg-gradient-to-r from-[#66cc66] to-[#88ee88]'
+                      }`} 
+                      style={{ width: `${calculateProgress(healthIntervals[0].lastVisit, healthIntervals[0].nextVisit)}%` }}
+                    ></div>
+                  </div>
+                  <div className={`flex justify-between mt-2 text-xs ${mode === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <span>Letzter Besuch: {formatRelativeDate(healthIntervals[0].lastVisit)}</span>
+                    <span>{Math.round(calculateProgress(healthIntervals[0].lastVisit, healthIntervals[0].nextVisit))}%</span>
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <p className={`text-sm ${mode === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Keine Gesundheitsintervalle konfiguriert
+                  </p>
+                  <div className={`w-full ${mode === 'dark' ? 'bg-[#2a2f4e]' : 'bg-gray-100'} h-2 rounded-full overflow-hidden mt-3`}>
+                    <div className="h-full bg-gradient-to-r from-[#66cc66] to-[#88ee88]" style={{ width: "0%" }}></div>
+                  </div>
+                  <div className={`flex justify-between mt-2 text-xs ${mode === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <span>Noch keine Termine</span>
+                    <span>0%</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

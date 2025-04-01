@@ -85,47 +85,37 @@ const HealthIntervals = () => {
     try {
       setLoading(true);
       const response = await api.get('/api/health-intervals');
+      console.log('API Response:', response.data);
+      
       // Konvertiere die API-Daten in das richtige Format
-      const formattedIntervals = response.data.map(interval => ({
-        id: interval.id,
-        title: interval.interval_type,
-        interval: interval.interval_months,
-        lastVisit: interval.last_appointment ? new Date(interval.last_appointment).toISOString() : new Date().toISOString(),
-        nextVisit: interval.next_appointment ? new Date(interval.next_appointment).toISOString() : new Date().toISOString(),
-        notes: interval.notes || ''
-      }));
+      const formattedIntervals = response.data.map(interval => {
+        // Stelle sicher, dass die Datumsformate korrekt sind
+        const lastVisitDate = interval.last_appointment ? new Date(interval.last_appointment) : new Date();
+        const nextVisitDate = interval.next_appointment ? new Date(interval.next_appointment) : new Date();
+        
+        // Berechne das nächste Besuchsdatum neu, falls es nicht vorhanden ist
+        if (!interval.next_appointment) {
+          nextVisitDate.setMonth(lastVisitDate.getMonth() + Number(interval.interval_months));
+        }
+        
+        return {
+          id: interval.id,
+          title: interval.interval_type,
+          interval: interval.interval_months,
+          lastVisit: lastVisitDate.toISOString(),
+          nextVisit: nextVisitDate.toISOString(),
+          notes: interval.notes || ''
+        };
+      });
+      
+      console.log('Formatted intervals:', formattedIntervals);
       setIntervals(formattedIntervals);
       setError(null);
     } catch (err) {
       console.error('Fehler beim Laden der Gesundheitsintervalle:', err);
       setError('Fehler beim Laden der Gesundheitsintervalle');
-      // Fallback-Daten bei Fehler
-      setIntervals([
-        {
-          id: 1,
-          title: "Zahnarzt",
-          interval: 6,
-          lastVisit: new Date("2023-12-15").toISOString(),
-          nextVisit: new Date("2024-06-15").toISOString(),
-          notes: "Reguläre Kontrolle"
-        },
-        {
-          id: 2,
-          title: "Hausarzt",
-          interval: 12,
-          lastVisit: new Date("2023-06-20").toISOString(),
-          nextVisit: new Date("2024-06-20").toISOString(),
-          notes: "Jährliche Vorsorge"
-        },
-        {
-          id: 3,
-          title: "Augenarzt",
-          interval: 24,
-          lastVisit: new Date("2022-03-10").toISOString(),
-          nextVisit: new Date("2024-03-10").toISOString(),
-          notes: "Kontrolle der Sehstärke"
-        }
-      ]);
+      // Keine Fallback-Daten mehr
+      setIntervals([]);
     } finally {
       setLoading(false);
     }
@@ -183,12 +173,29 @@ const HealthIntervals = () => {
     />
   ));
 
-  // Formular absenden
+  // Berechne das nächste Besuchsdatum basierend auf dem letzten Besuch und dem Intervall
+  const calculateNextVisit = (lastVisit, intervalMonths) => {
+    try {
+      const lastVisitDate = new Date(lastVisit);
+      const nextVisitDate = new Date(lastVisitDate);
+      nextVisitDate.setMonth(lastVisitDate.getMonth() + Number(intervalMonths));
+      return nextVisitDate.toISOString();
+    } catch (error) {
+      console.error('Fehler bei der Berechnung des nächsten Besuchsdatums:', error);
+      return new Date().toISOString(); // Fallback zum aktuellen Datum
+    }
+  };
+
+  // Formular absenden über den Modal-Dialog
   const handleSubmit = async () => {
     try {
+      // Berechne das nächste Besuchsdatum
+      const nextVisitDate = calculateNextVisit(formData.last_appointment, formData.interval_months);
+      
       const data = {
         ...formData,
-        last_appointment: DateTime.fromJSDate(formData.last_appointment).toISO()
+        last_appointment: DateTime.fromJSDate(formData.last_appointment).toISO(),
+        next_appointment: nextVisitDate
       };
 
       let response;
@@ -198,7 +205,14 @@ const HealthIntervals = () => {
         
         // Aktualisiere die Liste der Intervalle
         setIntervals(intervals.map(interval => 
-          interval.id === editingInterval.id ? response.data : interval
+          interval.id === editingInterval.id ? {
+            id: response.data.id,
+            title: response.data.interval_type,
+            interval: response.data.interval_months,
+            lastVisit: response.data.last_appointment,
+            nextVisit: response.data.next_appointment,
+            notes: response.data.notes || ''
+          } : interval
         ));
         
         setSnackbar({
@@ -211,7 +225,14 @@ const HealthIntervals = () => {
         response = await api.post('/api/health-intervals', data);
         
         // Füge das neue Intervall zur Liste hinzu
-        setIntervals([...intervals, response.data]);
+        setIntervals([...intervals, {
+          id: response.data.id,
+          title: response.data.interval_type,
+          interval: response.data.interval_months,
+          lastVisit: response.data.last_appointment,
+          nextVisit: response.data.next_appointment,
+          notes: response.data.notes || ''
+        }]);
         
         setSnackbar({
           open: true,
@@ -272,25 +293,66 @@ const HealthIntervals = () => {
 
   // Edit-Funktion
   const handleEdit = (interval) => {
-    setNewInterval({
-      interval_type: interval.interval_type,
-      interval_months: interval.interval_months,
-      last_appointment: formatDate(interval.last_appointment),
-      next_appointment: formatDate(interval.next_appointment),
-      status: interval.status
-    });
     setEditingInterval(interval);
+    setNewInterval({
+      title: interval.title,
+      interval: interval.interval,
+      lastVisit: new Date(interval.lastVisit).toISOString().split('T')[0],
+      notes: interval.notes || ''
+    });
+    setShowAddModal(true);
+  };
+
+  // Event-Handler für den Modal-Dialog
+  const handleAddOrEditInterval = () => {
+    if (editingInterval) {
+      handleAddInterval(); // Verwende die bestehende Funktion für beide Fälle
+    } else {
+      handleAddInterval();
+    }
+  };
+
+  // Öffne den Modal-Dialog für ein neues Intervall
+  const handleOpenAddModal = () => {
+    setEditingInterval(null);
+    setNewInterval({
+      title: '',
+      interval: 6,
+      lastVisit: new Date().toISOString().split('T')[0],
+      notes: ''
+    });
     setShowAddModal(true);
   };
 
   // Anpassen der handleAddInterval Funktion für das Editieren
   const handleAddInterval = async () => {
     try {
+      // Überprüfe, ob ein Titel eingegeben wurde
+      if (!newInterval.title || newInterval.title.trim() === '') {
+        alert('Bitte geben Sie einen Titel ein.');
+        return;
+      }
+      
+      // Stelle sicher, dass das Intervall eine positive Zahl ist
+      if (Number(newInterval.interval) <= 0) {
+        alert('Das Intervall muss größer als 0 sein.');
+        return;
+      }
+      
+      // Berechne das nächste Besuchsdatum basierend auf dem letzten Besuch und dem Intervall
+      const lastVisitDate = new Date(newInterval.lastVisit);
+      const nextVisitDate = new Date(lastVisitDate);
+      nextVisitDate.setMonth(lastVisitDate.getMonth() + Number(newInterval.interval));
+      
+      console.log('Last visit date:', lastVisitDate);
+      console.log('Next visit date:', nextVisitDate);
+      console.log('Interval:', newInterval.interval);
+
       const intervalData = {
         interval_type: newInterval.title,
         interval_months: Number(newInterval.interval),
-        last_appointment: newInterval.lastVisit,
-        next_appointment: new Date(new Date(newInterval.lastVisit).setMonth(new Date(newInterval.lastVisit).getMonth() + Number(newInterval.interval))).toISOString(),
+        last_appointment: lastVisitDate.toISOString(),
+        next_appointment: nextVisitDate.toISOString(),
         notes: newInterval.notes
       };
 
@@ -298,29 +360,44 @@ const HealthIntervals = () => {
       if (editingInterval) {
         // Update existierendes Intervall
         response = await api.put(`/api/health-intervals/${editingInterval.id}`, intervalData);
-        setIntervals(intervals.map(interval => 
-          interval.id === editingInterval.id ? {
-            id: response.data.id,
-            title: response.data.interval_type,
-            interval: response.data.interval_months,
-            lastVisit: response.data.last_appointment,
-            nextVisit: response.data.next_appointment,
-            notes: response.data.notes || ''
-          } : interval
-        ));
-    } else {
-        // Erstelle neues Intervall
-        response = await api.post('/api/health-intervals', intervalData);
-        setIntervals([...intervals, {
+        
+        // Umwandlung der Antwortdaten
+        const updatedInterval = {
           id: response.data.id,
           title: response.data.interval_type,
           interval: response.data.interval_months,
           lastVisit: response.data.last_appointment,
           nextVisit: response.data.next_appointment,
           notes: response.data.notes || ''
-        }]);
+        };
+        
+        // Aktualisierung im State mit konsistenten Daten
+        setIntervals(intervals.map(interval => 
+          interval.id === editingInterval.id ? updatedInterval : interval
+        ));
+        
+        console.log('Updated interval:', updatedInterval);
+      } else {
+        // Erstelle neues Intervall
+        response = await api.post('/api/health-intervals', intervalData);
+        
+        // Umwandlung der Antwortdaten
+        const newIntervalData = {
+          id: response.data.id,
+          title: response.data.interval_type,
+          interval: response.data.interval_months,
+          lastVisit: response.data.last_appointment,
+          nextVisit: response.data.next_appointment,
+          notes: response.data.notes || ''
+        };
+        
+        // Hinzufügen zum State mit konsistenten Daten
+        setIntervals([...intervals, newIntervalData]);
+        
+        console.log('New interval:', newIntervalData);
       }
 
+      // Zurücksetzen des Formulars
       setNewInterval({
         title: '',
         interval: 6,
@@ -329,23 +406,101 @@ const HealthIntervals = () => {
       });
       setEditingInterval(null);
       setShowAddModal(false);
+      
+      // Aktualisiere die Daten nach dem Speichern
+      fetchIntervals();
     } catch (err) {
       console.error('Fehler beim Speichern des Intervalls:', err);
-      alert('Fehler beim Speichern des Intervalls. Bitte überprüfen Sie Ihre Eingaben.');
+      alert('Fehler beim Speichern des Intervalls. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut.');
     }
   };
 
   const calculateProgress = (lastVisit, nextVisit) => {
-    const now = new Date();
-    const last = new Date(lastVisit);
-    const next = new Date(nextVisit);
-    const total = next - last;
-    const elapsed = now - last;
-    return Math.min(Math.max((elapsed / total) * 100, 0), 100);
+    try {
+      const now = new Date();
+      // Stelle sicher, dass wir Date-Objekte haben
+      const last = lastVisit instanceof Date ? lastVisit : new Date(lastVisit);
+      const next = nextVisit instanceof Date ? nextVisit : new Date(nextVisit);
+      
+      // Log zum Debugging
+      console.log('Fortschrittsberechnung:', {
+        last,
+        next,
+        now,
+        total: next - last,
+        elapsed: now - last
+      });
+      
+      // Prüfe, ob die Daten gültig sind
+      if (isNaN(last.getTime()) || isNaN(next.getTime())) {
+        console.error('Ungültige Datumswerte für Fortschrittsberechnung:', { lastVisit, nextVisit });
+        return 0;
+      }
+      
+      // Setze Uhrzeit auf Mitternacht für konsistente Berechnungen
+      const lastDate = new Date(last);
+      lastDate.setHours(0, 0, 0, 0);
+      
+      const nextDate = new Date(next);
+      nextDate.setHours(0, 0, 0, 0);
+      
+      const nowDate = new Date(now);
+      nowDate.setHours(0, 0, 0, 0);
+      
+      // Gesamt Zeitspanne
+      const total = nextDate - lastDate;
+      
+      // Wenn das Intervall ungültig ist oder 0, gib 0% zurück
+      if (total <= 0) {
+        console.warn('Ungültiges Intervall: Die Zeitspanne ist 0 oder negativ');
+        return 0;
+      }
+      
+      // Vergangene Zeit
+      const elapsed = nowDate - lastDate;
+      
+      // Fortschritt berechnen und auf 0-100% begrenzen
+      const progress = Math.min(Math.max((elapsed / total) * 100, 0), 100);
+      console.log('Berechneter Fortschritt:', progress);
+      
+      return progress;
+    } catch (error) {
+      console.error('Fehler bei der Fortschrittsberechnung:', error);
+      return 0;
+    }
   };
 
   const isOverdue = (nextVisit) => {
-    return new Date(nextVisit) < new Date();
+    try {
+      // Stelle sicher, dass wir ein Date-Objekt haben
+      const nextDate = nextVisit instanceof Date ? nextVisit : new Date(nextVisit);
+      
+      // Prüfe, ob das Datum gültig ist
+      if (isNaN(nextDate.getTime())) {
+        console.error('Ungültiges Datum für nächsten Besuch:', nextVisit);
+        return false;
+      }
+      
+      // Vergleiche nur Datum ohne Uhrzeit
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const nextDateOnly = new Date(nextDate);
+      nextDateOnly.setHours(0, 0, 0, 0);
+      
+      console.log('HealthIntervals - Überfälligkeitsprüfung:', {
+        original: nextVisit,
+        nextDate: nextDate,
+        nextDateOnly: nextDateOnly,
+        today: today,
+        isOverdue: nextDateOnly < today
+      });
+      
+      return nextDateOnly < today;
+    } catch (error) {
+      console.error('Fehler bei der Überprüfung auf Überfälligkeit:', error);
+      return false;
+    }
   };
 
   return (
@@ -377,7 +532,7 @@ const HealthIntervals = () => {
           </div>
           
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={handleOpenAddModal}
             style={{
               display: "flex",
               alignItems: "center",
@@ -421,13 +576,13 @@ const HealthIntervals = () => {
                   </div>
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => setEditingInterval(interval)}
+                      onClick={() => handleEdit(interval)}
                       className={`${mode === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-gray-900'}`}
                     >
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
-                            onClick={() => handleDelete(interval.id)}
+                      onClick={() => handleDelete(interval.id)}
                       className={`${mode === 'dark' ? 'text-gray-400 hover:text-[#ff0066]' : 'text-gray-400 hover:text-[#ff0066]'}`}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -607,8 +762,8 @@ const HealthIntervals = () => {
                       interval: 6,
                       lastVisit: new Date().toISOString().split('T')[0],
                       notes: ''
-                });
-              }}
+                    });
+                  }}
                   className={`px-4 py-2 rounded ${
                     mode === 'dark' ? 'bg-[#2a2f4e] text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
                   }`}
@@ -616,16 +771,10 @@ const HealthIntervals = () => {
                   Abbrechen
                 </button>
                 <button
-                  onClick={() => {
-                    if (showAddModal) {
-                      handleAddInterval();
-                    } else {
-                      handleSubmit();
-                    }
-                  }}
+                  onClick={handleAddOrEditInterval}
                   className="px-4 py-2 rounded bg-gradient-to-r from-[#ff0066] to-[#3399ff] text-white"
                 >
-                  {showAddModal ? 'Hinzufügen' : 'Speichern'}
+                  {editingInterval ? 'Speichern' : 'Hinzufügen'}
                 </button>
               </div>
             </div>

@@ -21,11 +21,11 @@ import NotFound from './pages/NotFound';
 import AuthCallback from './pages/AuthCallback';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Profile from './pages/Profile';
 
 // Layout-Komponente
 // import AnimatedLayout from './components/Layout/AnimatedLayout';
 import Layout from './components/Layout';
-import Profile from './components/Profile';
 
 /**
  * React Router Future Flags

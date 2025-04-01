@@ -36,7 +36,7 @@ router.get(
 );
 
 // Benutzerinfo abrufen
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
   
   if (!token) {
@@ -44,9 +44,31 @@ router.get('/me', (req, res) => {
   }
 
   try {
+    // Token dekodieren
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    res.json({ user: decoded });
+    
+    // Weitere Benutzerdaten aus der Datenbank abrufen
+    const userResult = await db.query(
+      'SELECT id, name, email, profile_picture, google_id, created_at, updated_at FROM users WHERE id = $1',
+      [decoded.id]
+    );
+    
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+    }
+    
+    // Benutzerdaten aus Token und Datenbank kombinieren
+    const userData = {
+      ...decoded,
+      profile_picture: userResult.rows[0].profile_picture,
+      google_id: userResult.rows[0].google_id,
+      created_at: userResult.rows[0].created_at,
+      updated_at: userResult.rows[0].updated_at
+    };
+    
+    res.json({ user: userData });
   } catch (error) {
+    console.error('Fehler beim Abrufen der Benutzerinformationen:', error);
     res.status(401).json({ message: 'Ungültiger Token' });
   }
 });
