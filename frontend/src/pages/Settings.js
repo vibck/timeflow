@@ -1,27 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Typography, 
-  Box, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
-  Button, 
-  Paper, 
-  Grid,
-  Alert,
-  Divider,
-  FormControlLabel,
-  Switch,
-  useTheme
-} from '@mui/material';
+import { useTheme as useAppTheme } from '../contexts/ThemeContext';
 import api from '../utils/api';
 import TelegramConnect from '../components/Settings/TelegramConnect';
-import { useTheme as useAppTheme } from '../contexts/ThemeContext';
+import { Alert } from '@mui/material';
 
 const Settings = () => {
-  // eslint-disable-next-line no-unused-vars
-  const theme = useTheme();
   const { mode, toggleTheme } = useAppTheme();
   const [settings, setSettings] = useState({
     state: 'BY',
@@ -38,7 +21,6 @@ const Settings = () => {
     severity: 'success'
   });
   const [telegramConnected, setTelegramConnected] = useState(false);
-  // eslint-disable-next-line no-unused-vars
   const [telegramBotName, setTelegramBotName] = useState('');
 
   // Liste der deutschen Bundesländer
@@ -61,7 +43,6 @@ const Settings = () => {
     { code: 'TH', name: 'Thüringen' }
   ];
 
-  // Lade Benutzereinstellungen und Telegram-Status beim Seitenaufruf
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -71,10 +52,8 @@ const Settings = () => {
           return;
         }
 
-        // Lade Benutzereinstellungen
         const settingsResponse = await api.get('/api/users/settings');
         
-        // Wenn keine Benachrichtigungspräferenzen in den Einstellungen vorhanden sind, verwende die Standardwerte
         const loadedSettings = {
           ...settingsResponse.data,
           showHolidays: settingsResponse.data.showHolidays !== undefined ? settingsResponse.data.showHolidays : true,
@@ -86,7 +65,6 @@ const Settings = () => {
         
         setSettings(loadedSettings);
         
-        // Prüfe Telegram-Verbindung
         try {
           const telegramResponse = await api.get('/api/telegram/status');
           setTelegramConnected(telegramResponse.data.connected);
@@ -111,7 +89,6 @@ const Settings = () => {
     fetchSettings();
   }, []);
 
-  // Aktualisiere Einstellungen
   const handleSaveSettings = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -126,11 +103,9 @@ const Settings = () => {
 
       await api.put('/api/users/settings', settings);
 
-      // Aktualisiere den lokalen Speicher für die Kalenderansicht
       const oldState = localStorage.getItem('userState');
       localStorage.setItem('userState', settings.state);
       
-      // Löse ein benutzerdefiniertes Event aus, um andere Komponenten zu benachrichtigen
       const stateChangeEvent = new CustomEvent('stateChange', {
         detail: {
           oldState,
@@ -154,7 +129,6 @@ const Settings = () => {
     }
   };
 
-  // Behandle Änderungen an den Formularfeldern
   const handleChange = event => {
     const { name, value } = event.target;
     setSettings(prevSettings => ({
@@ -163,7 +137,6 @@ const Settings = () => {
     }));
   };
 
-  // Behandle Änderungen an den Schaltern
   const handleSwitchChange = event => {
     const { name, checked } = event.target;
     setSettings(prevSettings => ({
@@ -172,7 +145,6 @@ const Settings = () => {
     }));
   };
   
-  // Behandle Änderungen an den Benachrichtigungspräferenzen
   const handleNotificationPreferenceChange = event => {
     setSettings({
       ...settings,
@@ -183,7 +155,6 @@ const Settings = () => {
     });
   };
 
-  // Schließe Snackbar
   const handleCloseSnackbar = useCallback(() => {
     setSnackbar(prevState => ({
       ...prevState,
@@ -191,7 +162,6 @@ const Settings = () => {
     }));
   }, []);
 
-  // Automatische Ausblendung der Benachrichtigung
   useEffect(() => {
     if (snackbar.open) {
       const timer = setTimeout(() => {
@@ -203,154 +173,264 @@ const Settings = () => {
   }, [snackbar.open, handleCloseSnackbar]);
 
   if (loading) {
-    return <Typography>Lade Einstellungen...</Typography>;
+    return (
+      <div style={{
+        minHeight: "100vh",
+        backgroundColor: "#0f1120",
+        color: "#ffffff",
+        padding: "1.5rem",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }}>
+        Lade Einstellungen...
+      </div>
+    );
   }
 
   return (
-    <Box>
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          mb: 3
-        }}
-      >
-        <Typography variant="h4">Einstellungen</Typography>
-      </Box>
-      
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          p: 3, 
-          mb: 3, 
-          border: 1, 
-          borderColor: 'divider',
-          borderRadius: 2
-        }}
-      >
-        <Typography variant="h6" gutterBottom>Erscheinungsbild</Typography>
-        
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={mode === 'dark'}
-                  onChange={toggleTheme}
-                />
-              }
-              label={mode === 'dark' ? 'Dunkelmodus' : 'Hellmodus'}
-            />
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Wähle zwischen Hell- und Dunkelmodus für die Benutzeroberfläche.
-            </Typography>
-          </Grid>
-        </Grid>
-        
-        <Divider sx={{ my: 3 }} />
-        
-        <Typography variant="h6" gutterBottom>Allgemeine Einstellungen</Typography>
-        
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <FormControl fullWidth>
-              <InputLabel id="state-label">Bundesland</InputLabel>
-              <Select
-                labelId="state-label"
-                id="state"
-                value={settings.state}
-                label="Bundesland"
-                onChange={handleChange}
-              >
-                {states.map(state => (
-                  <MenuItem key={state.code} value={state.code}>
-                    {state.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Wähle dein Bundesland für die korrekte Anzeige von Feiertagen.
-            </Typography>
-          </Grid>
+    <div style={{
+      minHeight: "100vh",
+      backgroundColor: mode === 'dark' ? "#0f1120" : "#f8fafc",
+      color: mode === 'dark' ? "#ffffff" : "#1e293b",
+      padding: "1.5rem",
+      fontFamily: "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue, sans-serif",
+    }}>
+      <div style={{ maxWidth: "64rem", margin: "0 auto" }}>
+        <h1 style={{
+          fontSize: "2.5rem",
+          fontWeight: "bold",
+          marginBottom: "2rem",
+          background: "linear-gradient(90deg, #ff0066, #3399ff)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+        }}>
+          Einstellungen
+        </h1>
+
+        {/* Erscheinungsbild */}
+        <div style={{
+          backgroundColor: mode === 'dark' ? "#1a1f3e" : "#ffffff",
+          borderRadius: "1rem",
+          padding: "2rem",
+          marginBottom: "1.5rem",
+          boxShadow: mode === 'dark' 
+            ? "0 4px 20px rgba(0, 0, 0, 0.2)" 
+            : "0 4px 20px rgba(148, 163, 184, 0.1)",
+          border: mode === 'dark' ? "none" : "1px solid #e2e8f0"
+        }}>
+          <h2 style={{ 
+            fontSize: "1.5rem", 
+            fontWeight: "600", 
+            marginBottom: "1.5rem",
+            color: mode === 'dark' ? "#ffffff" : "#1e293b"
+          }}>
+            Erscheinungsbild
+          </h2>
           
-          <Grid item xs={12}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={settings.showHolidays}
-                  onChange={handleSwitchChange}
-                  name="showHolidays"
-                />
-              }
-              label="Feiertage anzeigen"
-            />
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Zeige Feiertage im Kalender an.
-            </Typography>
-          </Grid>
-        </Grid>
-      </Paper>
-      
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          p: 3, 
-          mb: 3, 
-          border: 1, 
-          borderColor: 'divider',
-          borderRadius: 2
-        }}
-      >
-        <Typography variant="h6" gutterBottom>Benachrichtigungen</Typography>
-        
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={settings.notificationPreferences.email}
-                  onChange={handleNotificationPreferenceChange}
-                  name="email"
-                />
-              }
-              label="E-Mail-Benachrichtigungen"
-            />
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Erhalte Erinnerungen per E-Mail.
-            </Typography>
-          </Grid>
-          
-          <Grid item xs={12}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={settings.notificationPreferences.telegram}
-                  onChange={handleNotificationPreferenceChange}
-                  name="telegram"
-                  disabled={!telegramConnected}
-                />
-              }
-              label="Telegram-Benachrichtigungen"
-            />
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Erhalte Erinnerungen über Telegram.
-            </Typography>
-            
-            <Box sx={{ 
-              mt: 2, 
-              p: 2, 
-              bgcolor: 'transparent',
-              borderRadius: 1
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={{
+              display: "flex",
+              alignItems: "center",
+              cursor: "pointer",
+              color: mode === 'dark' ? "#ffffff" : "#1e293b"
             }}>
+              <input
+                type="checkbox"
+                checked={mode === 'dark'}
+                onChange={toggleTheme}
+                style={{
+                  marginRight: "0.75rem",
+                  width: "1.25rem",
+                  height: "1.25rem",
+                }}
+              />
+              <span>{mode === 'dark' ? 'Dunkelmodus' : 'Hellmodus'}</span>
+            </label>
+            <p style={{ 
+              fontSize: "0.875rem", 
+              color: mode === 'dark' ? "rgba(255, 255, 255, 0.7)" : "#64748b", 
+              marginTop: "0.5rem" 
+            }}>
+              Wähle zwischen Hell- und Dunkelmodus für die Benutzeroberfläche.
+            </p>
+          </div>
+        </div>
+
+        {/* Allgemeine Einstellungen */}
+        <div style={{
+          backgroundColor: mode === 'dark' ? "#1a1f3e" : "#ffffff",
+          borderRadius: "1rem",
+          padding: "2rem",
+          marginBottom: "1.5rem",
+          boxShadow: mode === 'dark' 
+            ? "0 4px 20px rgba(0, 0, 0, 0.2)" 
+            : "0 4px 20px rgba(148, 163, 184, 0.1)",
+          border: mode === 'dark' ? "none" : "1px solid #e2e8f0"
+        }}>
+          <h2 style={{ 
+            fontSize: "1.5rem", 
+            fontWeight: "600", 
+            marginBottom: "1.5rem",
+            color: mode === 'dark' ? "#ffffff" : "#1e293b"
+          }}>
+            Allgemeine Einstellungen
+          </h2>
+          
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={{ 
+              display: "block", 
+              marginBottom: "0.5rem",
+              color: mode === 'dark' ? "#ffffff" : "#1e293b"
+            }}>
+              Bundesland
+            </label>
+            <select
+              value={settings.state}
+              onChange={handleChange}
+              name="state"
+              style={{
+                width: "100%",
+                padding: "0.75rem 1rem",
+                backgroundColor: mode === 'dark' ? "#1a1f3e" : "#ffffff",
+                border: mode === 'dark' ? "1px solid #2a2e45" : "1px solid #e2e8f0",
+                borderRadius: "0.5rem",
+                color: mode === 'dark' ? "#ffffff" : "#1e293b",
+                fontSize: "1rem",
+              }}
+            >
+              {states.map(state => (
+                <option key={state.code} value={state.code}>
+                  {state.name}
+                </option>
+              ))}
+            </select>
+            <p style={{ 
+              fontSize: "0.875rem", 
+              color: mode === 'dark' ? "rgba(255, 255, 255, 0.7)" : "#64748b",
+              marginTop: "0.5rem" 
+            }}>
+              Wähle dein Bundesland für die korrekte Anzeige von Feiertagen.
+            </p>
+          </div>
+
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={{
+              display: "flex",
+              alignItems: "center",
+              cursor: "pointer",
+              color: mode === 'dark' ? "#ffffff" : "#1e293b"
+            }}>
+              <input
+                type="checkbox"
+                checked={settings.showHolidays}
+                onChange={handleSwitchChange}
+                name="showHolidays"
+                style={{
+                  marginRight: "0.75rem",
+                  width: "1.25rem",
+                  height: "1.25rem",
+                }}
+              />
+              <span>Feiertage anzeigen</span>
+            </label>
+            <p style={{ 
+              fontSize: "0.875rem", 
+              color: mode === 'dark' ? "rgba(255, 255, 255, 0.7)" : "#64748b",
+              marginTop: "0.5rem" 
+            }}>
+              Zeige Feiertage im Kalender an.
+            </p>
+          </div>
+        </div>
+
+        {/* Benachrichtigungen */}
+        <div style={{
+          backgroundColor: mode === 'dark' ? "#1a1f3e" : "#ffffff",
+          borderRadius: "1rem",
+          padding: "2rem",
+          marginBottom: "1.5rem",
+          boxShadow: mode === 'dark' 
+            ? "0 4px 20px rgba(0, 0, 0, 0.2)" 
+            : "0 4px 20px rgba(148, 163, 184, 0.1)",
+          border: mode === 'dark' ? "none" : "1px solid #e2e8f0"
+        }}>
+          <h2 style={{ 
+            fontSize: "1.5rem", 
+            fontWeight: "600", 
+            marginBottom: "1.5rem",
+            color: mode === 'dark' ? "#ffffff" : "#1e293b"
+          }}>
+            Benachrichtigungen
+          </h2>
+          
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={{
+              display: "flex",
+              alignItems: "center",
+              cursor: "pointer",
+              color: mode === 'dark' ? "#ffffff" : "#1e293b"
+            }}>
+              <input
+                type="checkbox"
+                checked={settings.notificationPreferences.email}
+                onChange={handleNotificationPreferenceChange}
+                name="email"
+                style={{
+                  marginRight: "0.75rem",
+                  width: "1.25rem",
+                  height: "1.25rem",
+                }}
+              />
+              <span>E-Mail-Benachrichtigungen</span>
+            </label>
+            <p style={{ 
+              fontSize: "0.875rem", 
+              color: mode === 'dark' ? "rgba(255, 255, 255, 0.7)" : "#64748b",
+              marginTop: "0.5rem" 
+            }}>
+              Erhalte Erinnerungen per E-Mail.
+            </p>
+          </div>
+
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={{
+              display: "flex",
+              alignItems: "center",
+              cursor: telegramConnected ? "pointer" : "not-allowed",
+              opacity: telegramConnected ? 1 : 0.5,
+              color: mode === 'dark' ? "#ffffff" : "#1e293b"
+            }}>
+              <input
+                type="checkbox"
+                checked={settings.notificationPreferences.telegram}
+                onChange={handleNotificationPreferenceChange}
+                name="telegram"
+                disabled={!telegramConnected}
+                style={{
+                  marginRight: "0.75rem",
+                  width: "1.25rem",
+                  height: "1.25rem",
+                }}
+              />
+              <span>Telegram-Benachrichtigungen</span>
+            </label>
+            <p style={{ 
+              fontSize: "0.875rem", 
+              color: mode === 'dark' ? "rgba(255, 255, 255, 0.7)" : "#64748b",
+              marginTop: "0.5rem" 
+            }}>
+              Erhalte Erinnerungen über Telegram.
+            </p>
+
+            <div style={{ marginTop: "1rem" }}>
               <TelegramConnect 
                 onConnected={(connected, botName) => {
                   setTelegramConnected(connected);
                   setTelegramBotName(botName);
                   
                   if (connected && !settings.notificationPreferences.telegram) {
-                    // Aktiviere Telegram-Benachrichtigungen automatisch, wenn verbunden
                     handleNotificationPreferenceChange({ 
                       target: { 
                         name: 'telegram', 
@@ -360,26 +440,42 @@ const Settings = () => {
                   }
                 }}
               />
-            </Box>
-          </Grid>
-        </Grid>
-      </Paper>
-      
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-        <Button 
-          variant="contained" 
-          onClick={handleSaveSettings}
-          disabled={loading}
-        >
-          Einstellungen speichern
-        </Button>
-      </Box>
-      
+            </div>
+          </div>
+        </div>
+
+        {/* Speichern Button */}
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button
+            onClick={handleSaveSettings}
+            disabled={loading}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              padding: "0.75rem 2rem",
+              background: "linear-gradient(90deg, #ff0066, #3399ff)",
+              color: "white",
+              border: "none",
+              borderRadius: "0.5rem",
+              fontSize: "1rem",
+              fontWeight: "500",
+              cursor: "pointer",
+              transition: "opacity 0.2s ease",
+            }}
+            onMouseOver={(e) => e.currentTarget.style.opacity = "0.9"}
+            onMouseOut={(e) => e.currentTarget.style.opacity = "1"}
+          >
+            Einstellungen speichern
+          </button>
+        </div>
+      </div>
+
       {/* Snackbar für Feedback-Meldungen */}
       {snackbar.open && (
         <Alert 
           severity={snackbar.severity} 
-          sx={{ 
+          style={{ 
             position: 'fixed', 
             bottom: 16, 
             left: '50%', 
@@ -392,7 +488,7 @@ const Settings = () => {
           {snackbar.message}
         </Alert>
       )}
-    </Box>
+    </div>
   );
 };
 

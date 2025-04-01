@@ -1,38 +1,45 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import getTheme from '../theme';
 
 const ThemeContext = createContext();
 
-export const useTheme = () => useContext(ThemeContext);
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+};
 
 export const ThemeProvider = ({ children }) => {
-  // Lade den Theme-Modus aus dem localStorage oder verwende 'light' als Standard
   const [mode, setMode] = useState(() => {
     const savedMode = localStorage.getItem('themeMode');
     return savedMode || 'light';
   });
 
-  // Aktualisiere den Theme-Modus im localStorage, wenn er sich ändert
+  const theme = getTheme(mode);
+
   useEffect(() => {
     localStorage.setItem('themeMode', mode);
-    // Setze das data-theme-Attribut auf dem HTML-Element für CSS-Selektoren
     document.documentElement.setAttribute('data-theme', mode);
+    document.body.style.backgroundColor = mode === 'dark' ? '#0f1120' : '#f8fafc';
   }, [mode]);
 
-  // Funktion zum Umschalten des Theme-Modus
   const toggleTheme = () => {
-    setMode(prevMode => prevMode === 'light' ? 'dark' : 'light');
+    setMode(prevMode => {
+      const newMode = prevMode === 'light' ? 'dark' : 'light';
+      localStorage.setItem('themeMode', newMode);
+      return newMode;
+    });
   };
 
-  // Prüfe, ob der Benutzer eine Systemeinstellung für den Dunkelmodus hat
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
-    // Wenn keine gespeicherte Einstellung vorhanden ist, verwende die Systemeinstellung
     if (!localStorage.getItem('themeMode')) {
       setMode(mediaQuery.matches ? 'dark' : 'light');
     }
     
-    // Höre auf Änderungen der Systemeinstellung
     const handleChange = e => {
       if (!localStorage.getItem('themeMode')) {
         setMode(e.matches ? 'dark' : 'light');
@@ -40,13 +47,20 @@ export const ThemeProvider = ({ children }) => {
     };
     
     mediaQuery.addEventListener('change', handleChange);
-    
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
+  const value = {
+    theme,
+    mode,
+    toggleTheme
+  };
+
   return (
-    <ThemeContext.Provider value={{ mode, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
-}; 
+};
+
+export default ThemeContext; 

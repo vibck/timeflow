@@ -32,7 +32,7 @@ export const Sidebar = ({ children }) => {
         width: 256,
         display: { xs: 'none', md: 'flex' },
         flexDirection: 'column',
-        background: 'rgba(20, 20, 40, 0.8)',
+        background: '#0f1120',
         backdropFilter: 'blur(10px)',
         borderRight: '1px solid rgba(255, 255, 255, 0.1)',
         pt: '64px',
@@ -119,7 +119,7 @@ export const SidebarLink = ({ icon, label, href }) => {
  */
 export const CalendarSidebar = ({ events = [], onEditEvent }) => {
   return (
-    <div className="w-64 bg-[#1a1f3e]/40 backdrop-blur-xl border-r border-white/10 p-6 fixed top-0 bottom-0 left-0 z-10">
+    <div className="w-64 bg-[#0f1120] backdrop-blur-xl border-r border-white/10 p-6 fixed top-0 bottom-0 left-0 z-10">
       <div className="text-xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-[#ff0066] to-[#3399ff]">
         TimeFlow
       </div>
@@ -149,7 +149,7 @@ export const CalendarSidebar = ({ events = [], onEditEvent }) => {
           {events.slice(0, 3).map(event => (
             <div 
               key={event.id} 
-              className="p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-3 rounded-lg bg-[#1a1f3e] border border-[#2a2f4e] transition-colors cursor-pointer"
               onClick={() => onEditEvent && onEditEvent(event)}
             >
               <div className="flex items-center">

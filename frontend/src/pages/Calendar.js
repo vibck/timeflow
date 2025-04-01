@@ -306,7 +306,7 @@ const Calendar = () => {
             </div>
             
             <Button 
-              className="bg-gradient-to-r from-[#ff0066] to-[#3399ff] hover:opacity-90 transition-all duration-300 shadow-lg shadow-[#3399ff]/20"
+              className="bg-gradient-to-r from-[#ff0066] to-[#3399ff] hover:opacity-90 transition-all duration-300 shadow-lg shadow-[#3399ff]/20 text-white"
               onClick={() => handleAddEvent(new Date())}
             >
               <Plus className="h-4 w-4 mr-1" />

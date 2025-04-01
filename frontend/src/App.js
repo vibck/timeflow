@@ -1,22 +1,22 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles'; // createTheme entfernt
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ThemeProvider as CustomThemeProvider, useTheme } from './contexts/ThemeContext';
-import theme from './theme'; // Importiere unser Theme-Objekt
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import Settings from './pages/Settings';
+import AIBooking from './pages/AIBooking';
+import HealthIntervals from './pages/HealthIntervals';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { de } from 'date-fns/locale';
 
 // App-Seiten
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
 import Calendar from './pages/Calendar';
 import EventForm from './pages/EventForm';
-import HealthIntervals from './pages/HealthIntervals';
-import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import AuthCallback from './pages/AuthCallback';
 import ForgotPassword from './pages/ForgotPassword';
@@ -25,7 +25,6 @@ import ResetPassword from './pages/ResetPassword';
 // Layout-Komponente
 // import AnimatedLayout from './components/Layout/AnimatedLayout';
 import Layout from './components/Layout';
-import AIBooking from './components/AIBooking';
 import Profile from './components/Profile';
 
 /**
@@ -44,32 +43,22 @@ const router = {
  * Leitet zur Login-Seite weiter, wenn der Benutzer nicht angemeldet ist
  */
 const PrivateRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
-    return <div>Lade...</div>;
-  }
-
+  const { isAuthenticated } = useAuth();
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
 /**
- * AppWithTheme - Hauptanwendung mit Theme-Unterstützung
+ * AppContent - Hauptanwendung mit Theme-Unterstützung
  * Verwaltet das Theme und die Routen der Anwendung
  */
-const AppWithTheme = () => {
-  
-  // Erstelle das Theme mit unserer benutzerdefinierten Funktion
-  // Removed the reference to createAppTheme
-
-  // Wir benötigen AppLayout nicht mehr, da wir alle Routen über das Layout-Element rendern
-  // const AppLayout = AnimatedLayout;
+const AppContent = () => {
+  const { theme } = useTheme();
 
   return (
     <MuiThemeProvider theme={theme}>
       <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={de}>
         <CssBaseline />
-        <BrowserRouter future={router.future}>
+        <Router>
           <Routes>
             {/* Öffentliche Routen */}
             <Route path="/login" element={<Login />} />
@@ -95,11 +84,10 @@ const AppWithTheme = () => {
               <Route path="health-intervals" element={<HealthIntervals />} />
             </Route>
             
-            {/* Die folgenden Routen entfernen, da sie jetzt im Layout oben sind */}
             {/* 404-Seite */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
+        </Router>
       </LocalizationProvider>
     </MuiThemeProvider>
   );
@@ -112,9 +100,9 @@ const AppWithTheme = () => {
 const App = () => {
   return (
     <AuthProvider>
-      <CustomThemeProvider>
-        <AppWithTheme />
-      </CustomThemeProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </AuthProvider>
   );
 };

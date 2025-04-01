@@ -229,7 +229,7 @@ const Layout = () => {
       color: 'white'
     }}>
       {/* Einheitliche Sidebar für alle Seiten */}
-      <div className="w-64 bg-[#1a1f3e]/40 backdrop-blur-xl border-r border-white/10 p-6 fixed top-0 bottom-0 left-0 z-10">
+      <div className="w-64 bg-[#0f1120] backdrop-blur-xl border-r border-white/10 p-6 fixed top-0 bottom-0 left-0 z-10">
         <div className="text-xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-[#ff0066] to-[#3399ff]">
           TimeFlow
         </div>
@@ -260,7 +260,7 @@ const Layout = () => {
             {calendarEvents.slice(0, 3).map(event => (
               <div 
                 key={event.id} 
-                className="p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                className="p-3 rounded-lg bg-[#1a1f3e] border border-[#2a2f4e] transition-colors cursor-pointer"
                 onClick={() => handleEditEvent && handleEditEvent(event)}
               >
                 <div className="flex items-center">
@@ -277,7 +277,7 @@ const Layout = () => {
       </div>
 
       {/* Header für alle Seiten */}
-      <div className="fixed top-0 left-64 right-0 z-20 flex justify-between items-center p-4 bg-[#1a1f3e]/40 backdrop-blur-xl border-b border-white/10">
+      <div className="fixed top-0 left-64 right-0 z-20 flex justify-between items-center p-4 bg-[#0f1120] backdrop-blur-xl border-b border-white/10">
         <div className="hidden md:flex items-center bg-white/5 rounded-full px-4 py-2 w-96 relative">
           <Search className="h-4 w-4 text-gray-400 mr-2" />
           <input 
