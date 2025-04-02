@@ -68,10 +68,34 @@ const createTestReminder = async () => {
     const reminderId = reminderResult.rows[0].id;
     console.log(`Testeeinnerung erstellt mit ID: ${reminderId}`);
     
-    return true;
+    return {
+      eventId,
+      reminderId,
+      userId: user.id,
+      userEmail: user.email
+    };
   } catch (error) {
     console.error('Fehler beim Erstellen der Testeeinnerung:', error);
     return false;
+  }
+};
+
+// Prüft, ob die Erinnerung gesendet wurde
+const checkReminderSent = async (reminderId) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT is_sent FROM reminders WHERE id = $1',
+      [reminderId]
+    );
+    
+    if (rows.length === 0) {
+      return { success: false, error: 'Erinnerung nicht gefunden' };
+    }
+    
+    return { success: true, is_sent: rows[0].is_sent };
+  } catch (error) {
+    console.error('Fehler beim Prüfen des Sendestatus:', error);
+    return { success: false, error: error.message };
   }
 };
 
@@ -80,30 +104,55 @@ const runTest = async () => {
   try {
     console.log('Starte Test für E-Mail- und Telegram-Benachrichtigungen...');
     
+    // Überprüfe, ob die sendReminders-Funktion existiert
+    if (typeof reminderService.sendReminders !== 'function') {
+      console.error('Test abgebrochen: reminderService.sendReminders ist keine Funktion.');
+      console.error('Stelle sicher, dass die sendReminders-Funktion exportiert wird.');
+      return;
+    }
+    
     // Erstelle Testeeinnerung
-    const reminderCreated = await createTestReminder();
-    if (!reminderCreated) {
+    const reminderInfo = await createTestReminder();
+    if (!reminderInfo) {
       console.error('Test abgebrochen: Konnte keine Testeeinnerung erstellen.');
-      throw new Error('Konnte keine Testeeinnerung erstellen');
+      return;
     }
     
     // Sende Erinnerungen
     console.log('Sende Erinnerungen...');
-    const result = await reminderService.sendReminders();
+    const sendResult = await reminderService.sendReminders();
     
-    console.log('Testergebnis:', result);
+    // Falls ein Ergebnis zurückgegeben wurde, dieses anzeigen
+    if (sendResult) {
+      console.log('Ergebnis des Erinnerungsversands:', sendResult);
+    }
     
-    if (result.success) {
-      console.log(`Test erfolgreich: ${result.count} Erinnerungen gesendet.`);
+    // Überprüfe, ob die Erinnerung als gesendet markiert wurde
+    console.log('Prüfe, ob die Erinnerung als gesendet markiert wurde...');
+    const checkResult = await checkReminderSent(reminderInfo.reminderId);
+    
+    if (checkResult.success && checkResult.is_sent) {
+      console.log('Test erfolgreich: Die Erinnerung wurde als gesendet markiert.');
+      console.log(`Eine E-Mail sollte an ${reminderInfo.userEmail} gesendet worden sein.`);
+      console.log('Überprüfe bitte deinen E-Mail-Posteingang (inkl. Spam-Ordner).');
+    } else if (checkResult.success) {
+      console.error('Test fehlgeschlagen: Die Erinnerung wurde NICHT als gesendet markiert.');
+      console.error('Es könnte ein Problem mit dem SMTP-Server geben.');
+      
+      // Prüfe die E-Mail-Konfiguration
+      console.log('\nE-Mail-Konfiguration:');
+      console.log(`EMAIL_SERVICE: ${process.env.EMAIL_SERVICE}`);
+      console.log(`EMAIL_USER: ${process.env.EMAIL_USER}`);
+      console.log(`EMAIL_HOST: ${process.env.EMAIL_HOST}`);
+      console.log(`EMAIL_PORT: ${process.env.EMAIL_PORT}`);
+      console.log(`EMAIL_SECURE: ${process.env.EMAIL_SECURE}`);
     } else {
-      console.error(`Test fehlgeschlagen: ${result.error}`);
-      throw new Error(`Test fehlgeschlagen: ${result.error}`);
+      console.error(`Test fehlgeschlagen: ${checkResult.error}`);
     }
     
     console.log('Test abgeschlossen.');
   } catch (error) {
-    console.error('Test fehlgeschlagen:', error.message);
-    // Hier keinen process.exit verwenden, lass den Prozess natürlich enden
+    console.error('Test fehlgeschlagen:', error);
   }
 };
 

@@ -399,7 +399,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
       
       {!readOnly && (
         <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 3 }}>
-          <FormControl sx={{ minWidth: 200, mr: 2 }}>
+          <FormControl sx={{ width: 180, mr: 2 }}>
             <InputLabel>Erinnerung</InputLabel>
             <Select
               value={presetOption}
@@ -429,7 +429,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
                 <CustomDateTimePickerInput 
                   label="Erinnerungszeit"
                   size="small"
-                  sx={{ minWidth: 250 }}
+                  sx={{ width: 180 }}
                 />
               }
             />
@@ -444,6 +444,8 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
             sx={{ 
               ml: 2, 
               mt: presetOption === 'custom' ? 0 : 1,
+              height: presetOption === 'custom' ? '40px' : 'auto',
+              minWidth: '120px',
               px: 2,
               py: 1,
               borderRadius: '0.375rem',
@@ -458,7 +460,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
               }
             }}
           >
-            Hinzufügen
+            {presetOption === 'custom' ? 'Hinzufügen' : 'Hinzufügen'}
           </Button>
         </Box>
       )}

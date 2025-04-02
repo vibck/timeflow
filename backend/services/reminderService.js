@@ -5,17 +5,43 @@ const telegramBot = require('./telegramBot');
 require('dotenv').config();
 
 // E-Mail-Transporter konfigurieren
-const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+let transporter;
+try {
+  transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.EMAIL_PORT || '587'),
+    secure: process.env.EMAIL_SECURE === 'true',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD
+    },
+    debug: true, // Debug-Ausgaben aktivieren
+    logger: true // Logger aktivieren
+  });
+  
+  // Überprüfen, ob der Transporter richtig konfiguriert ist
+  transporter.verify(function(error, success) {
+    if (error) {
+      console.error('SMTP-Transporter-Konfigurationsfehler:', error);
+    } else {
+      console.log('SMTP-Server ist bereit, Nachrichten zu akzeptieren');
+    }
+  });
+} catch (error) {
+  console.error('Fehler bei der Konfiguration des E-Mail-Transporters:', error);
+}
 
 // Funktion zum Senden von Erinnerungen
 const sendReminders = async () => {
   try {
+    // Prüfen, ob der Transporter funktioniert
+    if (!transporter) {
+      console.error('E-Mail-Transporter ist nicht konfiguriert. Kann keine E-Mails senden.');
+      return;
+    }
+    
+    console.log('Suche nach fälligen Erinnerungen...');
+    
     // Hole alle fälligen Erinnerungen
     const reminderResult = await db.query(
       `SELECT r.*, e.title, e.start_time, e.location, u.email, u.name 
@@ -25,10 +51,17 @@ const sendReminders = async () => {
        WHERE r.reminder_time <= NOW() AND r.is_sent = FALSE`
     );
 
+    console.log(`${reminderResult.rows.length} fällige Erinnerungen gefunden.`);
+
+    let successCount = 0;
+    let errorCount = 0;
+
     for (const reminder of reminderResult.rows) {
       try {
+        console.log(`Sende Erinnerung für Termin "${reminder.title}" an ${reminder.email}...`);
+        
         // Sende E-Mail
-        await transporter.sendMail({
+        const mailOptions = {
           from: `"TimeFlow" <${process.env.EMAIL_USER}>`,
           to: reminder.email,
           subject: `Erinnerung: ${reminder.title}`,
@@ -40,7 +73,17 @@ const sendReminders = async () => {
             ${reminder.location ? `<p><strong>Ort:</strong> ${reminder.location}</p>` : ''}
             <p>Viele Grüße,<br>Dein TimeFlow-Team</p>
           `
-        });
+        };
+
+        // Versuche, die E-Mail zu senden
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`E-Mail gesendet: ${info.messageId}`);
+        if (info.accepted && info.accepted.length > 0) {
+          console.log(`E-Mail akzeptiert für: ${info.accepted.join(', ')}`);
+        }
+        if (info.rejected && info.rejected.length > 0) {
+          console.warn(`E-Mail abgelehnt für: ${info.rejected.join(', ')}`);
+        }
 
         // Sende Telegram-Nachricht, falls verknüpft
         const telegramResult = await db.query(
@@ -53,7 +96,12 @@ const sendReminders = async () => {
 
         if (telegramResult.rows.length > 0) {
           const chatId = telegramResult.rows[0].telegram_chat_id;
-          telegramBot.sendEventReminder(chatId, reminder);
+          try {
+            telegramBot.sendEventReminder(chatId, reminder);
+            console.log(`Telegram-Nachricht gesendet an Chat ID: ${chatId}`);
+          } catch (telegramError) {
+            console.error(`Fehler beim Senden der Telegram-Nachricht an Chat ID ${chatId}:`, telegramError);
+          }
         }
 
         // Markiere Erinnerung als gesendet
@@ -61,8 +109,12 @@ const sendReminders = async () => {
           'UPDATE reminders SET is_sent = TRUE WHERE id = $1',
           [reminder.id]
         );
+        
+        console.log(`Erinnerung ID ${reminder.id} als gesendet markiert.`);
+        successCount++;
       } catch (reminderError) {
         console.error(`Fehler beim Senden der Erinnerung ID ${reminder.id}:`, reminderError);
+        errorCount++;
         
         // Spezifischere Fehlerbehandlung
         if (reminderError.code === 'ECONNREFUSED') {
@@ -75,6 +127,9 @@ const sendReminders = async () => {
         continue;
       }
     }
+    
+    console.log(`Erinnerungsversand abgeschlossen. Erfolg: ${successCount}, Fehler: ${errorCount}`);
+    return { success: true, count: successCount, errors: errorCount };
   } catch (error) {
     console.error('Fehler beim Abrufen von Erinnerungen:', error);
     
@@ -83,6 +138,8 @@ const sendReminders = async () => {
     } else {
       console.error('Unbekannter Fehler:', error.message);
     }
+    
+    return { success: false, error: error.message };
   }
 };
 
@@ -140,4 +197,8 @@ const start = () => {
   healthIntervalJob.start();
 };
 
-module.exports = { start };
+module.exports = { 
+  start,
+  sendReminders,
+  checkHealthIntervals
+};
