@@ -9,7 +9,7 @@ import {
   CheckSquare, 
   Square, 
   CalendarDays, 
-  ArrowRight, 
+  ArrowRight,
   Activity,
   Trash2,
   Edit,
@@ -18,6 +18,7 @@ import {
 import { Button } from '../components/ui/button';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTasks } from '../contexts/TaskContext';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import api from '../utils/api';
@@ -43,9 +44,9 @@ import {
 export default function Dashboard() {
   const { currentUser } = useAuth();
   const { mode } = useTheme();
+  const { tasks, addTask, deleteTask, toggleTaskCompletion, updateTask } = useTasks();
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("");
   const [newTaskCategory, setNewTaskCategory] = useState("work");
   const [newTaskDueDate, setNewTaskDueDate] = useState("Heute");
@@ -104,31 +105,20 @@ export default function Dashboard() {
     return currentTime.toLocaleDateString("de-DE", options);
   };
 
-  // Toggle task completion
-  const toggleTaskCompletion = (taskId) => {
-    setTasks(tasks.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task)));
-  };
-
   // Add new task
-  const addTask = () => {
+  const handleAddTask = () => {
     if (newTask.trim() === "") return;
     
     const newTaskObj = {
-      id: Date.now(),
       title: newTask,
       completed: false,
       dueDate: newTaskDueDate,
       category: newTaskCategory
     };
     
-    setTasks([newTaskObj, ...tasks]);
+    addTask(newTaskObj);
     setNewTask("");
     setIsAddingTask(false);
-  };
-  
-  // Delete task
-  const deleteTask = (taskId) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
   };
   
   // Start editing task
@@ -145,16 +135,11 @@ export default function Dashboard() {
   const saveEditTask = () => {
     if (editingTask.editTitle.trim() === "") return;
     
-    setTasks(tasks.map(task => 
-      task.id === editingTask.id 
-        ? {
-            ...task,
-            title: editingTask.editTitle,
-            category: editingTask.editCategory,
-            dueDate: editingTask.editDueDate
-          }
-        : task
-    ));
+    updateTask(editingTask.id, {
+      title: editingTask.editTitle,
+      category: editingTask.editCategory,
+      dueDate: editingTask.editDueDate
+    });
     
     setEditingTask(null);
   };
@@ -177,6 +162,20 @@ export default function Dashboard() {
         return "#9966cc";
     }
   };
+  
+  // Get event type color
+  const getEventTypeColor = (eventType) => {
+    switch (eventType) {
+      case "work":
+        return "#3399ff";
+      case "personal":
+        return "#ff9900";
+      case "health":
+        return "#66cc66";
+      default:
+        return "#9966cc";
+    }
+  };
 
   const handleAddAppointment = () => {
     // Anstatt zur URL zu navigieren, öffnen wir direkt das Popup
@@ -186,7 +185,7 @@ export default function Dashboard() {
     
     // Initialisiere ein leeres Event mit aktueller Zeit
     const emptyEvent = {
-      id: 'new-event-' + Date.now(), // Temporäre ID für das neue Event
+      // Keine ID für neue Events, damit im EventForm ein neues Event erstellt wird
       title: '',
       description: '',
       location: '',
@@ -300,14 +299,6 @@ export default function Dashboard() {
       const nextDateOnly = new Date(nextDate);
       nextDateOnly.setHours(0, 0, 0, 0);
       
-      console.log('Dashboard - Überfälligkeitsprüfung:', {
-        original: nextVisit,
-        nextDate: nextDate,
-        nextDateOnly: nextDateOnly,
-        today: today,
-        isOverdue: nextDateOnly < today
-      });
-      
       return nextDateOnly < today;
     } catch (error) {
       console.error('Fehler bei der Überprüfung auf Überfälligkeit:', error);
@@ -326,23 +317,44 @@ export default function Dashboard() {
           time: event.allDay 
             ? 'Ganztägig' 
             : `${format(new Date(event.start_time), 'HH:mm')} - ${format(new Date(event.end_time), 'HH:mm')}`,
-          color: event.color || "#3399ff"
+          color: getEventTypeColor(event.event_type),
+          event_type: event.event_type || 'personal',
+          start_time: new Date(event.start_time), // Original Startzeit speichern für Vergleiche
+          end_time: new Date(event.end_time)      // Original Endzeit speichern für Vergleiche
         }));
-        setUpcomingEvents(events);
+        
+        // Filtere vergangene Termine aus der Liste
+        const now = new Date();
+        const filteredEvents = events.filter(event => {
+          // Ganztägige Termine für heute behalten
+          if (event.time === 'Ganztägig') {
+            const today = format(now, 'dd.MM.yyyy', { locale: de });
+            if (event.date === today) return true;
+          }
+          
+          // Termine in der Zukunft behalten (wenn Endzeit noch nicht vorbei ist)
+          return event.end_time >= now;
+        });
+        
+        // Sortiere nach Startzeit
+        filteredEvents.sort((a, b) => a.start_time - b.start_time);
+        
+        setUpcomingEvents(filteredEvents);
       } catch (error) {
         console.error('Fehler beim Laden der Termine:', error);
-        // Keine Fallback-Daten mehr
         setUpcomingEvents([]);
       } finally {
         setLoading(false);
       }
     };
 
+    // Globale Funktion für Dashboard-Refresh erstellen
+    window.refreshDashboardEvents = fetchEvents;
+
     // Lade Gesundheitsintervalle
     const fetchHealthIntervals = async () => {
       try {
         const response = await api.get('/api/health-intervals');
-        console.log('Rohe API-Antwort (Health Intervals):', response.data);
         
         // Konvertiere die API-Daten in das richtige Format
         const formattedIntervals = response.data.map(interval => {
@@ -376,13 +388,11 @@ export default function Dashboard() {
             nextVisit: nextVisitDate,
             notes: interval.notes || ''
           };
-        })
-        .filter(interval => interval !== null); // Entferne ungültige Intervalldaten
+        }).filter(interval => interval !== null); // Entferne ungültige Intervalldaten
         
         // Sortiere nach nächstem Besuchsdatum
         formattedIntervals.sort((a, b) => a.nextVisit - b.nextVisit);
         
-        console.log('Geladene Gesundheitsintervalle:', formattedIntervals);
         setHealthIntervals(formattedIntervals);
       } catch (error) {
         console.error('Fehler beim Laden der Gesundheitsintervalle:', error);
@@ -392,6 +402,25 @@ export default function Dashboard() {
 
     fetchEvents();
     fetchHealthIntervals();
+    
+    // Clean-up Funktion
+    return () => {
+      // Lösche die globale Funktion, wenn die Komponente unmounted wird
+      window.refreshDashboardEvents = null;
+    };
+  }, []);
+
+  // Regelmäßige Aktualisierung der Termine
+  useEffect(() => {
+    // Periodische Aktualisierung alle 10 Sekunden
+    const interval = setInterval(() => {
+      if (window.refreshDashboardEvents) {
+        window.refreshDashboardEvents();
+      }
+    }, 10000);
+    
+    // Aufräumen beim Verlassen der Seite
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -507,7 +536,7 @@ export default function Dashboard() {
                       Abbrechen
                     </button>
                     <button
-                      onClick={addTask}
+                      onClick={handleAddTask}
                       className="px-3 py-1 rounded bg-gradient-to-r from-[#ff0066] to-[#3399ff] text-white"
                     >
                       Hinzufügen
@@ -660,7 +689,7 @@ export default function Dashboard() {
                   <div 
                     key={event.id} 
                     className={`p-3 ${mode === 'dark' ? 'bg-[#2a2f4e] hover:bg-[#323752]' : 'bg-gray-50 hover:bg-gray-100'} rounded-md transition-colors cursor-pointer`}
-                    onClick={() => {
+                    onClick={(e) => {
                       // Bereite das Event-Objekt mit korrekten Datumsformaten vor
                       const formattedEvent = {
                         ...event,
@@ -753,18 +782,135 @@ export default function Dashboard() {
             <div className="flex justify-between items-start">
               <div>
                 <h3 className={`text-sm ${mode === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Heute</h3>
-                <p className={`text-2xl font-bold mt-1 ${mode === 'dark' ? 'text-white' : 'text-gray-900'}`}>1 Termin</p>
+                <p className={`text-2xl font-bold mt-1 ${mode === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                  {(() => {
+                    // Filtere Termine, die heute stattfinden
+                    const todayEvents = upcomingEvents.filter(event => {
+                      const today = format(new Date(), 'dd.MM.yyyy', { locale: de });
+                      
+                      // Prüfe, ob der Termin heute ist
+                      if (event.date === today) {
+                        // Zusätzlich prüfen, ob der Termin noch nicht vorbei ist
+                        try {
+                          // Aktuelle Stunde und Minute
+                          const now = new Date();
+                          const currentHour = now.getHours();
+                          const currentMinute = now.getMinutes();
+                          
+                          // Extrahiere die Startzeit des Termins
+                          // Der time-String hat das Format "HH:mm - HH:mm" oder "Ganztägig"
+                          if (event.time === 'Ganztägig') {
+                            return true; // Ganztägige Termine sind immer relevant
+                          }
+                          
+                          // Startzeit extrahieren (Format: "HH:mm - HH:mm")
+                          const startTimeStr = event.time.split('-')[0].trim();
+                          const [startHour, startMinute] = startTimeStr.split(':').map(num => parseInt(num, 10));
+                          
+                          // Prüfe, ob der Termin in der Zukunft oder gerade jetzt stattfindet
+                          return (
+                            startHour > currentHour || 
+                            (startHour === currentHour && startMinute >= currentMinute)
+                          );
+                        } catch (error) {
+                          // Bei Fehlern den Termin anzeigen (Fallback)
+                          return true;
+                        }
+                      }
+                      
+                      return false; // Nicht heutige Termine ausfiltern
+                    });
+                    
+                    // Zeige Anzahl der heutigen Termine an
+                    const eventCount = todayEvents.length;
+                    if (eventCount === 0) return "Keine Termine";
+                    if (eventCount === 1) return "1 Termin";
+                    return `${eventCount} Termine`;
+                  })()}
+                </p>
               </div>
               <div className={`${mode === 'dark' ? 'bg-[#2a2f4e]' : 'bg-gray-50'} p-2 rounded-full`}>
                 <CalendarDays className="h-5 w-5 text-[#3399ff]" />
               </div>
             </div>
             <div className={`mt-4 pt-4 border-t ${mode === 'dark' ? 'border-[#2a2f4e]' : 'border-gray-200'}`}>
-              <div className="flex items-center">
-                <div className="w-2 h-2 rounded-full bg-[#3399ff] mr-2"></div>
-                <p className={`text-sm ${mode === 'dark' ? 'text-white' : 'text-gray-900'}`}>Meeting mit Marketing-Team</p>
-              </div>
-              <p className={`text-xs ${mode === 'dark' ? 'text-gray-400' : 'text-gray-500'} mt-1`}>15:30 - 16:30</p>
+              {(() => {
+                // Filtere Termine, die heute stattfinden und noch nicht vorbei sind
+                const todayEvents = upcomingEvents.filter(event => {
+                  const today = format(new Date(), 'dd.MM.yyyy', { locale: de });
+                  
+                  // Prüfe, ob der Termin heute ist
+                  if (event.date === today) {
+                    // Zusätzlich prüfen, ob der Termin noch nicht vorbei ist
+                    try {
+                      // Aktuelle Stunde und Minute
+                      const now = new Date();
+                      const currentHour = now.getHours();
+                      const currentMinute = now.getMinutes();
+                      
+                      // Extrahiere die Startzeit des Termins
+                      if (event.time === 'Ganztägig') {
+                        return true; // Ganztägige Termine sind immer relevant
+                      }
+                      
+                      // Startzeit extrahieren (Format: "HH:mm - HH:mm")
+                      const startTimeStr = event.time.split('-')[0].trim();
+                      const [startHour, startMinute] = startTimeStr.split(':').map(num => parseInt(num, 10));
+                      
+                      // Prüfe, ob der Termin in der Zukunft oder gerade jetzt stattfindet
+                      return (
+                        startHour > currentHour || 
+                        (startHour === currentHour && startMinute >= currentMinute)
+                      );
+                    } catch (error) {
+                      // Bei Fehlern den Termin anzeigen (Fallback)
+                      return true;
+                    }
+                  }
+                  
+                  return false; // Nicht heutige Termine ausfiltern
+                });
+                
+                // Sortiere nach Startzeit
+                todayEvents.sort((a, b) => {
+                  // Ganztägige Termine zuerst
+                  if (a.time === 'Ganztägig') return -1;
+                  if (b.time === 'Ganztägig') return 1;
+                  
+                  try {
+                    // Extrahiere und vergleiche Startzeiten
+                    const getStartHour = (event) => {
+                      const startTimeStr = event.time.split('-')[0].trim();
+                      const [hour, minute] = startTimeStr.split(':').map(num => parseInt(num, 10));
+                      return hour * 60 + minute; // Konvertiere in Minuten für einfachen Vergleich
+                    };
+                    
+                    return getStartHour(a) - getStartHour(b);
+                  } catch (error) {
+                    return 0;
+                  }
+                });
+                
+                if (todayEvents.length === 0) {
+                  return (
+                    <p className={`text-sm ${mode === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Keine weiteren Termine für heute
+                    </p>
+                  );
+                }
+                
+                // Zeige den ersten noch nicht vergangenen Termin des Tages an
+                const nextEvent = todayEvents[0];
+                return (
+                  <>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 rounded-full bg-[#3399ff] mr-2"></div>
+                      <p className={`text-sm ${mode === 'dark' ? 'text-white' : 'text-gray-900'}`}>{nextEvent.title}</p>
+                    </div>
+                    <p className={`text-xs ${mode === 'dark' ? 'text-gray-400' : 'text-gray-500'} mt-1`}>{nextEvent.time}</p>
+                  </>
+                );
+              })()}
             </div>
           </div>
 

@@ -66,7 +66,10 @@ const EventForm = ({ open, onClose, initialData, isEdit = false }) => {
   
   // Hole ID entweder aus Params oder initialData
   const [eventId, setEventId] = useState(initialData?.id || id || null);
-  const [isEditMode, setIsEditMode] = useState(isEdit || Boolean(eventId));
+  
+  // Überprüfe, ob es sich um einen neuen oder bestehenden Termin handelt
+  // Ein Termin gilt als neu, wenn keine ID vorhanden ist oder wenn isEdit explizit als false übergeben wurde
+  const [isEditMode, setIsEditMode] = useState(Boolean(isEdit && eventId));
   
   // Hole Standardwerte aus dem Location-State oder initialData
   const defaultStart = initialData?.start_time ? new Date(initialData.start_time) : 
@@ -210,7 +213,8 @@ const EventForm = ({ open, onClose, initialData, isEdit = false }) => {
       setLoading(true);
       setError(null);
       
-      if (isEditMode) {
+      // Benutze isEditMode UND eventId, um zu entscheiden, ob aktualisiert oder erstellt wird
+      if (isEditMode && eventId) {
         // Termin aktualisieren
         if (!eventId) {
           setError('Termin-ID fehlt. Bitte lade die Seite neu oder kehre zum Kalender zurück.');
@@ -233,6 +237,16 @@ const EventForm = ({ open, onClose, initialData, isEdit = false }) => {
         // Aktualisiere Calendar-Events
         if (window.refreshCalendarEvents) {
           window.refreshCalendarEvents();
+        }
+        
+        // Aktualisiere auch die Termine in der Seitenleiste
+        if (window.refreshSidebarEvents) {
+          window.refreshSidebarEvents();
+        }
+        
+        // Refresh dashboard events
+        if (window.refreshDashboardEvents) {
+          window.refreshDashboardEvents();
         }
       } else {
         // Neuen Termin erstellen
@@ -263,6 +277,16 @@ const EventForm = ({ open, onClose, initialData, isEdit = false }) => {
           // Aktualisiere Calendar-Events
           if (window.refreshCalendarEvents) {
             window.refreshCalendarEvents();
+          }
+          
+          // Aktualisiere auch die Termine in der Seitenleiste
+          if (window.refreshSidebarEvents) {
+            window.refreshSidebarEvents();
+          }
+          
+          // Refresh dashboard events
+          if (window.refreshDashboardEvents) {
+            window.refreshDashboardEvents();
           }
         } else {
           throw new Error('Keine gültige Event-ID erhalten');
@@ -358,6 +382,21 @@ const EventForm = ({ open, onClose, initialData, isEdit = false }) => {
       
       setSuccess('Termin erfolgreich gelöscht!');
       setDeleteDialogOpen(false);
+      
+      // Aktualisiere Calendar-Events
+      if (window.refreshCalendarEvents) {
+        window.refreshCalendarEvents();
+      }
+      
+      // Aktualisiere auch die Termine in der Seitenleiste
+      if (window.refreshSidebarEvents) {
+        window.refreshSidebarEvents();
+      }
+      
+      // Refresh dashboard events
+      if (window.refreshDashboardEvents) {
+        window.refreshDashboardEvents();
+      }
       
       // Nach erfolgreicher Löschung Dialog schließen
       setTimeout(() => {

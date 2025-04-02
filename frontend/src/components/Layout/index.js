@@ -37,9 +37,128 @@ const Layout = () => {
   const [notifications, setNotifications] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const [sidebarEvents, setSidebarEvents] = useState([]);
   
   const isCalendarPage = location.pathname === '/calendar';
   const currentPath = location.pathname;
+
+  // Funktion zum Abrufen der Farbe basierend auf dem Termintyp
+  const getEventTypeColor = (eventType) => {
+    switch (eventType) {
+      case "work":
+        return "#3399ff";
+      case "personal":
+        return "#ff9900";
+      case "health":
+        return "#66cc66";
+      default:
+        return "#9966cc";
+    }
+  };
+
+  useEffect(() => {
+    // Funktion, um Termine neu zu laden
+    const refreshSidebarEvents = async () => {
+      try {
+        // Ladezustand setzen
+        setIsLoadingEvents(true);
+        
+        // Direkt von der API neue Termine laden anstatt window.calendarEvents zu verwenden
+        const response = await api.get('/api/events');
+        const now = new Date();
+        
+        const events = response.data.map(event => {
+          const start_time = new Date(event.start_time);
+          const end_time = new Date(event.end_time);
+          
+          return {
+            id: event.id,
+            title: event.title,
+            date: format(start_time, 'dd.MM.yyyy', { locale: de }),
+            time: event.allDay 
+              ? 'Ganztägig' 
+              : `${format(start_time, 'HH:mm')} - ${format(end_time, 'HH:mm')}`,
+            color: getEventTypeColor(event.event_type),
+            event_type: event.event_type || 'personal',
+            start_time: start_time,
+            end_time: end_time,
+            // Explizit speichern, ob der Termin in der Zukunft liegt
+            isInFuture: end_time > now
+          };
+        });
+        
+        // Filtere vergangene Termine strikt aus
+        const filteredEvents = events.filter(event => event.isInFuture);
+        
+        // Sortiere strikt nach Startzeit und dann nach ID
+        filteredEvents.sort((a, b) => {
+          // Prüfung auf undefined/null Werte
+          if (!a || !a.start_time) return -1;
+          if (!b || !b.start_time) return 1;
+          
+          // Vergleiche nach Startdatum und Startzeit
+          const timeA = a.start_time.getTime();
+          const timeB = b.start_time.getTime();
+          
+          // Primäre Sortierung nach Startzeit (vom frühesten zum spätesten)
+          if (timeA !== timeB) {
+            return timeA - timeB; // Aufsteigende Sortierung nach Zeit
+          }
+          
+          // Sekundäre Sortierung nach ID
+          if (a.id !== b.id) {
+            return a.id - b.id;
+          }
+          
+          // Tertiäre Sortierung nach Titel
+          return a.title.localeCompare(b.title);
+        });
+        
+        // Update window.calendarEvents für andere Komponenten
+        window.calendarEvents = filteredEvents;
+        
+        // Aktualisiere separaten Sidebar-State
+        setSidebarEvents(filteredEvents);
+        
+        // Für die Kalenderseite auch calendarEvents aktualisieren
+        if (isCalendarPage) {
+          setCalendarEvents(filteredEvents);
+        }
+      } catch (error) {
+        // Fehler leise behandeln, um Konsolenspam zu vermeiden
+        // Kritische Fehler sollten in einer Produktionsumgebung in einem Error-Tracking-System erfasst werden
+      } finally {
+        // Ladezustand zurücksetzen
+        setIsLoadingEvents(false);
+      }
+    };
+    
+    // Globale Funktion für andere Komponenten bereitstellen
+    window.refreshSidebarEvents = refreshSidebarEvents;
+    
+    // Sofort beim Mounten der Komponente Termine laden
+    refreshSidebarEvents();
+    
+    // Die Termine regelmäßig aktualisieren (alle 30 Sekunden), um vergangene zu entfernen
+    const intervalId = setInterval(() => {
+      // Regelmäßig die Termine neu laden, unabhängig davon ob leer oder nicht
+      refreshSidebarEvents();
+    }, 30000); // Alle 30 Sekunden
+    
+    // Bei Unmount dieser Komponente die globale Funktion und den Interval löschen
+    return () => {
+      window.refreshSidebarEvents = null;
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Beim ersten Laden der Komponente Termine laden
+    if (window.refreshSidebarEvents && calendarEvents.length === 0) {
+      window.refreshSidebarEvents();
+    }
+  }, [calendarEvents.length]);
 
   useEffect(() => {
     // Wenn wir auf der Kalenderseite sind, überprüfen wir periodisch,
@@ -47,7 +166,20 @@ const Layout = () => {
     if (isCalendarPage) {
       const checkEvents = () => {
         if (window.calendarEvents) {
-          setCalendarEvents(window.calendarEvents);
+          // Erstelle einen eindeutigeren Fingerabdruck für die Events, der ID, Titel und Startzeit enthält
+          const createEventsFingerprint = (events) => {
+            return events
+              .map(event => `${event.id}-${event.title}-${event.start_time?.getTime() || 0}`)
+              .join('|');
+          };
+          
+          const currentFingerprint = createEventsFingerprint(calendarEvents);
+          const newFingerprint = createEventsFingerprint(window.calendarEvents);
+          
+          if (currentFingerprint !== newFingerprint) {
+            // Nur den calendarEvents-State aktualisieren, nicht den Sidebar-State
+            setCalendarEvents(window.calendarEvents);
+          }
         }
       };
       
@@ -59,7 +191,7 @@ const Layout = () => {
       
       return () => clearInterval(interval);
     }
-  }, [isCalendarPage]);
+  }, [isCalendarPage, calendarEvents]);
 
   // Lade Dummy-Events für alle Seiten
   useEffect(() => {
@@ -220,6 +352,27 @@ const Layout = () => {
     { icon: <MenuIcon className="h-5 w-5 text-gray-400" />, label: 'Gesundheitsintervalle', href: '/health-intervals' }
   ];
 
+  useEffect(() => {
+    // Überschreibe die globale Funktion, damit sie auch die Sidebar aktualisiert
+    const originalRefreshCalendarEvents = window.refreshCalendarEvents;
+    if (originalRefreshCalendarEvents) {
+      window.refreshCalendarEvents = (...args) => {
+        // Originale Funktion aufrufen
+        originalRefreshCalendarEvents(...args);
+        
+        // Zusätzlich die Sidebar aktualisieren
+        if (window.refreshSidebarEvents) {
+          window.refreshSidebarEvents();
+        }
+      };
+    }
+    
+    return () => {
+      // Beim Unmount die originale Funktion wiederherstellen
+      window.refreshCalendarEvents = originalRefreshCalendarEvents;
+    };
+  }, []);
+
   return (
     <Box sx={{ 
       display: 'flex',
@@ -254,77 +407,45 @@ const Layout = () => {
         
         {/* Kommende Termine werden jetzt immer angezeigt */}
         <div className="mt-8 pt-8 border-t border-white/10">
-          <h3 className="text-xs uppercase text-gray-500 font-medium mb-4 tracking-wider">Kommende Termine</h3>
+          <h3 className="text-xs uppercase text-gray-500 font-medium mb-4 tracking-wider">
+            Kommende Termine
+          </h3>
           <div className="space-y-3">
-            {calendarEvents
-              .filter(event => {
-                // Aktuelle Zeit zum Vergleich
-                const now = new Date();
-                
-                // Wenn es ein Event mit end_time gibt, prüfen, ob es bereits vorbei ist
-                if (event.end_time) {
-                  const eventEndTime = new Date(event.end_time);
-                  // Behalte das Event, wenn die Endzeit in der Zukunft liegt (noch nicht vorbei)
-                  return eventEndTime > now;
-                }
-                
-                // Fallback für Events ohne explizite Endzeit: Prüfe das Datum
-                if (event.date) {
-                  const eventDate = new Date(event.date);
-                  // Wenn es heute ist, behalte es (ohne Endzeit ist es vermutlich ganztägig)
-                  if (eventDate.getDate() === now.getDate() && 
-                      eventDate.getMonth() === now.getMonth() && 
-                      eventDate.getFullYear() === now.getFullYear()) {
-                    return true;
-                  }
-                  // Ansonsten behalte nur zukünftige Termine
-                  return eventDate >= now;
-                }
-                
-                return true; // Fallback für Events ohne Datum oder Endzeit
-              })
-              // Sortiere nach Datum und Zeit
-              .sort((a, b) => {
-                const dateA = new Date(a.datetime || a.date || a.start_time);
-                const dateB = new Date(b.datetime || b.date || b.start_time);
-                return dateA - dateB;
-              })
-              // Zeige nur die nächsten drei Termine
-              .slice(0, 3)
-              .map(event => (
-                <div 
-                  key={event.id} 
-                  className="p-3 rounded-lg bg-[#1a1f3e] border border-[#2a2f4e] transition-colors cursor-pointer"
-                  onClick={() => handleEditEvent && handleEditEvent(event)}
-                >
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: event.color }}></div>
-                    <span className="text-sm font-medium">{event.title}</span>
+            {isLoadingEvents && sidebarEvents.length === 0 ? (
+              <div className="p-3 rounded-lg bg-[#2a2f4e] border border-[#3a3f6e] transition-colors flex items-center justify-center">
+                <span className="text-sm text-gray-400">Termine werden geladen...</span>
+              </div>
+            ) : sidebarEvents && sidebarEvents.length > 0 ? (
+              // Nochmaliges Filtern der Events direkt vor der Anzeige, um sicherzustellen, dass
+              // wirklich nur zukünftige Termine angezeigt werden
+              sidebarEvents
+                .filter(event => {
+                  const now = new Date();
+                  // Für Events mit Endzeit: nur anzeigen, wenn Endzeit > jetzt
+                  return event.end_time > now;
+                })
+                .slice(0, 3) // Zeige nur die nächsten drei Termine
+                .map(event => (
+                  <div 
+                    key={event.id} 
+                    className="p-3 rounded-lg bg-[#1a1f3e] border border-[#2a2f4e] transition-colors cursor-pointer"
+                    onClick={() => handleEditEvent && handleEditEvent(event)}
+                  >
+                    <div className="flex items-center">
+                      <div 
+                        className="w-2 h-2 rounded-full mr-2" 
+                        style={{ backgroundColor: event.color || getEventTypeColor(event.event_type || 'personal') }}
+                      ></div>
+                      <span className="text-sm font-medium">{event.title || 'Unbenannter Termin'}</span>
+                    </div>
+                    <div className="mt-1 text-xs text-gray-400">
+                      {event.date && format(new Date(event.date), 'dd. MMM', { locale: de })} • {event.time || 'Keine Zeit angegeben'}
+                    </div>
                   </div>
-                  <div className="mt-1 text-xs text-gray-400">
-                    {format(new Date(event.date), 'dd. MMM', { locale: de })} • {event.time}
-                  </div>
-                </div>
-              ))}
-              
-            {calendarEvents.filter(event => {
-                const now = new Date();
-                if (event.end_time) {
-                  return new Date(event.end_time) > now;
-                }
-                if (event.date) {
-                  const eventDate = new Date(event.date);
-                  if (eventDate.getDate() === now.getDate() && 
-                      eventDate.getMonth() === now.getMonth() && 
-                      eventDate.getFullYear() === now.getFullYear()) {
-                    return true;
-                  }
-                  return eventDate >= now;
-                }
-                return true;
-              }).length === 0 && (
-              <div className="p-3 text-center text-gray-400 text-sm">
-                Keine kommenden Termine
+                ))
+            ) : (
+              <div className="p-3 rounded-lg bg-[#2a2f4e] border border-[#3a3f6e] transition-colors flex items-center justify-center">
+                <span className="text-sm text-gray-400">Keine kommenden Termine</span>
               </div>
             )}
           </div>

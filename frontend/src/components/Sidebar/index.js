@@ -146,21 +146,27 @@ export const CalendarSidebar = ({ events = [], onEditEvent }) => {
       <div className="mt-8 pt-8 border-t border-white/10">
         <h3 className="text-xs uppercase text-gray-500 font-medium mb-4 tracking-wider">Kommende Termine</h3>
         <div className="space-y-3">
-          {events.slice(0, 3).map(event => (
-            <div 
-              key={event.id} 
-              className="p-3 rounded-lg bg-[#1a1f3e] border border-[#2a2f4e] transition-colors cursor-pointer"
-              onClick={() => onEditEvent && onEditEvent(event)}
-            >
-              <div className="flex items-center">
-                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: event.color }}></div>
-                <span className="text-sm font-medium">{event.title}</span>
+          {events.length > 0 ? (
+            events.slice(0, 3).map(event => (
+              <div 
+                key={event.id} 
+                className="p-3 rounded-lg bg-[#1a1f3e] border border-[#2a2f4e] transition-colors cursor-pointer"
+                onClick={() => onEditEvent && onEditEvent(event)}
+              >
+                <div className="flex items-center">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: event.color }}></div>
+                  <span className="text-sm font-medium">{event.title}</span>
+                </div>
+                <div className="mt-1 text-xs text-gray-400">
+                  {format(event.date, 'dd. MMM', { locale: de })} • {event.time}
+                </div>
               </div>
-              <div className="mt-1 text-xs text-gray-400">
-                {format(event.date, 'dd. MMM', { locale: de })} • {event.time}
-              </div>
+            ))
+          ) : (
+            <div className="p-3 rounded-lg bg-[#1a1f3e] border border-[#2a2f4e] flex items-center justify-center">
+              <span className="text-sm text-gray-400 font-medium">Keine kommenden Termine</span>
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>

@@ -176,8 +176,18 @@ const Profile = () => {
                 <div className="relative w-32 h-32">
                   <div 
                     className="w-32 h-32 rounded-full bg-cover bg-center"
-                    style={{ backgroundImage: `url(${editData.profile_picture || 'https://via.placeholder.com/128?text=Profil'})` }}
-                  ></div>
+                    style={{ 
+                      backgroundImage: editData.profile_picture ? 
+                        `url(${editData.profile_picture})` : 
+                        'none',
+                      backgroundColor: editData.profile_picture ? 'transparent' : '#3a4166',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {!editData.profile_picture && <User size={48} color="#8892b0" />}
+                  </div>
                   <label className="absolute bottom-0 right-0 bg-[#3399ff] rounded-full p-2 cursor-pointer hover:bg-[#3399ff]/80">
                     <Camera className="h-5 w-5 text-white" />
                     <input 
@@ -191,8 +201,18 @@ const Profile = () => {
               ) : (
                 <div 
                   className="w-32 h-32 rounded-full bg-cover bg-center border-4 border-[#3399ff]/20"
-                  style={{ backgroundImage: `url(${userData?.profile_picture || 'https://via.placeholder.com/128?text=Profil'})` }}
-                ></div>
+                  style={{ 
+                    backgroundImage: userData?.profile_picture ? 
+                      `url(${userData.profile_picture})` : 
+                      'none',
+                    backgroundColor: userData?.profile_picture ? 'transparent' : '#3a4166',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  {!userData?.profile_picture && <User size={48} color="#8892b0" />}
+                </div>
               )}
             </div>
             

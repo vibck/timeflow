@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -33,36 +34,38 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = async (emailOrToken, password) => {
+  const login = async (email, password) => {
+    setLoading(true);
     try {
-      let token;
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/login`, { email, password });
       
-      if (password === undefined) {
-        token = emailOrToken;
-      } else {
-        const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
-          email: emailOrToken,
-          password
-        });
+      if (response.data && response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
         
-        token = response.data.token;
-        if (!token) {
-          throw new Error('Kein Token vom Server erhalten');
-        }
+        setCurrentUser(response.data.user);
+        setIsAuthenticated(true);
+        
+        // Nach erfolgreichem Login die Termine für die Sidebar laden
+        setTimeout(() => {
+          if (window.refreshSidebarEvents) {
+            window.refreshSidebarEvents();
+          }
+          
+          if (window.refreshDashboardEvents) {
+            window.refreshDashboardEvents();
+          }
+        }, 500);
+        
+        return true;
       }
-      
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
-      const userResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/auth/me`);
-      setCurrentUser(userResponse.data.user);
-      setIsAuthenticated(true);
-      return userResponse.data.user;
     } catch (error) {
-      console.error('Fehler beim Abrufen der Benutzerinformationen:', error);
-      localStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
-      throw error;
+      console.error('Login error:', error);
+      const message = error.response?.data?.message || 'Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.';
+      setError(message);
+      return false;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -87,6 +90,7 @@ export const AuthProvider = ({ children }) => {
     currentUser,
     isAuthenticated,
     loading,
+    error,
     login,
     logout,
     updateUserData

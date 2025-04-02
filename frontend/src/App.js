@@ -4,6 +4,7 @@ import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { TaskProvider } from './contexts/TaskContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -83,7 +84,8 @@ const AppContent = () => {
         const endTime = createSafeDate(event.end_time) || new Date(startTime.getTime() + 60 * 60 * 1000); // +1 Stunde als Fallback
         
         // Prüfe, ob es sich um ein neues oder bestehendes Event handelt
-        const isNew = event.id && event.id.toString().startsWith('new-event-');
+        // Ein Event ist neu, wenn es keine ID hat oder eine temporäre ID, die mit 'new-event-' beginnt
+        const isNew = !event.id || (event.id && event.id.toString().startsWith('new-event-'));
         
         setEventData({
           id: isNew ? null : event.id, // Keine ID für neue Events
@@ -92,7 +94,8 @@ const AppContent = () => {
           location: event.location || '',
           start_time: startTime,
           end_time: endTime,
-          event_type: event.event_type || 'personal'
+          event_type: event.event_type || 'personal',
+          color: event.color
         });
         setShowEventForm(true);
       } catch (error) {
@@ -107,9 +110,17 @@ const AppContent = () => {
     setShowEventForm(false);
     setEventData(null);
     
-    // Termine neu laden - Diese Funktion könnte ein globales Event auslösen
+    // Refresh calendar events
     if (window.refreshCalendarEvents) {
       window.refreshCalendarEvents();
+    }
+    // Refresh sidebar events
+    if (window.refreshSidebarEvents) {
+      window.refreshSidebarEvents();
+    }
+    // Refresh dashboard events
+    if (window.refreshDashboardEvents) {
+      window.refreshDashboardEvents();
     }
   };
   
@@ -162,7 +173,7 @@ const AppContent = () => {
               open={showEventForm}
               onClose={closeEventFormPopup}
               initialData={eventData}
-              isEdit={true}
+              isEdit={eventData && eventData.id ? true : false}
             />
           )}
         </Router>
@@ -179,7 +190,9 @@ const App = () => {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <AppContent />
+        <TaskProvider>
+          <AppContent />
+        </TaskProvider>
       </ThemeProvider>
     </AuthProvider>
   );

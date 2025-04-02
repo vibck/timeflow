@@ -85,7 +85,6 @@ const HealthIntervals = () => {
     try {
       setLoading(true);
       const response = await api.get('/api/health-intervals');
-      console.log('API Response:', response.data);
       
       // Konvertiere die API-Daten in das richtige Format
       const formattedIntervals = response.data.map(interval => {
@@ -108,11 +107,9 @@ const HealthIntervals = () => {
         };
       });
       
-      console.log('Formatted intervals:', formattedIntervals);
       setIntervals(formattedIntervals);
       setError(null);
     } catch (err) {
-      console.error('Fehler beim Laden der Gesundheitsintervalle:', err);
       setError('Fehler beim Laden der Gesundheitsintervalle');
       // Keine Fallback-Daten mehr
       setIntervals([]);
@@ -181,7 +178,6 @@ const HealthIntervals = () => {
       nextVisitDate.setMonth(lastVisitDate.getMonth() + Number(intervalMonths));
       return nextVisitDate.toISOString();
     } catch (error) {
-      console.error('Fehler bei der Berechnung des nächsten Besuchsdatums:', error);
       return new Date().toISOString(); // Fallback zum aktuellen Datum
     }
   };
@@ -243,7 +239,6 @@ const HealthIntervals = () => {
       
       handleCloseDialog();
     } catch (err) {
-      console.error('Fehler beim Speichern des Gesundheitsintervalls:', err);
       setSnackbar({
         open: true,
         message: 'Fehler beim Speichern des Gesundheitsintervalls',
@@ -259,8 +254,7 @@ const HealthIntervals = () => {
         // Entferne das gelöschte Intervall aus der Liste
         setIntervals(intervals.filter(interval => interval.id !== id));
       } catch (err) {
-        console.error('Fehler beim Löschen des Gesundheitsintervalls:', err);
-      alert('Fehler beim Löschen des Intervalls');
+        alert('Fehler beim Löschen des Intervalls');
     }
   };
 
@@ -273,7 +267,6 @@ const HealthIntervals = () => {
       }
       return format(date, 'dd.MM.yyyy', { locale: de });
     } catch (error) {
-      console.error('Fehler bei der Datumsformatierung:', error);
       return 'Ungültiges Datum';
     }
   };
@@ -344,10 +337,6 @@ const HealthIntervals = () => {
       const nextVisitDate = new Date(lastVisitDate);
       nextVisitDate.setMonth(lastVisitDate.getMonth() + Number(newInterval.interval));
       
-      console.log('Last visit date:', lastVisitDate);
-      console.log('Next visit date:', nextVisitDate);
-      console.log('Interval:', newInterval.interval);
-
       const intervalData = {
         interval_type: newInterval.title,
         interval_months: Number(newInterval.interval),
@@ -375,8 +364,6 @@ const HealthIntervals = () => {
         setIntervals(intervals.map(interval => 
           interval.id === editingInterval.id ? updatedInterval : interval
         ));
-        
-        console.log('Updated interval:', updatedInterval);
       } else {
         // Erstelle neues Intervall
         response = await api.post('/api/health-intervals', intervalData);
@@ -393,8 +380,6 @@ const HealthIntervals = () => {
         
         // Hinzufügen zum State mit konsistenten Daten
         setIntervals([...intervals, newIntervalData]);
-        
-        console.log('New interval:', newIntervalData);
       }
 
       // Zurücksetzen des Formulars
@@ -410,7 +395,6 @@ const HealthIntervals = () => {
       // Aktualisiere die Daten nach dem Speichern
       fetchIntervals();
     } catch (err) {
-      console.error('Fehler beim Speichern des Intervalls:', err);
       alert('Fehler beim Speichern des Intervalls. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut.');
     }
   };
@@ -422,18 +406,8 @@ const HealthIntervals = () => {
       const last = lastVisit instanceof Date ? lastVisit : new Date(lastVisit);
       const next = nextVisit instanceof Date ? nextVisit : new Date(nextVisit);
       
-      // Log zum Debugging
-      console.log('Fortschrittsberechnung:', {
-        last,
-        next,
-        now,
-        total: next - last,
-        elapsed: now - last
-      });
-      
       // Prüfe, ob die Daten gültig sind
       if (isNaN(last.getTime()) || isNaN(next.getTime())) {
-        console.error('Ungültige Datumswerte für Fortschrittsberechnung:', { lastVisit, nextVisit });
         return 0;
       }
       
@@ -452,7 +426,6 @@ const HealthIntervals = () => {
       
       // Wenn das Intervall ungültig ist oder 0, gib 0% zurück
       if (total <= 0) {
-        console.warn('Ungültiges Intervall: Die Zeitspanne ist 0 oder negativ');
         return 0;
       }
       
@@ -461,11 +434,9 @@ const HealthIntervals = () => {
       
       // Fortschritt berechnen und auf 0-100% begrenzen
       const progress = Math.min(Math.max((elapsed / total) * 100, 0), 100);
-      console.log('Berechneter Fortschritt:', progress);
       
       return progress;
     } catch (error) {
-      console.error('Fehler bei der Fortschrittsberechnung:', error);
       return 0;
     }
   };
@@ -477,7 +448,6 @@ const HealthIntervals = () => {
       
       // Prüfe, ob das Datum gültig ist
       if (isNaN(nextDate.getTime())) {
-        console.error('Ungültiges Datum für nächsten Besuch:', nextVisit);
         return false;
       }
       
@@ -488,17 +458,8 @@ const HealthIntervals = () => {
       const nextDateOnly = new Date(nextDate);
       nextDateOnly.setHours(0, 0, 0, 0);
       
-      console.log('HealthIntervals - Überfälligkeitsprüfung:', {
-        original: nextVisit,
-        nextDate: nextDate,
-        nextDateOnly: nextDateOnly,
-        today: today,
-        isOverdue: nextDateOnly < today
-      });
-      
       return nextDateOnly < today;
     } catch (error) {
-      console.error('Fehler bei der Überprüfung auf Überfälligkeit:', error);
       return false;
     }
   };

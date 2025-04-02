@@ -47,6 +47,20 @@ const Calendar = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [initialEventData, setInitialEventData] = useState(null);
 
+  // Farben für verschiedene Termintypen
+  const getEventTypeColor = (eventType) => {
+    switch (eventType) {
+      case "work":
+        return "#3399ff";
+      case "personal":
+        return "#ff9900";
+      case "health":
+        return "#66cc66";
+      default:
+        return "#9966cc";
+    }
+  };
+
   // Lade Termine vom Backend
   const fetchEvents = async () => {
     try {
@@ -65,8 +79,8 @@ const Calendar = () => {
         time: event.allDay 
           ? 'Ganztägig' 
           : `${format(new Date(event.start_time), 'HH:mm')} - ${format(new Date(event.end_time), 'HH:mm')}`,
-        color: event.color || "#3399ff", // Fallback color
-        event_type: event.event_type,
+        color: getEventTypeColor(event.event_type || 'personal'),
+        event_type: event.event_type || 'personal',
         originalEvent: event // Originale Eventdaten für später
       }));
       
@@ -364,7 +378,7 @@ const Calendar = () => {
     }
   };
 
-  // Globale Funktion zuweisen, damit sie von der Sidebar verwendet werden kann
+  // Globale Funktionen zuweisen
   useEffect(() => {
     // Nur zuweisen, wenn nicht bereits definiert (vom App.js)
     if (!window.openEventFormPopup) {
@@ -524,7 +538,11 @@ const Calendar = () => {
                           <div 
                             key={i} 
                             className="w-2 h-2 rounded-full border border-[#1a1f3e]" 
-                            style={{ backgroundColor: event.color }}
+                            style={{ 
+                              backgroundColor: event.isHoliday 
+                                ? '#9d7fea' 
+                                : getEventTypeColor(event.event_type) 
+                            }}
                           ></div>
                         ))}
                         {dayEvents.length > 2 && (
@@ -549,7 +567,7 @@ const Calendar = () => {
                           }}
                         >
                           <div className="w-1 h-1 rounded-full bg-[#9d7fea] mr-1.5"></div>
-                          <div className="font-medium text-[#d6bcff] truncate">
+                          <div className="font-medium text-white truncate">
                             {event.title}
                           </div>
                         </div>
@@ -564,8 +582,8 @@ const Calendar = () => {
                           key={`event-${event.id}-${idx}`}
                           className="p-1 rounded-md text-xs cursor-pointer transition-transform hover:scale-[1.02]"
                           style={{ 
-                            backgroundColor: `${event.color}20`, 
-                            color: event.color 
+                            backgroundColor: `${getEventTypeColor(event.event_type)}40`, 
+                            color: 'white' 
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
