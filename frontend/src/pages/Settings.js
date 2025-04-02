@@ -422,6 +422,16 @@ const Settings = () => {
               marginTop: "0.5rem" 
             }}>
               Erhalte Erinnerungen über Telegram.
+              {!telegramConnected && (
+                <span style={{ 
+                  display: "block", 
+                  marginTop: "0.25rem",
+                  fontStyle: "italic",
+                  color: mode === 'dark' ? "#ff9800" : "#ed6c02"
+                }}>
+                  Bitte verbinde zuerst deinen Account mit Telegram unten, um diese Option zu aktivieren.
+                </span>
+              )}
             </p>
 
             <div style={{ marginTop: "1rem" }}>

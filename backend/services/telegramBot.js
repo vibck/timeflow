@@ -213,4 +213,4 @@ const start = () => {
   });
 };
 
-module.exports = { start, sendEventReminder, sendHealthIntervalReminder };
+module.exports = { start, sendEventReminder, sendHealthIntervalReminder, getBot: () => bot };

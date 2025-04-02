@@ -14,9 +14,7 @@ try {
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD
-    },
-    debug: true, // Debug-Ausgaben aktivieren
-    logger: true // Logger aktivieren
+    }
   });
   
   // Überprüfen, ob der Transporter richtig konfiguriert ist
@@ -51,15 +49,16 @@ const sendReminders = async () => {
        WHERE r.reminder_time <= NOW() AND r.is_sent = FALSE`
     );
 
-    console.log(`${reminderResult.rows.length} fällige Erinnerungen gefunden.`);
+    const foundCount = reminderResult.rows.length;
+    if (foundCount > 0) {
+      console.log(`${foundCount} fällige Erinnerungen gefunden.`);
+    }
 
     let successCount = 0;
     let errorCount = 0;
 
     for (const reminder of reminderResult.rows) {
       try {
-        console.log(`Sende Erinnerung für Termin "${reminder.title}" an ${reminder.email}...`);
-        
         // Sende E-Mail
         const mailOptions = {
           from: `"TimeFlow" <${process.env.EMAIL_USER}>`,
@@ -76,15 +75,8 @@ const sendReminders = async () => {
         };
 
         // Versuche, die E-Mail zu senden
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`E-Mail gesendet: ${info.messageId}`);
-        if (info.accepted && info.accepted.length > 0) {
-          console.log(`E-Mail akzeptiert für: ${info.accepted.join(', ')}`);
-        }
-        if (info.rejected && info.rejected.length > 0) {
-          console.warn(`E-Mail abgelehnt für: ${info.rejected.join(', ')}`);
-        }
-
+        await transporter.sendMail(mailOptions);
+        
         // Sende Telegram-Nachricht, falls verknüpft
         const telegramResult = await db.query(
           `SELECT tu.telegram_chat_id 
@@ -98,7 +90,6 @@ const sendReminders = async () => {
           const chatId = telegramResult.rows[0].telegram_chat_id;
           try {
             telegramBot.sendEventReminder(chatId, reminder);
-            console.log(`Telegram-Nachricht gesendet an Chat ID: ${chatId}`);
           } catch (telegramError) {
             console.error(`Fehler beim Senden der Telegram-Nachricht an Chat ID ${chatId}:`, telegramError);
           }
@@ -110,7 +101,6 @@ const sendReminders = async () => {
           [reminder.id]
         );
         
-        console.log(`Erinnerung ID ${reminder.id} als gesendet markiert.`);
         successCount++;
       } catch (reminderError) {
         console.error(`Fehler beim Senden der Erinnerung ID ${reminder.id}:`, reminderError);
@@ -128,7 +118,11 @@ const sendReminders = async () => {
       }
     }
     
-    console.log(`Erinnerungsversand abgeschlossen. Erfolg: ${successCount}, Fehler: ${errorCount}`);
+    // Nur bei Ergebnissen einen Abschlussbericht ausgeben
+    if (foundCount > 0) {
+      console.log(`Erinnerungsversand: ${successCount} erfolgreich, ${errorCount} fehlgeschlagen`);
+    }
+    
     return { success: true, count: successCount, errors: errorCount };
   } catch (error) {
     console.error('Fehler beim Abrufen von Erinnerungen:', error);
