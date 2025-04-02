@@ -53,7 +53,9 @@ const CustomDateTimePickerInput = forwardRef(({ value, onClick, placeholder, lab
 
 const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderChange, readOnly = false }) => {
   const theme = useTheme();
-  const [reminderTime, setReminderTime] = useState(addMinutes(new Date(eventStartTime), -30));
+  // Stelle sicher, dass eventStartTime ein gültiges Date-Objekt ist
+  const eventStart = useMemo(() => new Date(eventStartTime), [eventStartTime]);
+  const [reminderTime, setReminderTime] = useState(() => createReminderTime(eventStart, 30));
   const [presetOption, setPresetOption] = useState('30min');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -66,6 +68,42 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
     message: '',
     severity: 'success'
   });
+
+  // Hilfsfunktion zur Erzeugung einer korrekten Erinnerungszeit
+  function createReminderTime(baseTime, minutesBefore) {
+    if (!baseTime || isNaN(baseTime.getTime())) {
+      console.error('Ungültiges Basisdatum für Erinnerung:', baseTime);
+      return new Date();
+    }
+    
+    // Erstelle ein neues Datum-Objekt basierend auf der Event-Startzeit
+    const reminderDate = new Date(baseTime.getTime());
+    
+    // Subtrahiere die angegebenen Minuten
+    reminderDate.setMinutes(reminderDate.getMinutes() - minutesBefore);
+    
+    return reminderDate;
+  }
+  
+  // Hilfsfunktion um ein korrektes ISO-String zu erzeugen (ohne 2-Stunden-Verschiebung)
+  function getCorrectISOString(date) {
+    if (!date || isNaN(date.getTime())) {
+      console.error('Ungültiges Datum für ISO-String:', date);
+      return new Date().toISOString();
+    }
+    
+    // Erhalte die lokale Zeitzone Offset in Minuten
+    const tzOffset = date.getTimezoneOffset();
+    
+    // Erstelle ein neues Date-Objekt und füge den Timezone-Offset hinzu,
+    // damit nach Konvertierung zu ISO die lokale Zeit korrekt ist
+    const correctedDate = new Date(date.getTime() - tzOffset * 60000);
+    
+    // Ersetze den 'Z' am Ende mit dem expliziten +00:00 für UTC-Zeit
+    const isoString = correctedDate.toISOString().replace('Z', '+00:00');
+    
+    return isoString;
+  }
 
   // Voreingestellte Erinnerungsoptionen mit useMemo
   const presetOptions = useMemo(() => [
@@ -86,14 +124,17 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
     
     if (selectedOption !== 'custom') {
       const option = presetOptions.find(opt => opt.value === selectedOption);
-      setReminderTime(addMinutes(new Date(eventStartTime), -option.minutes));
+      if (option) {
+        // Verwende die Hilfsfunktion für korrekte Berechnung
+        setReminderTime(createReminderTime(eventStart, option.minutes));
+      }
     }
   };
 
   // Validiere die Erinnerungszeit
   const validateReminderTime = () => {
     // Prüfe, ob die Erinnerungszeit vor der Startzeit des Termins liegt
-    if (isAfter(reminderTime, new Date(eventStartTime))) {
+    if (isAfter(reminderTime, eventStart)) {
       setError('Die Erinnerungszeit muss vor der Startzeit des Termins liegen.');
       return false;
     }
@@ -136,10 +177,13 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
       const tempReminder = {
         id: 'temp-' + Date.now(),
         event_id: null,
-        reminder_time: reminderTime.toISOString(),
+        reminder_time: getCorrectISOString(reminderTime),
         is_sent: false,
         is_temp: true
       };
+      
+      // Debug-Ausgabe für den temporären Reminder
+      console.log('Neuer temporärer Reminder:', tempReminder);
       
       setTempReminders([...tempReminders, tempReminder]);
       
@@ -158,7 +202,9 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
       // Setze die Erinnerungszeit zurück
       const defaultOption = presetOptions.find(opt => opt.value === '30min');
       setPresetOption('30min');
-      setReminderTime(addMinutes(new Date(eventStartTime), -defaultOption.minutes));
+      if (defaultOption) {
+        setReminderTime(createReminderTime(eventStart, defaultOption.minutes));
+      }
       
       return;
     }
@@ -166,10 +212,14 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
     try {
       setLoading(true);
       
-      const response = await api.post('/api/reminders', {
+      // Debug-Ausgabe für die gesendeten Daten
+      const reminderData = {
         event_id: eventId,
-        reminder_time: reminderTime.toISOString()
-      });
+        reminder_time: getCorrectISOString(reminderTime)
+      };
+      console.log('Sende Erinnerungsdaten zum Server:', reminderData);
+      
+      const response = await api.post('/api/reminders', reminderData);
       
       // Aktualisiere die Liste der Erinnerungen
       if (onReminderChange) {
@@ -186,7 +236,9 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
       // Setze die Erinnerungszeit zurück
       const defaultOption = presetOptions.find(opt => opt.value === '30min');
       setPresetOption('30min');
-      setReminderTime(addMinutes(new Date(eventStartTime), -defaultOption.minutes));
+      if (defaultOption) {
+        setReminderTime(createReminderTime(eventStart, defaultOption.minutes));
+      }
       
     } catch (err) {
       console.error('Fehler beim Erstellen der Erinnerung:', err);
@@ -277,14 +329,14 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
 
   // Aktualisiere die Erinnerungszeit, wenn sich die Startzeit des Termins ändert
   useEffect(() => {
-    // Setze die Standard-Erinnerungszeit basierend auf der aktuellen Voreinstellung
+    // Aktualisiere die Basis-Startzeit
     if (presetOption !== 'custom') {
       const option = presetOptions.find(opt => opt.value === presetOption);
       if (option) {
-        setReminderTime(addMinutes(new Date(eventStartTime), -option.minutes));
+        setReminderTime(createReminderTime(eventStart, option.minutes));
       }
     }
-  }, [eventStartTime, presetOption, presetOptions]);
+  }, [eventStartTime, presetOption, presetOptions, eventStart]);
 
   // Formatiere das Datum für die Anzeige
   const formatReminderTime = time => {
@@ -299,7 +351,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
     const reminderDate = typeof reminderTime === 'string' ? new Date(reminderTime) : reminderTime;
     const eventDate = typeof eventTime === 'string' ? new Date(eventTime) : eventTime;
     
-    // Berechne die Differenz in Minuten
+    // Berechne die exakte Differenz in Minuten ohne Rundungsfehler
     const diffMs = eventDate.getTime() - reminderDate.getTime();
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
     
@@ -308,11 +360,25 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
     } else if (diffMinutes < 60) {
       return `${Math.round(diffMinutes)} Minuten vor dem Termin`;
     } else if (diffMinutes < 24 * 60) {
+      // Exakte Stundenberechnung
       const hours = Math.floor(diffMinutes / 60);
-      return `${hours} Stunde${hours !== 1 ? 'n' : ''} vor dem Termin`;
+      const minutes = diffMinutes % 60;
+      
+      if (minutes === 0) {
+        return `${hours} Stunde${hours !== 1 ? 'n' : ''} vor dem Termin`;
+      } else {
+        return `${hours} Stunde${hours !== 1 ? 'n' : ''} und ${minutes} Minute${minutes !== 1 ? 'n' : ''} vor dem Termin`;
+      }
     } else {
       const days = Math.floor(diffMinutes / (24 * 60));
-      return `${days} Tag${days !== 1 ? 'e' : ''} vor dem Termin`;
+      const remainingMinutes = diffMinutes % (24 * 60);
+      const hours = Math.floor(remainingMinutes / 60);
+      
+      if (hours === 0) {
+        return `${days} Tag${days !== 1 ? 'e' : ''} vor dem Termin`;
+      } else {
+        return `${days} Tag${days !== 1 ? 'e' : ''} und ${hours} Stunde${hours !== 1 ? 'n' : ''} vor dem Termin`;
+      }
     }
   };
 
@@ -412,7 +478,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
                     {formatReminderTime(new Date(reminder.reminder_time))}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {getRelativeTime(new Date(reminder.reminder_time), new Date(eventStartTime))}
+                    {getRelativeTime(new Date(reminder.reminder_time), eventStart)}
                   </Typography>
                   {reminder.is_sent && (
                     <Typography variant="body2" color="success.main" sx={{ mt: 0.5 }}>
@@ -462,7 +528,7 @@ const ReminderForm = ({ eventId, eventStartTime, existingReminders, onReminderCh
                 Erinnerungszeit: {formatReminderTime(new Date(reminderToDelete.reminder_time))}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {getRelativeTime(new Date(reminderToDelete.reminder_time), new Date(eventStartTime))}
+                {getRelativeTime(new Date(reminderToDelete.reminder_time), eventStart)}
               </Typography>
             </Box>
           )}

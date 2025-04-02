@@ -191,6 +191,26 @@ const EventForm = ({ open, onClose, initialData, isEdit = false }) => {
     }
   };
   
+  // Hilfsfunktion für ISO-String ohne Zeitzonen-Verschiebung
+  function getCorrectISOString(date) {
+    if (!date || isNaN(date.getTime())) {
+      console.error('Ungültiges Datum für ISO-String:', date);
+      return new Date().toISOString();
+    }
+    
+    // Erhalte die lokale Zeitzone Offset in Minuten
+    const tzOffset = date.getTimezoneOffset();
+    
+    // Erstelle ein neues Date-Objekt und füge den Timezone-Offset hinzu,
+    // damit nach Konvertierung zu ISO die lokale Zeit korrekt ist
+    const correctedDate = new Date(date.getTime() - tzOffset * 60000);
+    
+    // Ersetze den 'Z' am Ende mit dem expliziten +00:00 für UTC-Zeit
+    const isoString = correctedDate.toISOString().replace('Z', '+00:00');
+    
+    return isoString;
+  }
+  
   // Formular absenden
   const handleSubmit = async e => {
     if (e) e.preventDefault();
@@ -204,8 +224,8 @@ const EventForm = ({ open, onClose, initialData, isEdit = false }) => {
       title,
       description,
       location: location_,
-      start_time: startTime.toISOString(),
-      end_time: endTime.toISOString(),
+      start_time: getCorrectISOString(startTime),
+      end_time: getCorrectISOString(endTime),
       event_type: eventType
     };
     
@@ -321,38 +341,47 @@ const EventForm = ({ open, onClose, initialData, isEdit = false }) => {
       const oldEventStart = originalStartTime;
       const newEventStart = new Date(newEventStartTime);
       
-      // Berechne die Zeitdifferenz zwischen alter und neuer Startzeit in Millisekunden
-      const timeDiff = newEventStart.getTime() - oldEventStart.getTime();
+      // Berechne die Zeitdifferenz zwischen alter und neuer Startzeit in Minuten
+      const timeDiffMinutes = Math.round(
+        (newEventStart.getTime() - oldEventStart.getTime()) / (1000 * 60)
+      );
       
       // Nur fortfahren, wenn es eine tatsächliche Zeitdifferenz gibt
-      if (timeDiff === 0) {
+      if (timeDiffMinutes === 0) {
         return;
       }
       
       // Aktualisiere jede Erinnerung
       const updatedReminders = await Promise.all(
         currentReminders.map(async reminder => {
+          if (reminder.is_sent) {
+            return reminder;
+          }
+          
           // Konvertiere die Erinnerungszeit zu einem Date-Objekt
           const oldReminderTime = new Date(reminder.reminder_time);
           
-          // Berechne die neue Erinnerungszeit, indem die gleiche Zeitdifferenz hinzugefügt wird
-          const newReminderTime = new Date(oldReminderTime.getTime() + timeDiff);
+          // Ermittle den Zeitunterschied zwischen Event und Erinnerung in Minuten
+          const minutesBeforeEvent = Math.round((oldEventStart.getTime() - oldReminderTime.getTime()) / (1000 * 60));
+          
+          // Berechne die neue Erinnerungszeit durch Anwendung des gleichen Zeitabstands zur neuen Startzeit
+          // Erstelle ein neues Datum basierend auf der neuen Startzeit
+          const newReminderDate = new Date(newEventStart);
+          // Subtrahiere die gleiche Anzahl von Minuten wie zuvor
+          newReminderDate.setMinutes(newReminderDate.getMinutes() - minutesBeforeEvent);
           
           // Aktualisiere die Erinnerung in der Datenbank
-          if (!reminder.is_sent) {
-            try {
-              const updatedReminder = await api.put(`/api/reminders/${reminder.id}`, {
-                reminder_time: newReminderTime.toISOString()
-              });
-              return updatedReminder.data;
-            } catch (err) {
-              console.error(`Fehler beim Aktualisieren der Erinnerung ${reminder.id}:`, err);
-              return reminder;
-            }
+          try {
+            // Verwende die Hilfsfunktion für korrekte ISO-Strings
+            const reminderData = {
+              reminder_time: getCorrectISOString(newReminderDate)
+            };
+            
+            const updatedReminder = await api.put(`/api/reminders/${reminder.id}`, reminderData);
+            return updatedReminder.data;
+          } catch (err) {
+            return reminder;
           }
-          
-          // Wenn die Erinnerung bereits gesendet wurde, nicht aktualisieren
-          return reminder;
         })
       );
       
