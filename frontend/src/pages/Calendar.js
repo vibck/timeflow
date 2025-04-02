@@ -431,14 +431,14 @@ const Calendar = () => {
       {/* Hintergrundelemente */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0a0f1e] via-[#1a1f3e] to-[#0a0f1e] opacity-80"></div>
       
-      {/* Dekorative Elemente */}
-      <div className="absolute top-[10%] left-[20%] w-32 h-32 rounded-full bg-[#ff0066] blur-[80px] opacity-20"></div>
-      <div className="absolute top-[40%] right-[10%] w-40 h-40 rounded-full bg-[#3399ff] blur-[100px] opacity-20"></div>
-      <div className="absolute bottom-[15%] left-[30%] w-36 h-36 rounded-full bg-[#9f7aea] blur-[90px] opacity-20"></div>
+      {/* Subtile Hintergrund-Effekte */}
+      <div className="absolute top-[10%] left-[20%] w-32 h-32 rounded-full bg-[#ff0066] blur-[120px] opacity-20"></div>
+      <div className="absolute top-[40%] right-[10%] w-40 h-40 rounded-full bg-[#3399ff] blur-[150px] opacity-20"></div>
+      <div className="absolute bottom-[15%] left-[30%] w-36 h-36 rounded-full bg-[#9f7aea] blur-[130px] opacity-20"></div>
       
-      <div className="relative z-10 h-full">
+      <div className="relative z-10 h-full px-4 lg:px-8 mx-auto max-w-[1800px]">
         {/* Kalender-Header */}
-        <div className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 mt-[64px]">
+        <div className="py-6 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 mt-[64px]">
           <div>
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#ff0066] to-[#3399ff]">
               {format(currentDate, 'MMMM yyyy', { locale: de })}
@@ -449,7 +449,7 @@ const Calendar = () => {
           </div>
           
           <div className="flex items-center space-x-3">
-            <div className="flex rounded-lg overflow-hidden bg-white/5 p-1">
+            <div className="flex rounded-lg overflow-hidden bg-white/5 border border-white/10 p-1 shadow-xl shadow-black/10">
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -490,7 +490,7 @@ const Calendar = () => {
         {error && <Alert severity="error" className="mx-4 mb-3">{error}</Alert>}
         
         {/* Kalender-Raster */}
-        <div className="flex-1 px-2 pb-4 overflow-auto">
+        <div className="flex-1 pb-6 overflow-auto">
           {/* Wochentagsüberschriften */}
           <div className="grid grid-cols-7 mb-2">
             {weekDays.map((day, index) => (
@@ -504,7 +504,7 @@ const Calendar = () => {
           </div>
           
           {/* Kalendertage */}
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-2">
             {days.map((day, index) => {
               const isCurrentMonth = isSameMonth(day, currentDate);
               const isCurrentDay = isToday(day);
@@ -514,10 +514,12 @@ const Calendar = () => {
               return (
                 <div 
                   key={index} 
-                  className={`rounded-lg backdrop-blur-sm p-2 relative min-h-[90px] transition-all duration-200 ${
+                  className={`rounded-lg backdrop-blur-sm p-2 relative min-h-[90px] transition-all duration-200 border ${
                     isCurrentMonth 
-                      ? "bg-white/5 hover:bg-white/10" 
-                      : "bg-white/[0.02] hover:bg-white/5"
+                      ? isCurrentDay 
+                        ? "bg-white/10 border-[#3399ff]/50 shadow-lg shadow-[#3399ff]/10" 
+                        : "bg-white/5 border-white/5 hover:border-white/10 hover:bg-white/8"
+                      : "bg-white/[0.02] border-white/[0.025] hover:bg-white/5 hover:border-white/5"
                   } ${!isCurrentMonth ? "opacity-60" : ""} ${hasHoliday ? "bg-gradient-to-b from-[#9d7fea]/10 to-transparent" : ""}`}
                   onClick={() => handleAddEvent(day)}
                 >
@@ -580,10 +582,11 @@ const Calendar = () => {
                       .map((event, idx) => (
                         <div 
                           key={`event-${event.id}-${idx}`}
-                          className="p-1 rounded-md text-xs cursor-pointer transition-transform hover:scale-[1.02]"
+                          className="p-1 rounded-md text-xs cursor-pointer transition-transform hover:scale-[1.02] shadow-sm"
                           style={{ 
                             backgroundColor: `${getEventTypeColor(event.event_type)}40`, 
-                            color: 'white' 
+                            color: 'white',
+                            border: `1px solid ${getEventTypeColor(event.event_type)}30`
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
