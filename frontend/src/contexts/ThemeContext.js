@@ -12,43 +12,22 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [mode, setMode] = useState(() => {
-    const savedMode = localStorage.getItem('themeMode');
-    return savedMode || 'light';
-  });
+  // Immer den 'dark' Modus verwenden, unabhängig von gespeicherten Einstellungen
+  const [mode, setMode] = useState('dark');
 
   const theme = getTheme(mode);
 
   useEffect(() => {
-    localStorage.setItem('themeMode', mode);
-    document.documentElement.setAttribute('data-theme', mode);
-    document.body.style.backgroundColor = mode === 'dark' ? '#0f1120' : '#f8fafc';
-  }, [mode]);
-
-  const toggleTheme = () => {
-    setMode(prevMode => {
-      const newMode = prevMode === 'light' ? 'dark' : 'light';
-      localStorage.setItem('themeMode', newMode);
-      return newMode;
-    });
-  };
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    if (!localStorage.getItem('themeMode')) {
-      setMode(mediaQuery.matches ? 'dark' : 'light');
-    }
-    
-    const handleChange = e => {
-      if (!localStorage.getItem('themeMode')) {
-        setMode(e.matches ? 'dark' : 'light');
-      }
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    localStorage.setItem('themeMode', 'dark');
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.body.style.backgroundColor = '#0f1120';
   }, []);
+
+  // Dummy-Funktion für toggleTheme, die nichts mehr tut (immer im Dark Mode bleiben)
+  const toggleTheme = () => {
+    // Nichts tun - wir bleiben immer im Dark Mode
+    return;
+  };
 
   const value = {
     theme,
