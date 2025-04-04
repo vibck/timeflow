@@ -69,24 +69,41 @@ const Layout = () => {
         const now = new Date();
         
         const events = response.data.map(event => {
-          const start_time = new Date(event.start_time);
-          const end_time = new Date(event.end_time);
-          
-          return {
-            id: event.id,
-            title: event.title,
-            date: format(start_time, 'dd.MM.yyyy', { locale: de }),
-            time: event.allDay 
-              ? 'Ganztägig' 
-              : `${format(start_time, 'HH:mm')} - ${format(end_time, 'HH:mm')}`,
-            color: getEventTypeColor(event.event_type),
-            event_type: event.event_type || 'personal',
-            start_time: start_time,
-            end_time: end_time,
-            // Explizit speichern, ob der Termin in der Zukunft liegt
-            isInFuture: end_time > now
-          };
-        });
+          try {
+            // Validiere die Zeitwerte
+            if (!event.start_time || !event.end_time) {
+              console.warn('Event ohne Start- oder Endzeit gefunden:', event);
+              return null;
+            }
+
+            const start_time = new Date(event.start_time);
+            const end_time = new Date(event.end_time);
+
+            // Prüfe auf ungültige Datumswerte
+            if (isNaN(start_time.getTime()) || isNaN(end_time.getTime())) {
+              console.warn('Ungültige Datumswerte im Event:', event);
+              return null;
+            }
+
+            return {
+              id: event.id,
+              title: event.title,
+              date: format(start_time, 'dd.MM.yyyy', { locale: de }),
+              time: event.allDay 
+                ? 'Ganztägig' 
+                : `${format(start_time, 'HH:mm')} - ${format(end_time, 'HH:mm')}`,
+              color: getEventTypeColor(event.event_type),
+              event_type: event.event_type || 'personal',
+              start_time: start_time,
+              end_time: end_time,
+              // Explizit speichern, ob der Termin in der Zukunft liegt
+              isInFuture: end_time > now
+            };
+          } catch (error) {
+            console.warn('Fehler bei der Verarbeitung eines Events:', error);
+            return null;
+          }
+        }).filter(event => event !== null); // Entferne ungültige Events
         
         // Filtere vergangene Termine strikt aus
         const filteredEvents = events.filter(event => event.isInFuture);
@@ -98,27 +115,11 @@ const Layout = () => {
           if (!b || !b.start_time) return 1;
           
           // Vergleiche nach Startdatum und Startzeit
-          const timeA = a.start_time.getTime();
-          const timeB = b.start_time.getTime();
-          
-          // Primäre Sortierung nach Startzeit (vom frühesten zum spätesten)
-          if (timeA !== timeB) {
-            return timeA - timeB; // Aufsteigende Sortierung nach Zeit
-          }
-          
-          // Sekundäre Sortierung nach ID
-          if (a.id !== b.id) {
-            return a.id - b.id;
-          }
-          
-          // Tertiäre Sortierung nach Titel
-          return a.title.localeCompare(b.title);
+          const timeDiff = a.start_time - b.start_time;
+          return timeDiff !== 0 ? timeDiff : a.id - b.id;
         });
         
-        // Update window.calendarEvents für andere Komponenten
-        window.calendarEvents = filteredEvents;
-        
-        // Aktualisiere separaten Sidebar-State
+        // Setze die gefilterten und sortierten Events
         setSidebarEvents(filteredEvents);
         
         // Für die Kalenderseite auch calendarEvents aktualisieren
@@ -126,10 +127,9 @@ const Layout = () => {
           setCalendarEvents(filteredEvents);
         }
       } catch (error) {
-        // Fehler leise behandeln, um Konsolenspam zu vermeiden
-        // Kritische Fehler sollten in einer Produktionsumgebung in einem Error-Tracking-System erfasst werden
+        console.error('Fehler beim Laden der Termine:', error);
+        setSidebarEvents([]);
       } finally {
-        // Ladezustand zurücksetzen
         setIsLoadingEvents(false);
       }
     };
@@ -439,7 +439,7 @@ const Layout = () => {
                       <span className="text-sm font-medium">{event.title || 'Unbenannter Termin'}</span>
                     </div>
                     <div className="mt-1 text-xs text-gray-400">
-                      {event.date && format(new Date(event.date), 'dd. MMM', { locale: de })} • {event.time || 'Keine Zeit angegeben'}
+                      {event.date} • {event.time || 'Keine Zeit angegeben'}
                     </div>
                   </div>
                 ))

@@ -310,22 +310,46 @@ export default function Dashboard() {
     const fetchEvents = async () => {
       try {
         const response = await api.get('/api/events');
-        const events = response.data.map(event => ({
-          id: event.id,
-          title: event.title,
-          date: format(new Date(event.start_time), 'dd.MM.yyyy', { locale: de }),
-          time: event.allDay 
-            ? 'Ganztägig' 
-            : `${format(new Date(event.start_time), 'HH:mm')} - ${format(new Date(event.end_time), 'HH:mm')}`,
-          color: getEventTypeColor(event.event_type),
-          event_type: event.event_type || 'personal',
-          start_time: new Date(event.start_time), // Original Startzeit speichern für Vergleiche
-          end_time: new Date(event.end_time)      // Original Endzeit speichern für Vergleiche
-        }));
+        const events = response.data.map(event => {
+          try {
+            // Validiere die Zeitwerte
+            if (!event.start_time || !event.end_time) {
+              console.warn('Event ohne Start- oder Endzeit gefunden:', event);
+              return null;
+            }
+
+            const startTime = new Date(event.start_time);
+            const endTime = new Date(event.end_time);
+
+            // Prüfe auf ungültige Datumswerte
+            if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+              console.warn('Ungültige Datumswerte im Event:', event);
+              return null;
+            }
+
+            return {
+              id: event.id,
+              title: event.title,
+              date: format(startTime, 'dd.MM.yyyy', { locale: de }),
+              time: event.allDay 
+                ? 'Ganztägig' 
+                : `${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}`,
+              color: getEventTypeColor(event.event_type),
+              event_type: event.event_type || 'personal',
+              start_time: startTime,
+              end_time: endTime
+            };
+          } catch (error) {
+            console.warn('Fehler bei der Verarbeitung eines Events:', error);
+            return null;
+          }
+        }).filter(event => event !== null); // Entferne ungültige Events
         
         // Filtere vergangene Termine aus der Liste
         const now = new Date();
         const filteredEvents = events.filter(event => {
+          if (!event) return false;
+          
           // Ganztägige Termine für heute behalten
           if (event.time === 'Ganztägig') {
             const today = format(now, 'dd.MM.yyyy', { locale: de });
@@ -358,37 +382,48 @@ export default function Dashboard() {
         
         // Konvertiere die API-Daten in das richtige Format
         const formattedIntervals = response.data.map(interval => {
-          // Stelle sicher, dass die Daten gültig sind
-          if (!interval.last_appointment) {
-            console.warn('Ungültige Intervalldaten in API-Antwort (fehlendes last_appointment):', interval);
+          try {
+            // Validiere die erforderlichen Felder
+            if (!interval.last_appointment) {
+              console.warn('Ungültige Intervalldaten: fehlendes last_appointment', interval);
+              return null;
+            }
+            
+            // Das nächste Datum wird entweder aus next_appointment oder next_suggested_date gelesen
+            const nextDateValue = interval.next_appointment || interval.next_suggested_date;
+            if (!nextDateValue) {
+              console.warn('Ungültige Intervalldaten: fehlendes nächstes Datum', interval);
+              return null;
+            }
+            
+            // Konvertiere und validiere die Datumswerte
+            const lastVisitDate = new Date(interval.last_appointment);
+            const nextVisitDate = new Date(nextDateValue);
+            
+            if (isNaN(lastVisitDate.getTime()) || isNaN(nextVisitDate.getTime())) {
+              console.warn('Ungültige Datumswerte in Intervall:', interval);
+              return null;
+            }
+            
+            // Validiere das Intervall
+            if (interval.interval_months <= 0) {
+              console.warn('Ungültiges Intervall (<= 0):', interval);
+              return null;
+            }
+            
+            return {
+              id: interval.id,
+              title: interval.interval_type || 'Unbekanntes Intervall',
+              interval: interval.interval_months,
+              lastVisit: lastVisitDate,
+              nextVisit: nextVisitDate,
+              notes: interval.notes || ''
+            };
+          } catch (error) {
+            console.warn('Fehler bei der Verarbeitung eines Intervalls:', error);
             return null;
           }
-          
-          // Das nächste Datum wird entweder aus next_appointment oder next_suggested_date gelesen
-          const nextDateValue = interval.next_appointment || interval.next_suggested_date;
-          if (!nextDateValue) {
-            console.warn('Ungültige Intervalldaten in API-Antwort (fehlendes nächstes Datum):', interval);
-            return null;
-          }
-          
-          const lastVisitDate = new Date(interval.last_appointment);
-          const nextVisitDate = new Date(nextDateValue);
-          
-          // Prüfe, ob die Datumsangaben gültig sind
-          if (isNaN(lastVisitDate.getTime()) || isNaN(nextVisitDate.getTime())) {
-            console.warn('Ungültige Datumswerte in Intervall:', interval);
-            return null;
-          }
-          
-          return {
-            id: interval.id,
-            title: interval.interval_type,
-            interval: interval.interval_months,
-            lastVisit: lastVisitDate,
-            nextVisit: nextVisitDate,
-            notes: interval.notes || ''
-          };
-        }).filter(interval => interval !== null); // Entferne ungültige Intervalldaten
+        }).filter(interval => interval !== null);
         
         // Sortiere nach nächstem Besuchsdatum
         formattedIntervals.sort((a, b) => a.nextVisit - b.nextVisit);
